@@ -4,20 +4,35 @@ import { money } from './lib/i18n'
 
 // Real places, approximate price per person in MAD (0 = free), duration in hours. Prices are indicative only.
 type Kind = 'famille' | 'couple' | 'sport' | 'culture' | 'nature'
-interface Act { id: string; e: string; n: string; d: string; p: number; h: number; k: Kind[] }
-const A = (id: string, e: string, n: string, d: string, p: number, h: number, k: string): Act => ({ id, e, n, d, p, h, k: k.split(' ') as Kind[] })
+interface Act { id: string; e: string; n: string; d: string; p: number; h: number; k: Kind[]; a?: string; tl?: string[] }
+const A = (id: string, e: string, n: string, d: string, p: number, h: number, k: string, a?: string, tl?: string): Act => ({ id, e, n, d, p, h, k: k.split(' ') as Kind[], a, tl: tl?.split('|') })
 export const CITIES: Record<string, Act[]> = {
   Casablanca: [
-    A('hassan2', '🕌', 'Visite de la Mosquée Hassan II', 'Visite guidée de l’intérieur, face à l’océan', 130, 2, 'culture famille'),
-    A('corniche', '🌊', 'Balade sur la Corniche d’Aïn Diab', 'Marche au coucher du soleil, glace en route', 0, 2, 'couple famille nature'),
-    A('habous', '🛍️', 'Quartier des Habous', 'Souks, librairies et pâtisseries traditionnelles', 0, 2, 'culture couple'),
-    A('ligue', '🌳', 'Parc de la Ligue Arabe', 'Grand parc rénové, jeux pour enfants', 0, 2, 'famille nature'),
-    A('aquarium', '🐠', 'Aquarium du Morocco Mall', 'Aquarium géant et balade au centre', 100, 2, 'famille'),
-    A('sindibad', '🎢', 'Parc Sindibad', 'Parc d’attractions et zoo', 150, 4, 'famille'),
-    A('slaoui', '🖼️', 'Musée Abderrahman Slaoui', 'Affiches, bijoux et art marocain', 30, 1, 'culture'),
-    A('villa-arts', '🎨', 'Villa des Arts', 'Expositions d’art contemporain', 0, 1, 'culture couple'),
-    A('surf-casa', '🏄', 'Cours de surf à Aïn Diab', 'Cours de 2 h avec planche et combinaison', 250, 2, 'sport'),
-    A('anfa-run', '🏃', 'Footing au Parc d’Anfa', 'Boucle verte, idéale le matin', 0, 1, 'sport nature'),
+    A('hassan2', '🕌', 'Mosquée Hassan II', 'Visite guidée de l’intérieur, face à l’océan', 130, 2, 'culture famille', 'Bd Sidi Mohammed Ben Abdallah', 'Arrivée par l’esplanade|Visite guidée (salle de prière, hammams)|Photos sur le parvis face à la mer'),
+    A('corniche', '🌊', 'Corniche d’Aïn Diab', 'Marche au coucher du soleil, glace en route', 0, 2, 'couple famille nature', 'Bd de la Corniche, Aïn Diab', 'Départ au phare d’El Hank|Marche jusqu’à Aïn Diab|Glace et coucher de soleil'),
+    A('habous', '🛍️', 'Quartier des Habous', 'Souks, librairies, pâtisseries traditionnelles', 0, 2, 'culture couple', 'Nouvelle médina, Habous', 'Place du Mahkama|Souk des olives et librairies|Cornes de gazelle chez Bennis'),
+    A('ligue', '🌳', 'Parc de la Ligue Arabe', 'Grand parc rénové, jeux pour enfants', 0, 2, 'famille nature', 'Bd Moulay Youssef, centre-ville', 'Entrée côté Cathédrale du Sacré-Cœur|Aires de jeux|Pause au kiosque'),
+    A('aquarium', '🐠', 'Aquarium du Morocco Mall', 'Aquarium géant et balade au centre', 100, 2, 'famille', 'Morocco Mall, Bd de l’Océan Atlantique', 'Aquarium géant|Fontaine musicale|Balade dans le mall'),
+    A('sindibad', '🎢', 'Parc Sindibad', 'Parc d’attractions et zoo', 150, 4, 'famille', 'Route d’Azemmour, Aïn Diab', 'Zoo le matin|Attractions|Goûter au parc'),
+    A('slaoui', '🖼️', 'Musée Abderrahman Slaoui', 'Affiches, bijoux et art marocain', 30, 1, 'culture', '12 rue du Parc, Gauthier', 'Collection d’affiches|Bijoux et orfèvrerie|Thé sur le toit'),
+    A('villa-arts', '🎨', 'Villa des Arts', 'Expositions d’art contemporain', 0, 1, 'culture couple', '30 bd Brahim Roudani, Maârif', 'Exposition temporaire|Jardin Art déco'),
+    A('surf-casa', '🏄', 'Cours de surf à Aïn Diab', 'Cours de 2 h avec planche et combinaison', 250, 2, 'sport', 'Plage d’Aïn Diab (écoles de surf)', 'Échauffement sur le sable|Cours dans les vagues|Douche et jus frais'),
+    A('anfa-run', '🏃', 'Footing au Parc d’Anfa', 'Boucle verte, idéale le matin', 0, 1, 'sport nature', 'Anfa Park, Casa-Anfa', 'Boucle de 5 km|Étirements au lac'),
+    A('ancienne-medina', '🏘️', 'Ancienne médina et Sqala', 'Remparts, bastion portugais et café du jardin', 0, 2, 'culture famille couple', 'Bd des Almohades, Ancienne médina', 'Bab Marrakech|Ruelles et artisans|Thé au café de la Sqala'),
+    A('art-deco', '🏛️', 'Balade Art déco du centre-ville', 'Immeubles des années 1930 autour de Mohammed V', 0, 2, 'culture couple', 'Bd Mohammed V et place des Nations Unies', 'Marché Central|Immeubles Art déco|Place Mohammed V'),
+    A('cathedrale', '⛪', 'Ancienne cathédrale du Sacré-Cœur', 'Architecture blanche Art déco, expositions', 0, 1, 'culture', 'Rue d’Alger, centre-ville', 'Façade et vitraux|Exposition du moment'),
+    A('marche-central', '🦞', 'Marché Central', 'Poissons, fleurs et grillades sur place', 0, 1, 'culture couple', 'Bd Mohammed V, centre-ville', 'Étals de poissons et fleurs|Choisis ton poisson, grillé sur place'),
+    A('twin-center', '🏙️', 'Shopping au Twin Center et Maârif', 'Boutiques et cafés du quartier Maârif', 0, 2, 'couple', 'Bd Zerktouni, Maârif', 'Twin Center|Rues commerçantes du Maârif|Café en terrasse'),
+    A('anfa-place', '🛍️', 'Anfa Place et la plage', 'Centre face à la mer, promenade', 0, 2, 'famille couple', 'Bd de la Corniche, Anfa', 'Boutiques|Promenade sur la digue'),
+    A('tamaris', '🏖️', 'Plage de Tamaris', 'Grande plage au sud de Casablanca', 0, 4, 'famille nature sport', 'Tamaris, route de Dar Bouazza', 'Arrivée le matin|Baignade et beach-volley|Déjeuner poisson au bord de mer'),
+    A('dar-bouazza', '🌅', 'Dar Bouazza et ses criques', 'Criques et cafés de surfeurs', 0, 3, 'couple nature', 'Dar Bouazza (25 min du centre)', 'Balade sur les rochers|Café face aux vagues|Coucher de soleil'),
+    A('bouskoura', '🌲', 'Forêt de Bouskoura', 'Vélo, randonnée et pique-nique', 0, 3, 'nature sport famille', 'Forêt de Bouskoura, sortie autoroute', 'Parcours VTT ou marche|Pique-nique|Aire de jeux'),
+    A('mohammedia', '⛵', 'Journée à Mohammedia', 'Plage, port de plaisance et poisson', 50, 6, 'famille couple nature', 'Mohammedia (train 20 min, ~25 MAD)', 'Train depuis Casa-Port|Plage des Sablettes|Déjeuner au port'),
+    A('technopark-escalade', '🧗', 'Escalade en salle', 'Murs d’escalade pour débutants', 120, 2, 'sport', 'Salles d’escalade de Casablanca (Sidi Maârouf)', 'Initiation et matériel|Voies débutant|Défi entre amis'),
+    A('karting', '🏎️', 'Karting', 'Sessions de karting en piste', 200, 1, 'sport famille', 'Circuits de karting de Casablanca (Bouskoura)', 'Briefing sécurité|2 sessions chronométrées|Podium'),
+    A('cinema', '🎬', 'Cinéma Mégarama', 'Derniers films, grand écran', 70, 2, 'couple famille', 'Mégarama, Bd de la Corniche', 'Popcorn|Séance|Balade sur la Corniche après'),
+    A('hammam-casa', '🧖', 'Hammam et spa', 'Gommage traditionnel et détente', 150, 2, 'couple', 'Hammams du Maârif et de Gauthier', 'Bain de vapeur|Gommage au savon noir|Thé à la menthe'),
+    A('cuisine-casa', '👩‍🍳', 'Atelier de cuisine marocaine', 'Prépare un tajine avec une cheffe', 400, 3, 'couple culture famille', 'Ateliers à Gauthier et Maârif', 'Courses au marché|Préparation du tajine|Repas partagé'),
   ],
   Rabat: [
     A('hassan-tour', '🗼', 'Tour Hassan et Mausolée Mohammed V', 'Monument emblématique, accès libre', 0, 1, 'culture famille'),
@@ -167,6 +182,7 @@ export function SortiesTab() {
               <ol className="relative space-y-3 border-s-2 border-leaf/50 ps-4">
                 {pr.map((x, i) => <li key={i} className="relative"><span className="absolute -start-[1.45rem] top-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-[11px] ring-2 ring-leaf">{x.e}</span>
                   <p className="text-[11px] font-bold text-forest">{x.t}</p><p className="font-semibold leading-tight">{x.n}</p><p className="text-xs text-muted">{x.d} · {x.p ? `≈ ${money(x.p * people, 'fr')}` : 'Gratuit'}</p>
+                  {(() => { const ac = x.id ? acts.find((q) => q.id === x.id) : undefined; return ac && <>{ac.a && <p className="mt-0.5 text-xs">📍 <a className="font-semibold text-forest underline" href={`https://www.google.com/maps/search/${encodeURIComponent(ac.n + ' ' + ac.a + ' ' + city)}`} target="_blank" rel="noreferrer">{ac.a}</a></p>}{ac.tl && <ul className="mt-1 space-y-0.5 text-[11px] text-ink/80">{ac.tl.map((st, j) => <li key={j}>• {st}</li>)}</ul>}</> })()}
                   {x.id && <button className="mt-1 rounded-full bg-cream px-3 py-1 text-xs font-bold active:scale-95" onClick={() => swap(k, d.acts.indexOf(x.id!))}>↻ Changer cette activité</button>}</li>)}
               </ol>
               <div className="mt-3 space-y-1 rounded-2xl bg-cream p-3 text-xs"><p>🚕 <b>Y aller :</b> {FOOD[city].move}</p>{kindsHere.slice(0, 2).map((kk) => <p key={kk}>💡 <b>Conseil :</b> {TIP[kk]}</p>)}</div>
