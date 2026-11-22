@@ -1,5 +1,6 @@
 import { zf } from './lib/zgh'
 import { E3 } from './E3'
+import { Program } from './Program'
 import { Ic } from './Ic'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
@@ -11,7 +12,7 @@ import { Dish } from './ui'
 import { RecipeSheet } from './Screens'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
-export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number; kcalO?: number; protO?: number }
+export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number; kcalO?: number; protO?: number; lvl?: 'beg' | 'mid' | 'adv' }
 const DEF: SportProfile = { sex: 'm', age: 30, h: 175, w: 75, sport: 'gym', goal: 'fit', days: 3 }
 
 const SPORTS: [string, string, string, string, string][] = [
@@ -110,6 +111,8 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
           <Num v={p.days} set={(days) => set({ days })} min={0} max={7} unit={L(lang, '/wk', '/sem', '/أسبوع')} label={L(lang, 'Sessions', 'Séances', 'حصص')} />
         </div>
       </section>
+
+      <Program p={p} set={set} lang={lang} />
 
       <section className="rounded-[24px] bg-surface p-4 shadow-soft">
         <div className="flex items-baseline justify-between"><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted"><Ic e="⚖️" /> {L(lang, 'Advised weight', 'Poids conseillé', 'الوزن المنصوح')}</p><b className="font-display text-lg tabular-nums text-forest">{n.lo}–{n.hi} kg</b></div>
