@@ -4,6 +4,7 @@ import { dayName, money, rname, t, type Lang } from './lib/i18n'
 import { RECIPES, REC, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { dailyKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
+import type { Mode } from './lib/plan'
 import { FoodTile, Sheet, Stepper } from './ui'
 
 const SLOTS: Meal[] = ['b', 'l', 'd']
@@ -44,74 +45,126 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
 
 
 const FILTERS = ['all', 'moroccan', 'healthy', 'budget', 'quick', 'vegetarian']
+const MODES: { id: Mode; e: string; k: string }[] = [{ id: 'light', e: '🥗', k: 'modeLight' }, { id: 'balanced', e: '⚖️', k: 'modeBal' }, { id: 'gourmet', e: '😋', k: 'modeGourmet' }]
 
-/** Step 1: the budget drives everything. */
-export function BudgetStep({ cost, setBudget, compose, hasPlan, go }: { cost: number; setBudget: (b: number) => void; compose: () => void; hasPlan: boolean; go: (s: number) => void }) {
+export function ModePicker({ value, onPick, compact = false }: { value: Mode; onPick: (m: Mode) => void; compact?: boolean }) {
+  const { lang } = useApp()
+  return (
+    <div className="grid grid-cols-3 gap-2" role="radiogroup">
+      {MODES.map((m) => (
+        <button key={m.id} role="radio" aria-checked={value === m.id} onClick={() => onPick(m.id)} className={`rounded-2xl border-2 p-3 text-center transition-all active:scale-95 ${value === m.id ? 'border-forest bg-leaf/25 shadow-soft' : 'border-line bg-surface'}`}>
+          <div className={`text-3xl ${value === m.id ? 'pop' : ''}`}>{m.e}</div>
+          <div className="mt-1 text-sm font-bold">{t(m.k, lang)}</div>
+          {!compact && <div className="mt-0.5 text-[11px] leading-tight text-muted">{t({ light: 'modeLightD', balanced: 'modeBalD', gourmet: 'modeGourmetD' }[m.id], lang)}</div>}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/** Budget, people, mode and vegetarian: the controls that drive the whole week. Used on step 1 and in the budget sheet. */
+export function Controls({ setBudget, setMode }: { setBudget: (b: number) => void; setMode: (m: Mode) => void }) {
   const { lang, me, patchMe } = useApp()
   const b = me!.budget
-  const perDay = b / 7
   return (
-    <div className="space-y-5">
-      <h1 className="rise text-center text-2xl font-extrabold leading-tight text-forest sm:text-3xl">{t('bTitle', lang)}</h1>
-      <div className="card rise space-y-5 p-6 text-center">
+    <div className="space-y-4">
+      <div className="card space-y-4 p-5 text-center">
         <div className="flex items-center justify-center gap-4">
           <button className="btn btn-soft !h-12 !w-12 !min-h-12 !px-0 text-xl" onClick={() => setBudget(Math.max(200, b - 50))} aria-label="−50">−</button>
           <div><div className="font-display text-5xl font-extrabold tabular-nums text-forest">{b}</div><div className="text-sm font-semibold text-muted">MAD / {t('week2', lang).toLowerCase()}</div></div>
           <button className="btn btn-soft !h-12 !w-12 !min-h-12 !px-0 text-xl" onClick={() => setBudget(Math.min(5000, b + 50))} aria-label="+50">+</button>
         </div>
         <input type="range" min={200} max={3000} step={50} value={Math.min(b, 3000)} onChange={(e) => setBudget(+e.target.value)} className="w-full accent-[#245B43]" aria-label={t('budgetBar', lang)} />
-        <p className="text-sm text-muted">≈ {money(perDay, lang)} {t('perDay', lang)} · {money(perDay / Math.max(1, me!.size), lang)} / 👤</p>
+        <p className="text-sm text-muted">≈ {money(b / 7, lang)} {t('perDay', lang)} · {money(b / 7 / Math.max(1, me!.size), lang)} / 👤</p>
       </div>
-      <div className="card rise space-y-3 p-5">
-        <div className="flex items-center justify-between"><span className="font-bold">{t('people', lang)}</span><Stepper v={me!.size} set={(n) => patchMe({ size: n })} max={12} /></div>
-        <div className="flex flex-wrap gap-2">{['vegetarian', 'healthy', 'budget'].map((d) => <button key={d} className="chip" aria-pressed={me!.diet.includes(d)} onClick={() => patchMe({ diet: me!.diet.includes(d) ? me!.diet.filter((x) => x !== d) : [...me!.diet, d] })}>{t(d === 'budget' ? 'budgetT' : d, lang)}</button>)}</div>
+      <ModePicker value={me!.mode ?? 'balanced'} onPick={setMode} />
+      <div className="card flex items-center justify-between gap-3 p-4">
+        <span className="font-bold">👤 {t('people', lang)}</span><Stepper v={me!.size} set={(n) => patchMe({ size: n })} max={12} />
+        <button className="chip" aria-pressed={me!.diet.includes('vegetarian')} onClick={() => patchMe({ diet: me!.diet.includes('vegetarian') ? [] : ['vegetarian'] })}>🌱 {t('veg', lang)}</button>
       </div>
-      <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {t('compose', lang)}</button>
-      {hasPlan && <button className="btn btn-soft w-full" onClick={() => go(2)}>{t('keepWeek', lang)} · {money(cost, lang)}</button>}
     </div>
   )
 }
 
-/** Step 2: the week. */
-export function WeekStep({ cost, compose, adapt }: { cost: number; compose: () => void; adapt: () => void }) {
+export function BudgetStep({ setBudget, setMode, compose, hasPlan, go }: { setBudget: (b: number) => void; setMode: (m: Mode) => void; compose: () => void; hasPlan: boolean; go: (s: number) => void }) {
+  const { lang } = useApp()
+  return (
+    <div className="space-y-5">
+      <h1 className="rise text-center text-2xl font-extrabold leading-tight text-forest">{t('bTitle', lang)}</h1>
+      <Controls setBudget={setBudget} setMode={setMode} />
+      <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {t('compose', lang)}</button>
+      {hasPlan && <button className="btn btn-soft w-full" onClick={() => go(2)}>{t('keepWeek', lang)} →</button>}
+    </div>
+  )
+}
+
+/** Mascot reacts to the real calories of the planned week. */
+export function Mascot({ plan }: { plan: Record<string, { r: string; n: number }> }) {
+  const { lang } = useApp()
+  const kc = Math.round(dailyKcal(plan)); const hl = healthLevel(kc)
+  const pos = Math.min(100, Math.max(0, (kc / 3000) * 100))
+  const hue = { fit: 'linear-gradient(135deg, rgb(var(--leaf) / .55), rgb(var(--cream)))', balanced: 'linear-gradient(135deg, rgb(var(--apricot) / .35), rgb(var(--cream)))', belly: 'linear-gradient(135deg, rgb(var(--apricot) / .7), rgb(255 226 200))' }[hl]
+  return (
+    <div className="card overflow-hidden p-4" style={{ background: hue, transition: 'background .6s' }}>
+      <div className="flex items-center gap-4">
+        <div key={hl} className={`mascot mascot-${hl} text-6xl`} aria-hidden>{HEALTH[hl]}</div>
+        <div className="min-w-0 flex-1"><p className="font-display text-lg font-extrabold leading-tight">{t({ fit: 'capFit', balanced: 'capBal', belly: 'capBelly' }[hl], lang)}</p><p className="text-sm text-muted tabular-nums">≈ {kc.toLocaleString(lang === 'ar' ? 'en' : lang)} {t('kcal', lang)}</p></div>
+      </div>
+      <div className="relative mt-4 h-3 rounded-full" style={{ background: 'linear-gradient(90deg, rgb(var(--leaf)) 0 50%, rgb(var(--apricot)) 50% 73%, rgb(var(--danger) / .75) 73%)' }}>
+        <div className="absolute top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-4 border-white bg-forest shadow-soft transition-all duration-700" style={{ insetInlineStart: `calc(${pos}% - 12px)` }} />
+      </div>
+    </div>
+  )
+}
+
+/** Step 2: a day at a time, so it fits a phone screen. */
+export function WeekStep({ compose, setMode }: { compose: () => void; setMode: (m: Mode) => void }) {
   const { lang, me, house, upHouse, award } = useApp()
+  const [day, setDay] = useState((new Date().getDay() + 6) % 7)
   const [pick, setPick] = useState<{ d: number; s: Meal } | null>(null)
   const [view, setView] = useState<string | null>(null)
   const [q, setQ] = useState(''); const [f, setF] = useState('all')
-  const plan = house!.plan; const hh = Math.max(1, me!.size); const budget = me!.budget
-  const planned = Object.keys(plan).length; const kc = Math.round(dailyKcal(plan)); const hl = healthLevel(kc); const over = cost > budget
+  const plan = house!.plan; const hh = Math.max(1, me!.size)
   const setEntry = (k: string, r: string, n: number, log: string) => upHouse((h) => { h.plan[k] = { r, n } }, log)
   const cands = useMemo(() => RECIPES.filter((r) => pick && r.m.includes(pick.s) && (f === 'all' || r.tags.includes(f)) && (rname(r.n, lang) + ' ' + r.n[0]).toLowerCase().includes(q.toLowerCase())), [pick, q, f, lang])
+  const dayEntries = SLOTS.map((s) => plan[`${day}-${s}`]).filter(Boolean)
+  const dayK = Math.round(dayEntries.reduce((a, e) => a + kcalPerServing(e.r), 0)); const dayC = dayEntries.reduce((a, e) => a + recipeCost(e.r, e.n), 0)
   const cur = view ? plan[view] : null
+  const open = (s: Meal) => { setPick({ d: day, s }); setQ(''); setF('all') }
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2"><h1 className="text-2xl font-extrabold text-forest">{t('weekTitle', lang)}</h1><button className="btn btn-soft !min-h-11" onClick={compose}>🎲 {t('reshuffle', lang)}</button></div>
-      {planned > 0 && (
-        <div className="card flex items-center gap-3 p-3">
-          <span className="text-3xl" aria-hidden>{HEALTH[hl]}</span>
-          <div className="flex-1"><p className="text-sm font-bold">{t(hl, lang)}</p><p className="text-xs text-muted">≈ {kc} {t('kcal', lang)} · {planned}/21 {t('meals', lang)}</p></div>
-          {over && <button className="btn btn-warm !min-h-9 !px-4 text-sm" onClick={adapt}>{t('adapt', lang)}</button>}
-        </div>
-      )}
-      {Array.from({ length: 7 }, (_, d) => (
-        <div key={d} className="card p-4">
-          <h3 className="mb-3 font-bold capitalize">{dayName(d, lang)}</h3>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {SLOTS.map((s) => {
-              const e = plan[`${d}-${s}`]
-              if (!e) return <button key={s} className="flex min-h-[4.25rem] items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line text-sm font-semibold text-muted hover:border-leaf" onClick={() => { setPick({ d, s }); setQ(''); setF('all') }}>+ {t(s, lang)}</button>
-              const kb = kcalBadge(e.r)
-              return (
-                <button key={s} className="pop flex items-center gap-3 rounded-2xl bg-cream p-2 text-start" onClick={() => setView(`${d}-${s}`)}>
-                  <FoodTile r={REC[e.r]} className="h-12 w-12 shrink-0 rounded-xl !text-2xl" />
-                  <span className="min-w-0 flex-1"><span className="block text-[10px] font-bold uppercase text-muted">{t(s, lang)} · {e.n}</span><span className="block truncate text-sm font-semibold">{rname(REC[e.r].n, lang)}</span></span>
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${kb.c}`}>{kb.k}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+      <Mascot plan={plan} />
+      <div className="flex items-center gap-2"><div className="min-w-0 flex-1"><ModePicker compact value={me!.mode ?? 'balanced'} onPick={setMode} /></div><button className="btn btn-soft !h-full !min-h-[4.25rem] flex-col !px-4 text-xs" onClick={compose}><span className="text-2xl">🎲</span>{t('reshuffle', lang)}</button></div>
+      <div data-noswipe className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+        {Array.from({ length: 7 }, (_, d) => (
+          <button key={d} aria-pressed={day === d} onClick={() => setDay(d)} className={`flex min-w-[3.6rem] flex-1 flex-col items-center rounded-2xl py-2 transition-all active:scale-95 ${day === d ? 'bg-forest text-white shadow-lift' : 'bg-surface text-ink shadow-soft'}`}>
+            <span className="text-xs font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span>
+            <span className="mt-1 flex gap-0.5">{SLOTS.map((s) => <i key={s} className={`h-1.5 w-1.5 rounded-full ${plan[`${d}-${s}`] ? (day === d ? 'bg-apricot' : 'bg-forest') : day === d ? 'bg-white/30' : 'bg-line'}`} />)}</span>
+          </button>
+        ))}
+      </div>
+      <div key={day} className="rise space-y-3">
+        <div className="flex items-end justify-between"><h2 className="text-xl font-extrabold capitalize">{dayName(day, lang)}</h2><span className="text-xs text-muted tabular-nums">≈ {dayK} kcal · {money(dayC, lang)}</span></div>
+        {SLOTS.map((s) => {
+          const e = plan[`${day}-${s}`]
+          if (!e) return <button key={s} className="flex min-h-[5.5rem] w-full items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-line bg-surface/50 font-semibold text-muted active:scale-[.98]" onClick={() => open(s)}><span className="text-3xl">{{ b: '🌅', l: '☀️', d: '🌙' }[s]}</span>+ {t(s, lang)}</button>
+          const r = REC[e.r]; const kb = kcalBadge(e.r)
+          return (
+            <div key={s} className="card pop p-3">
+              <div className="flex gap-3">
+                <button onClick={() => setView(`${day}-${s}`)} aria-label={rname(r.n, lang)}><FoodTile r={r} className="h-20 w-20 shrink-0 rounded-2xl" /></button>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted">{{ b: '🌅', l: '☀️', d: '🌙' }[s]} {t(s, lang)}</p>
+                  <button className="block text-start font-display text-base font-extrabold leading-tight" onClick={() => setView(`${day}-${s}`)}>{rname(r.n, lang)}</button>
+                  <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted"><span className={`rounded-full px-2 py-0.5 font-bold ${kb.c}`}>{kb.k} kcal</span><span>≈ {money(recipeCost(e.r) / r.s, lang)} / 👤</span></p>
+                </div>
+              </div>
+              <div className="mt-3 flex items-center justify-between"><Stepper v={e.n} set={(n) => setEntry(`${day}-${s}`, e.r, n, `set ${r.n[0]} to ${n}`)} max={12} />
+                <span className="flex gap-2"><button className="btn btn-soft !min-h-10 !px-4" onClick={() => open(s)} aria-label="swap">↻</button><button className="btn btn-soft !min-h-10 !px-4 !text-danger" onClick={() => upHouse((h) => { delete h.plan[`${day}-${s}`] }, `removed ${r.n[0]}`)} aria-label={t('remove', lang)}>✕</button></span></div>
+            </div>
+          )
+        })}
+      </div>
       <Sheet open={!!pick} onClose={() => setPick(null)} title={pick ? `${dayName(pick.d, lang)} · ${t(pick.s, lang)}` : ''}>
         <input className="input mb-2" placeholder={t('search', lang)} value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{FILTERS.map((k) => <button key={k} className="chip" aria-pressed={f === k} onClick={() => setF(k)}>{k === 'budget' ? t('budgetT', lang) : t(k, lang)}</button>)}</div>
@@ -121,12 +174,6 @@ export function WeekStep({ cost, compose, adapt }: { cost: number; compose: () =
           </button>) })}</div>
       </Sheet>
       {cur && view && <RecipeSheet r={REC[cur.r]} servings={cur.n} onServings={(n) => setEntry(view, cur.r, n, `set ${REC[cur.r].n[0]} to ${n}`)} onClose={() => setView(null)} />}
-      {cur && view && (
-        <div className="fixed inset-x-0 bottom-24 z-[75] flex justify-center gap-2">
-          <button className="btn btn-soft shadow-lift" onClick={() => { const [d, s] = view.split('-'); setView(null); setPick({ d: +d, s: s as Meal }); setQ(''); setF('all') }}>↻</button>
-          <button className="btn shadow-lift" style={{ background: 'rgb(var(--danger))', color: '#fff' }} onClick={() => { upHouse((h) => { delete h.plan[view] }, `removed ${REC[cur.r].n[0]}`); setView(null) }}>{t('remove', lang)}</button>
-        </div>
-      )}
     </div>
   )
 }

@@ -37,6 +37,7 @@ export function ProfileScreen({ celebrate }: { celebrate: () => void }) {
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-extrabold text-forest">{t('profile', lang)}</h1>
+      <div className="card grid grid-cols-3 gap-2 p-4 text-center"><div><p className="text-2xl">🔥</p><b className="tabular-nums">{me!.streak}</b><p className="text-xs text-muted">{t('streak', lang)}</p></div><div><p className="text-2xl">⭐</p><b className="tabular-nums">{t('level', lang)} {Math.floor(me!.xp / 100) + 1}</b><div className="mx-auto mt-1 h-1.5 w-16 rounded-full bg-cream"><div className="h-full rounded-full bg-apricot" style={{ width: `${me!.xp % 100}%` }} /></div></div><div><p className="text-2xl">✨</p><b className="tabular-nums">{me!.xp}</b><p className="text-xs text-muted">XP</p></div></div>
       <div className="card p-5"><p className="text-lg font-bold">{me!.name}</p><p className="text-sm text-muted">{me!.email} · {me!.city}</p>
         <div className="mt-4 flex gap-2" role="group" aria-label={t('language', lang)}>{(['fr', 'en', 'ar'] as Lang[]).map((l) => <button key={l} className="chip" aria-pressed={lang === l} onClick={() => setLang(l)}>{{ fr: 'Français', en: 'English', ar: 'العربية' }[l]}</button>)}</div></div>
       <div className="card space-y-3 p-5"><h2 className="font-bold">{house!.name}</h2><p className="text-sm text-muted">{t('invite', lang)}</p>

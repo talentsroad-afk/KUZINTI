@@ -26,3 +26,17 @@ describe('engine', () => {
     for (const r of RECIPES) expect(recipeCost(r.id)).toBeGreaterThan(0)
   })
 })
+
+import { randomPlan, adaptToBudget, listCost } from './plan'
+import { dailyKcal } from './engine'
+describe('modes and budget', () => {
+  const avg = (m: 'light' | 'balanced' | 'gourmet') => { let s = 0; for (let i = 0; i < 12; i++) s += dailyKcal(randomPlan(2, [], m, 99999, STAPLES, {})); return s / 12 }
+  it('light < balanced < gourmet in calories', () => { const [a, b, c] = [avg('light'), avg('balanced'), avg('gourmet')]; expect(a).toBeLessThan(b); expect(b).toBeLessThan(c) })
+  it('fits a tight budget by swapping then shrinking portions', () => {
+    const big = randomPlan(4, [], 'gourmet', 99999, STAPLES, {})
+    const target = listCost(big, STAPLES, {}) * 0.6
+    const fit = adaptToBudget(big, target, STAPLES, {}, [])
+    expect(fit.after).toBeLessThanOrEqual(target)
+    expect(fit.swapped + fit.scaled).toBeGreaterThan(0)
+  })
+})
