@@ -164,7 +164,7 @@ function Shell() {
   }
   // Budget change re-builds the week to fit the new cap (up or down), debounced for the slider, with undo.
   const bt = useRef<number | undefined>(undefined)
-  const setBudget = (b: number) => { patchMe({ budget: b }); if (!hasPlan) return; clearTimeout(bt.current); bt.current = window.setTimeout(() => refit(b), 450) }
+  const setBudget = (b: number) => { patchMe({ budget: b }); clearTimeout(bt.current); bt.current = window.setTimeout(() => refit(b), 450) }
   const refit = (b: number) => {
     const u = snap(t('adjustB', lang)); const mul = store ? Math.max(...Object.values(store.m)) : 1
     const target = Math.max(0, (b - extraCost) / mul)
