@@ -11,7 +11,7 @@ import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket, useCart } from './Flow'
 import { CartMode } from './Cart'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost, setRamadanSides } from './lib/plan'
-import { buildList } from './lib/engine'
+import { buildList, applyPriceOverrides } from './lib/engine'
 import { RecipesTab } from './Extra'
 import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, Wallet, Dumbbell, type LucideIcon } from './icons'
 import { BudgetTab } from './Budget'
@@ -126,6 +126,7 @@ function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
   setCurrency(me!.country); setStoreCountry(me!.country); setDietFilter(me!.diet); setRamadan(!!me!.ramadan); setRamadanSides(!!me!.ramadan)
   useEffect(() => { document.documentElement.dataset.country = me!.country }, [me!.country]) // eslint-disable-line react-hooks/exhaustive-deps
+  applyPriceOverrides(house!.ingP)
   const h = house!; const hasPlan = Object.keys(h.plan).length > 0
   const [tab, setTab] = useState<Tab>(hasPlan ? 'week' : 'home')
   const [sheet, setSheet] = useState(false)

@@ -208,7 +208,7 @@ const FOOD0: Record<string, { lunch: [string, number][]; cafe: [string, number][
 }
 const FOOD = { ...FOOD0, ...WORLD_FOOD }
 const TIP: Record<Kind, string> = { loisirs: 'Réserve en ligne : souvent moins cher et sans file d’attente.', famille: 'Prévois de l’eau, des en-cas et une casquette pour les enfants.', couple: 'Vise l’heure du coucher du soleil pour les vues et les photos.', sport: 'Pars tôt, prends de l’eau et des chaussures adaptées.', culture: 'Évite le vendredi midi et prévois de la monnaie pour l’entrée.', nature: 'Vérifie la météo et pars avec une petite veste.' }
-type Step = { t: string; e: string; n: string; d: string; p: number; id?: string }
+type Step = { t: string; e: string; n: string; d: string; p: number; id?: string; k?: string; p0?: number }
 type Day = { fmt: Fmt; acts: string[] }
 const fmtD = (d: Date, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('fr', o).format(d)
 function daysFor(mode: Mode): [string, string, Fmt][] {
@@ -240,14 +240,14 @@ function pickActs(acts: Act[], kinds: Kind[], fmt: Fmt, left: number, people: nu
   return out
 }
 /** Turns a day's activities into a concrete hour-by-hour program with meals, café and transport. */
-function program(city: string, acts: Act[], day: Day, budget = 600, people = 2): Step[] {
+function program(city: string, acts: Act[], day: Day, budget = 600, people = 2, ovr: Record<string, number> = {}): Step[] {
   budget = budget / Math.max(1, people) * 2 // thresholds below are written for 2 people
   const F = FOOD[city]; const A = day.acts.map((id) => acts.find((a) => a.id === id)!).filter(Boolean)
   const act = (t: string, a: Act): Step => ({ t, e: a.e, n: a.n, d: a.d, p: a.p, id: a.id })
   let h = 0; for (const ch of city + day.fmt + new Date().toDateString()) h = (h * 31 + ch.charCodeAt(0)) >>> 0
   // cheaper places when the outing budget is small, the famous ones when it allows
   const pk = (x: [string, number][], o = 0) => { const y = [...x].sort((u, v) => u[1] - v[1]); const z = budget <= 450 ? y.slice(0, 1) : budget <= 900 ? y.slice(0, Math.ceil(y.length / 2)) : y; return z[(h + o) % z.length] }
-  const meal = (t: string, e: string, x: [string, number], d: string): Step => (budget <= 0 ? { t, e, n: 'Pique-nique fait maison', d, p: 0 } : { t, e, n: x[0], d, p: x[1] })
+  const meal = (t: string, e: string, x: [string, number], d: string): Step => (budget <= 0 ? { t, e, n: 'Pique-nique fait maison', d, p: 0 } : { t, e, n: x[0], d, p: ovr['m:' + x[0]] ?? x[1], k: 'm:' + x[0], p0: x[1] })
   const [l, c, d] = [pk(F.lunch), pk(F.cafe), pk(F.dinner, 1)]
   const show = budget < 900 ? undefined : acts.find((a) => /cin[ée]ma|th[ée]âtre|op[ée]ra|spectacle|concert/i.test(a.n + a.d) && !day.acts.includes(a.id) && a.h <= 2)
   if (day.fmt === 'full') return [meal('09:30', '☕', pk(F.cafe, 2), 'Petit-déjeuner'), A[0] && act('10:15', A[0]), A[1] && act('11:45', A[1]), meal('13:00', '🍽️', l, 'Déjeuner'), A[2] && act('15:00', A[2]), meal('16:45', '🧁', c, 'Goûter'), A[3] && act('17:30', A[3]), meal('20:00', '🌙', d, 'Dîner'), show && act('21:45', show)].filter(Boolean) as Step[]
@@ -276,8 +276,8 @@ export function SortiesTab() {
   const days = daysFor(mode)
   // Cost of a day = activities + meals (per person) + trips between activities (per taxi of 4, or fuel), all live.
   const perDay = budget / days.length
-  const fitB = (d: Day) => { for (const b of [perDay, 450, 220, 0]) { if (b > perDay) continue; const c = program(city, acts, d, b, people).reduce((t, x) => t + x.p * people, 0); if (c <= perDay * 0.9 || b === 0) return b } return 0 }
-  const parts = (d: Day) => { const pr = program(city, acts, d, fitB(d), people); const a = pr.filter((x) => x.id).reduce((s, x) => s + x.p * people, 0); const m = pr.filter((x) => !x.id).reduce((s, x) => s + x.p * people, 0)
+  const fitB = (d: Day) => { for (const b of [perDay, 450, 220, 0]) { if (b > perDay) continue; const c = program(city, acts, d, b, people, ovr).reduce((t, x) => t + x.p * people, 0); if (c <= perDay * 0.9 || b === 0) return b } return 0 }
+  const parts = (d: Day) => { const pr = program(city, acts, d, fitB(d), people, ovr); const a = pr.filter((x) => x.id).reduce((s, x) => s + x.p * people, 0); const m = pr.filter((x) => !x.id).reduce((s, x) => s + x.p * people, 0)
     const hops = d.acts.slice(1).map((id, i) => km(d.acts[i], id)); const tr = hops.reduce((s, k) => s + (mv === 'walk' ? 0 : mv === 'car' ? k * 1.2 : Math.ceil(people / 4) * (12 + 4 * k)), 0)
     return { a, m, tr: Math.round(tr), all: a + m + Math.round(tr) } }
   const cost = (d: Day) => parts(d).all
@@ -329,7 +329,7 @@ export function SortiesTab() {
           <div className="relative grid h-16 w-16 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(${total > budget ? 'rgb(var(--danger))' : 'rgb(var(--forest))'} ${Math.min(100, (total / Math.max(1, budget)) * 100)}%, rgb(var(--cream)) 0)` }}><span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-[12px] font-extrabold tabular-nums">{Math.round((total / Math.max(1, budget)) * 100)}%</span></div>
           <div className="min-w-0 flex-1"><p className="text-xs text-muted">Total estimé · {people} pers.</p><p className={`font-display text-2xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{M$(total)}</p><p className="text-[12px] text-muted"><Ic e="🎟️" /> {M$(sum.a)} · 🍽️ {M$(sum.m)} · 🚕 {M$(sum.tr)}</p></div>
         </div>
-        {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d, fitB(d), people); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!; const tone = story(d); const dl = deal(d)
+        {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d, fitB(d), people, ovr); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!; const tone = story(d); const dl = deal(d)
           const kindsHere = [...new Set(d.acts.flatMap((id) => acts.find((a) => a.id === id)?.k ?? []))] as Kind[]
           return (
           <div key={k} className="card overflow-hidden">
@@ -351,11 +351,16 @@ export function SortiesTab() {
                   <div className={`flex gap-3 rounded-2xl p-2.5 ${x.id ? 'bg-cream/70' : ''}`}>
                     <div className="flex w-11 shrink-0 flex-col items-center"><span className="text-[12px] font-extrabold tabular-nums text-forest">{x.t}</span><span className={`mt-1 grid h-9 w-9 place-items-center rounded-xl text-xl ${x.id ? 'bg-surface shadow-soft' : ''}`}><E3 e={x.e} /></span></div>
                     <div className="min-w-0 flex-1"><p className="font-semibold leading-tight">{x.n}</p><p className="text-xs text-muted">{x.d}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px]">{x.id ? <button className={`rounded-full px-2 py-0.5 font-bold active:scale-95 ${x.p ? 'bg-surface' : 'bg-leaf/30 text-forest'}`} onClick={() => setEditP(editP === x.id ? null : x.id!)} aria-expanded={editP === x.id}>{x.p ? `≈ ${M$(x.p * people)}` : 'Gratuit'} ✎</button> : <span className="rounded-full bg-surface px-2 py-0.5 font-bold">≈ {M$(x.p * people)}</span>}
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px]">{x.id ? <button className={`rounded-full px-2 py-0.5 font-bold active:scale-95 ${x.p ? 'bg-surface' : 'bg-leaf/30 text-forest'}`} onClick={() => setEditP(editP === x.id ? null : x.id!)} aria-expanded={editP === x.id}>{x.p ? `≈ ${M$(x.p * people)}` : 'Gratuit'} ✎</button> : <button className={`rounded-full px-2 py-0.5 font-bold active:scale-95 ${x.p === x.p0 ? 'bg-surface' : 'bg-leaf/30 text-forest'}`} onClick={() => x.k && setEditP(editP === x.k ? null : x.k)} aria-expanded={editP === x.k}>≈ {M$(x.p * people)} ✎</button>}
                         {ac && <a className="rounded-full bg-surface px-2 py-0.5 font-bold text-forest" href={`https://www.google.com/maps/search/${encodeURIComponent(ac.n + ' ' + (ac.a ?? '') + ' ' + city)}`} target="_blank" rel="noreferrer"><Ic e="📍" /> Itinéraire</a>}
                         {x.id && <button className="rounded-full bg-surface px-2 py-0.5 font-bold active:scale-95" onClick={() => swap(k, ai)}>↻ Autre idée</button>}</div>
                       {ac && <p className="mt-1 flex items-start gap-1 text-[12px] font-semibold text-ink/80"><span aria-hidden><Ic e="📍" /> </span><span>{ac.a ? `${ac.a}, ${city}` : city}</span></p>}
                       {ac?.tl && <p className="mt-1 text-[12px] text-ink/70">{ac.tl.join(' → ')}</p>}
+                      {!x.id && x.k && editP === x.k && (() => { const avg = x.p0 ?? x.p; const mx = Math.max(50, avg * 3) * CR; return <div className="fade-up mt-2 rounded-2xl bg-surface p-2.5 shadow-soft">
+                        <div className="flex items-baseline justify-between text-[12px]"><span className="font-bold">Mon prix par personne</span><b className="font-display text-base tabular-nums text-forest">{M$(x.p)}</b></div>
+                        <input type="range" min={0} max={Math.round(mx)} step={Math.max(1, Math.round(mx / 60))} value={Math.round(x.p * CR)} onChange={(e) => setPrice(x.k!, +e.target.value / CR)} className="mt-1 w-full accent-[#245B43]" aria-label="Prix par personne" />
+                        <div className="flex items-center justify-between text-[12px] text-muted"><span>Gratuit</span><span className="rounded-full bg-cream px-2 py-0.5 font-bold text-ink">Moyenne ≈ {M$(avg)}</span><span>{M$(mx / CR)}</span></div>
+                        {x.p !== avg && <button className="mt-1.5 w-full text-[12px] font-bold text-forest" onClick={() => setPrice(x.k!, undefined)}>↺ Revenir au prix moyen</button>}</div> })()}
                       {ac && editP === ac.id && (() => { const avg = (ac as Act & { p0: number }).p0; const mx = Math.max(50, avg * 3) * CR; return <div className="fade-up mt-2 rounded-2xl bg-surface p-2.5 shadow-soft">
                         <div className="flex items-baseline justify-between text-[12px]"><span className="font-bold">Mon prix par personne</span><b className="font-display text-base tabular-nums text-forest">{M$(ac.p)}</b></div>
                         <input type="range" min={0} max={Math.round(mx)} step={Math.max(1, Math.round(mx / 60))} value={Math.round(ac.p * CR)} onChange={(e) => setPrice(ac.id, +e.target.value / CR)} className="mt-1 w-full accent-[#245B43]" aria-label="Prix par personne" />

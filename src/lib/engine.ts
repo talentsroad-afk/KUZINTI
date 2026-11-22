@@ -2,6 +2,12 @@ import { ING, type Base, type Ing, type Unit } from '../data/catalog'
 import { REC } from '../data/recipes'
 import { SIDE } from '../data/sides'
 
+const P0: Record<string, number> = {}
+/** The household's own reference prices (per base unit, MAD) replace the built-in averages everywhere (list, recipes, store comparison). */
+export function applyPriceOverrides(o: Record<string, number> = {}) {
+  for (const id of Object.keys(ING)) { P0[id] ??= ING[id].p; ING[id].p = o[id] !== undefined && o[id] >= 0 ? o[id] : P0[id] }
+}
+export const basePrice = (id: string) => P0[id] ?? ING[id].p
 export interface PlanEntry { r: string; n: number; x?: string[] } // x = accompaniments (sides, drink)
 export interface Line { id: string; ing: Ing; need: number; have: number; buy: number; cost: number; uses: string[]; auto: number }
 
