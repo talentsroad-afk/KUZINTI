@@ -286,7 +286,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket, openCriter
         </div>
         <p className="mt-2 text-center text-[12px] text-muted">{t('monthNote', lang)}</p>
       </div>}
-      <button className="cta-glow btn btn-primary sticky bottom-28 z-20 w-full !min-h-14 text-base shadow-lift" onClick={toBasket}><Ic e="🛒" /> {lang === 'en' ? 'Done choosing → my basket' : lang === 'ar' ? 'انتهيت → سلتي' : 'J’ai fini mes choix → mon panier'}</button>
+      <button className="btn btn-primary mt-2 w-full !min-h-12 text-base" onClick={toBasket}><Ic e="🛒" /> {lang === 'en' ? 'Done choosing → my basket' : lang === 'ar' ? 'انتهيت → سلتي' : 'J’ai fini mes choix → mon panier'}</button>
       {rep && <ReplaceSheet k={rep} onClose={() => setRep(null)} say={say} />}
       {rv && <RecipeSheet r={rv} onClose={() => setRv(null)} />}
       <p className="px-1 text-center text-xs text-muted">{me!.size} <Ic e="👤" /> · {t('c_' + p.cuisine, lang)}</p>

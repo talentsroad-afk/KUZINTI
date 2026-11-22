@@ -229,7 +229,7 @@ const MORE: Record<string, [Act, [number, number]][]> = {
 }
 for (const [c, xs] of Object.entries(MORE)) (EXTRA[c] ??= []).push(...xs.filter(([a]) => !(EXTRA[c] ?? []).some(([b]) => b.id === a.id)))
 for (const [c, xs] of Object.entries(EXTRA)) for (const [a] of xs) if (CITIES0[c] && !CITIES0[c].some((b) => b.id === a.id)) CITIES0[c].push(a)
-export const COUNTRY_CITIES: Record<string, string[]> = { ...WORLD_COUNTRY_CITIES, MA: ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Chefchaouen'], FR: ['Paris', 'Lyon', 'Marseille'] }
+export const COUNTRY_CITIES: Record<string, string[]> = { ...WORLD_COUNTRY_CITIES, MA: ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Chefchaouen'], FR: ['Paris', 'Lyon', 'Marseille', 'Nice'] }
 type Mode = 'day' | 'eve' | 'we' | 'week'
 // Everyday leisure found in every city (indicative prices, MAD base): added where the city list has no such activity.
 const FUN: [string, string, string, string, number, number, string][] = [

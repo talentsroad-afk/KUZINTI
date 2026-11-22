@@ -1,4 +1,5 @@
 import { countryOf } from '../lib/countries'
+import { CITY2 } from './outings2'
 /** Outings outside Morocco and France: well-known real places. Prices are written in local currency
  *  (per person, indicative) and converted to the app's MAD base so the user's currency shows them right. */
 export type Kind = 'famille' | 'couple' | 'sport' | 'culture' | 'nature' | 'loisirs'
@@ -82,6 +83,7 @@ const MORE: Record<string, [string, string, string, string, number, number, stri
   Tunis: [['medina-tunis', '🕌', 'Médina et Zitouna', 'Souks et mosquée', 0, 2, 'culture couple', 'Rue Jamaa Ezzitouna'], ['bardo', '🏛️', 'Musée du Bardo', 'Mosaïques romaines', 13, 2, 'culture famille', 'Le Bardo'], ['sidi-bou', '💙', 'Sidi Bou Saïd', 'Village bleu et blanc, Café des Délices', 0, 3, 'couple', 'Sidi Bou Saïd'], ['carthage', '🏺', 'Carthage', 'Thermes d’Antonin', 12, 3, 'culture famille', 'Carthage'], ['gammarth', '🏖️', 'Plage de Gammarth', 'Mer et fruits de mer', 0, 4, 'famille nature', 'Gammarth']],
   Alger: [['casbah', '🏘️', 'Casbah d’Alger', 'Ruelles et palais ottomans', 0, 2, 'culture couple', 'Casbah'], ['jardin-essai', '🌴', 'Jardin d’Essai du Hamma', 'Jardin botanique', 150, 2, 'nature famille', 'Hamma, Belouizdad'], ['maqam', '🗼', 'Maqam Echahid', 'Mémorial et vue sur la baie', 0, 1, 'culture famille', 'El Madania'], ['notre-dame-afrique', '⛪', 'Notre-Dame d’Afrique', 'Basilique face à la mer', 0, 1, 'culture', 'Bologhine'], ['sidi-fredj', '⛵', 'Sidi Fredj', 'Port de plaisance et plage', 0, 4, 'famille nature', 'Staouéli']],
 }
+for (const [c, x] of Object.entries(CITY2)) { W[c] = { cc: x.cc, move: x.move, lunch: x.lunch, cafe: x.cafe, dinner: x.dinner, acts: [] }; MORE[c] = x.rows }
 for (const [c, rows] of Object.entries(MORE)) if (W[c]) W[c].acts.push(...rows.map((r) => r.slice(0, 7) as Row))
 export const ADDR: Record<string, string> = Object.fromEntries(Object.values(MORE).flat().map((r) => [r[0], r[7]]))
 
