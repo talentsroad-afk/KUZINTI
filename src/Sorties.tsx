@@ -108,12 +108,20 @@ function daysFor(mode: Mode): [string, string, Fmt][] {
 }
 const maxH: Record<Fmt, number> = { full: 6, half: 4, eve: 2, night: 2 }
 const pick = <T,>(x: T[]) => x[Math.floor(Math.random() * x.length)]
-function pickActs(acts: Act[], kinds: Kind[], fmt: Fmt, left: number, people: number, avoid: Set<string>) {
+// Approximate coordinates (Greater Casablanca) so a day follows a sensible route.
+const GEO: Record<string, [number, number]> = { hassan2: [33.608, -7.632], corniche: [33.594, -7.668], habous: [33.578, -7.603], ligue: [33.588, -7.624], aquarium: [33.576, -7.706], sindibad: [33.585, -7.690], slaoui: [33.591, -7.627], 'villa-arts': [33.585, -7.636], 'surf-casa': [33.590, -7.680], 'anfa-run': [33.565, -7.656], 'ancienne-medina': [33.602, -7.618], 'art-deco': [33.595, -7.616], cathedrale: [33.590, -7.622], 'marche-central': [33.597, -7.613], 'twin-center': [33.584, -7.633], 'anfa-place': [33.598, -7.651], tamaris: [33.528, -7.818], 'dar-bouazza': [33.520, -7.830], bouskoura: [33.465, -7.640], mohammedia: [33.687, -7.383], 'technopark-escalade': [33.510, -7.650], karting: [33.470, -7.630], cinema: [33.595, -7.665], 'hammam-casa': [33.586, -7.632], 'cuisine-casa': [33.588, -7.630] }
+export type Move = 'walk' | 'taxi' | 'car'
+export const MOVES: [Move, string, number, number][] = [['walk', '🚶 À pied', 2.5, 5], ['taxi', '🚕 Taxi / tram', 12, 20], ['car', '🚗 Voiture', 60, 35]] // max hop km, speed km/h
+export const km = (a: string, b: string) => { const p = GEO[a], q = GEO[b]; if (!p || !q) return 0; const dx = (p[1] - q[1]) * 92.5, dy = (p[0] - q[0]) * 111; return Math.hypot(dx, dy) * 1.3 }
+function pickActs(acts: Act[], kinds: Kind[], fmt: Fmt, left: number, people: number, avoid: Set<string>, mv: Move = 'taxi', from?: string) {
+  const hop = MOVES.find((m) => m[0] === mv)![2]
   const ok = acts.filter((a) => (!kinds.length || a.k.some((k) => kinds.includes(k))) && a.h <= maxH[fmt])
   const n = FMT.find((f) => f[0] === fmt)![3]; const out: string[] = []
   for (let i = 0; i < n; i++) {
-    const c = ok.filter((a) => !out.includes(a.id) && a.p * people <= left)
-    const a = pick(c.filter((x) => !avoid.has(x.id))) ?? pick(c) ?? pick(acts.filter((x) => x.p === 0 && !out.includes(x.id)))
+    const prev = out[out.length - 1] ?? from
+    const c = ok.filter((a) => !out.includes(a.id) && a.p * people <= left && (!prev || km(prev, a.id) <= hop))
+    const near = (x: Act[]) => prev ? pick([...x].sort((u, v) => km(prev, u.id) - km(prev, v.id)).slice(0, 3)) : pick(x)
+    const a = near(c.filter((x) => !avoid.has(x.id))) ?? near(c) ?? pick(acts.filter((x) => x.p === 0 && !out.includes(x.id)))
     if (a) { out.push(a.id); left -= a.p * people }
   }
   return out
@@ -136,7 +144,7 @@ export function SortiesTab() {
   const { me, house, upHouse, patchMe, award } = useApp()
   const city = CITIES[me!.city] ? me!.city : 'Casablanca'; const acts = CITIES[city]; const people = me!.size
   const [kinds, setKinds] = useState<Kind[]>([]); const [budget, setBudget] = useState(400); const [mode, setMode] = useState<Mode>('day')
-  const [fmt, setFmt] = useState<Fmt | 'auto'>('auto'); const [open, setOpen] = useState<string | null>('d0')
+  const [mv, setMv] = useState<Move>('taxi'); const [fmt, setFmt] = useState<Fmt | 'auto'>('auto'); const [open, setOpen] = useState<string | null>('d0')
   type O = { outings2?: Partial<Record<Mode, Record<string, Day>>> }
   const plan = (house as unknown as O).outings2?.[mode] ?? {}
   const save = (w: Record<string, Day>, log: string, all = false) => upHouse((h) => { const x = h as unknown as O; x.outings2 = all ? {} : { ...(x.outings2 ?? {}), [mode]: w } }, log)
@@ -145,11 +153,11 @@ export function SortiesTab() {
   const total = days.reduce((s, [k]) => s + (plan[k] ? cost(plan[k]) : 0), 0)
   const compose = () => {
     const out: Record<string, Day> = {}; const used = new Set<string>(); let left = budget
-    for (const [k, , def] of days) { const f = fmt === 'auto' ? def : fmt; const per = left / Math.max(1, days.length - Object.keys(out).length); const a = pickActs(acts, kinds, f, Math.max(0, per - 100 * people), people, used); a.forEach((x) => used.add(x)); out[k] = { fmt: f, acts: a }; left -= cost(out[k]) }
+    for (const [k, , def] of days) { const f = fmt === 'auto' ? def : fmt; const per = left / Math.max(1, days.length - Object.keys(out).length); const a = pickActs(acts, kinds, f, Math.max(0, per - 100 * people), people, used, mv); a.forEach((x) => used.add(x)); out[k] = { fmt: f, acts: a }; left -= cost(out[k]) }
     save(out, `🎈 sorties ${city}`); setOpen(days[0][0]); award(10, '🎈')
   }
-  const swap = (k: string, i: number) => { const d = plan[k]; const alt = pickActs(acts.filter((a) => !d.acts.includes(a.id)), kinds, d.fmt, budget, people, new Set())[0]; if (!alt) return; const acts2 = [...d.acts]; acts2[i] = alt; save({ ...plan, [k]: { ...d, acts: acts2 } }, '↻ activité') }
-  const setDayFmt = (k: string, f: Fmt) => save({ ...plan, [k]: { fmt: f, acts: pickActs(acts, kinds, f, budget, people, new Set()) } }, 'format')
+  const swap = (k: string, i: number) => { const d = plan[k]; const alt = pickActs(acts.filter((a) => !d.acts.includes(a.id)), kinds, d.fmt, budget, people, new Set(), mv, d.acts[i - 1] ?? d.acts[i + 1])[0]; if (!alt) return; const acts2 = [...d.acts]; acts2[i] = alt; save({ ...plan, [k]: { ...d, acts: acts2 } }, '↻ activité') }
+  const setDayFmt = (k: string, f: Fmt) => save({ ...plan, [k]: { fmt: f, acts: pickActs(acts, kinds, f, budget, people, new Set(), mv) } }, 'format')
   return (
     <div className="stagger space-y-3">
       <div className="card space-y-3 p-4">
@@ -160,7 +168,9 @@ export function SortiesTab() {
         <div className="grid grid-cols-2 gap-2">{([['auto', '✨ Automatique', 'soirée en semaine, journée le week-end'], ...FMT.map((f) => [f[0], f[1], f[2]])] as [string, string, string][]).map(([k, l, h]) => <button key={k} className={`rounded-2xl border p-2 text-start ${fmt === k ? 'border-forest bg-leaf/20' : 'border-line bg-surface'} ${k === 'auto' ? 'col-span-2' : ''}`} onClick={() => setFmt(k as Fmt | 'auto')} aria-pressed={fmt === k}><span className="block text-sm font-bold">{l}</span><span className="block text-[11px] text-muted">{h}</span></button>)}</div>
         <p className="text-xs font-bold uppercase tracking-wide text-muted">3 · Avec qui ?</p>
         <div className="flex flex-wrap gap-2">{KINDS.map(([k, l]) => <button key={k} className="chip" aria-pressed={kinds.includes(k)} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])}>{l}</button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">4 · Combien ?</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">4 · Comment je me déplace ?</p>
+        <div className="flex gap-2">{MOVES.map(([m, l]) => <button key={m} className="chip flex-1 justify-center" aria-pressed={mv === m} onClick={() => setMv(m)}>{l}</button>)}</div>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">5 · Combien ?</p>
         <div className="flex items-center gap-3"><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-24 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
         <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>🎈 Composer {mode === 'day' ? 'ma journée' : mode === 'week' ? 'ma semaine' : 'mes week-ends'}</button>
         <p className="text-center text-[11px] text-muted">Pour {people} personne(s) · prix indicatifs, à vérifier sur place</p>
@@ -181,6 +191,7 @@ export function SortiesTab() {
               <div className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1">{FMT.map(([fk, fl]) => <button key={fk} className={`chip shrink-0 !min-h-8 !text-xs ${d.fmt === fk ? '!bg-forest !text-white' : ''}`} onClick={() => setDayFmt(k, fk)}>{fl}</button>)}</div>
               <ol className="relative space-y-3 border-s-2 border-leaf/50 ps-4">
                 {pr.map((x, i) => <li key={i} className="relative"><span className="absolute -start-[1.45rem] top-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-[11px] ring-2 ring-leaf">{x.e}</span>
+                  {(() => { if (!x.id) return null; const ai = d.acts.indexOf(x.id); if (ai < 1) return null; const dist = km(d.acts[ai - 1], x.id); if (!dist) return null; const M = MOVES.find((m) => m[0] === mv)!; const mins = Math.max(5, Math.round((dist / M[3]) * 60)); return <p className="mb-1 inline-block rounded-full bg-leaf/25 px-2 py-0.5 text-[10px] font-bold text-forest">{M[1].split(' ')[0]} {mins} min · {dist.toFixed(1).replace('.', ',')} km</p> })()}
                   <p className="text-[11px] font-bold text-forest">{x.t}</p><p className="font-semibold leading-tight">{x.n}</p><p className="text-xs text-muted">{x.d} · {x.p ? `≈ ${money(x.p * people, 'fr')}` : 'Gratuit'}</p>
                   {(() => { const ac = x.id ? acts.find((q) => q.id === x.id) : undefined; return ac && <>{ac.a && <p className="mt-0.5 text-xs">📍 <a className="font-semibold text-forest underline" href={`https://www.google.com/maps/search/${encodeURIComponent(ac.n + ' ' + ac.a + ' ' + city)}`} target="_blank" rel="noreferrer">{ac.a}</a></p>}{ac.tl && <ul className="mt-1 space-y-0.5 text-[11px] text-ink/80">{ac.tl.map((st, j) => <li key={j}>• {st}</li>)}</ul>}</> })()}
                   {x.id && <button className="mt-1 rounded-full bg-cream px-3 py-1 text-xs font-bold active:scale-95" onClick={() => swap(k, d.acts.indexOf(x.id!))}>↻ Changer cette activité</button>}</li>)}
