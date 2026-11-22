@@ -84,7 +84,7 @@ function Trolley({ done, total, onClick, lang }: { done: number; total: number; 
         <path d="M22 14h64l-8 30H30z M30 44l4 12h42 M4 6h10l8 8 M38 22v16 M54 22v16 M70 22v16" fill="none" stroke="rgb(var(--forest))" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="38" cy="64" r="5" fill="rgb(var(--forest))" /><circle cx="72" cy="64" r="5" fill="rgb(var(--forest))" />
       </svg>
-      <span className="min-w-0 flex-1"><b className="block font-display text-lg leading-tight"><span className="tabular-nums">{done}/{total}</span> {lang === 'en' ? 'in the trolley' : 'dans le caddie'}</b><span className="block text-xs text-muted">{lang === 'en' ? 'Tick items: they jump into the trolley' : 'Cochez : les articles sautent dans le caddie'}</span></span>
+      <span className="min-w-0 flex-1"><b className="block font-display text-lg leading-tight">{total ? <><span className="tabular-nums">{done}/{total}</span> {lang === 'en' ? 'in the trolley' : 'dans le caddie'}</> : (lang === 'en' ? 'Trolley empty' : 'Caddie vide')}</b><span className="block text-xs text-muted">{lang === 'en' ? 'Tick items: they jump into the trolley' : 'Cochez : les articles sautent dans le caddie'}</span></span>
       <span className="shrink-0 text-sm font-bold text-forest">{lang === 'en' ? 'Shop ›' : 'Courses ›'}</span>
     </button>
   )
@@ -179,7 +179,7 @@ export function CoursesTab({ celebrate, goStores, compose, setBudget, clear }: {
         <p className="mt-1 text-center text-[11px] text-muted">{lang === 'en' ? 'Change it: meals and quantities adjust automatically.' : 'Modifiez-le : les repas et quantités s’adaptent automatiquement.'}</p>
         {cart.length > 0 && <button className="btn btn-primary mt-3 w-full !min-h-12" onClick={() => setCartOpen(true)}><ShoppingCart size={18} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'Start shopping' : 'Je fais mes courses'} · {cart.filter((x) => !chk[x.key]).length}</button>}
       </div>
-      {items.length > 0 && <Trolley done={done} total={items.length} lang={lang} onClick={() => (cart.length ? setCartOpen(true) : undefined)} />}
+      {<Trolley done={done} total={items.length} lang={lang} onClick={() => (cart.length ? setCartOpen(true) : toast(lang === 'en' ? 'Trolley empty: compose a week first' : 'Caddie vide : composez d’abord une semaine'))} />}
       <CartMode open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onFinish={finish} />
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1">
         <div className="flex shrink-0 rounded-full bg-surface p-1 shadow-soft">{([[-1, t('lWeek', lang)], [TODAY, lang === 'en' ? 'Today' : 'Aujourd’hui'], [(TODAY + 1) % 7, lang === 'en' ? 'Tomorrow' : 'Demain']] as [number, string][]).map(([d, l]) => <button key={l} className={`rounded-full px-3 py-1.5 text-xs font-bold ${day === d ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{l}</button>)}</div>
