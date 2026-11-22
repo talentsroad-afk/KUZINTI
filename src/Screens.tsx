@@ -1,7 +1,7 @@
 import { RefreshCw, Shuffle } from 'lucide-react'
 import { BookOpen, Coffee, Dices, Moon, Sun, Sunrise, type LucideIcon } from './icons'
 import { E3 } from './E3'
-import { StepScene, actOf, ACT_LABEL, CHEF_LINE } from './StepScene'
+import { StepScene, actOf, ACT_LABEL } from './StepScene'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { HEALTH as HP, NUT, healthOk, nutName, nutrientsOf, type Health } from './lib/nutri'
@@ -12,7 +12,7 @@ import { ING } from './data/catalog'
 import { SIDE } from './data/sides'
 import { dailyKcal, entryCost, entryKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
 import { alternatives, FLAG, surpriseOne, composeSides, type Prefs } from './lib/plan'
-import { ChefPop, Dish, FoodTile, Sheet, Stepper } from './ui'
+import { Dish, FoodTile, Sheet, Stepper } from './ui'
 const SLOT_BG: Record<string, string> = { b: '#FBEFD9', l: '#E6F0E4', d: '#E7E9F4', g: '#FCE7E1' }
 import { iconOf } from './Cart'
 import { FormeCard } from './Forme'
@@ -55,14 +55,10 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
   const hold = useRef(0); const held = useRef(false)
   const down = () => { held.current = false; hold.current = window.setTimeout(() => { held.current = true; setPaused(true) }, 220) }
   const up = () => { clearTimeout(hold.current); if (held.current) { setPaused(false) } }
-  // Parallax: the 3D scene follows the finger, the mouse or the phone's tilt.
-  const [tilt, setTilt] = useState({ x: 0, y: 0 })
-  useEffect(() => { const o = (e: DeviceOrientationEvent) => setTilt({ x: Math.max(-12, Math.min(12, ((e.beta ?? 45) - 45) / 3)), y: Math.max(-14, Math.min(14, (e.gamma ?? 0) / 3)) }); addEventListener('deviceorientation', o); return () => removeEventListener('deviceorientation', o) }, [])
-  const onMove = (x: number, y: number) => setTilt({ x: ((y / innerHeight) - 0.5) * -14, y: ((x / innerWidth) - 0.5) * 18 })
-  const hue = r.h; const R = Math.min(150, 60 + ings.length * 11)
+  const hue = r.h
   return createPortal(
     <div className={`fixed inset-0 z-[80] flex select-none flex-col overflow-hidden text-white ${paused ? 'story-paused' : ''}`} style={{ background: `radial-gradient(120% 80% at 50% 0%, hsl(${hue} 50% 30%), #0a130f 72%)` }} role="dialog" aria-label={rname(r.n, lang)}
-      onPointerMove={(e) => onMove(e.clientX, e.clientY)} onPointerDown={down} onPointerUp={up} onPointerCancel={up}>
+      onPointerDown={down} onPointerUp={up} onPointerCancel={up}>
       <span className="pointer-events-none absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl" style={{ background: `hsl(${hue} 80% 55% / .35)` }} aria-hidden />
       <div className="relative flex gap-1 px-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}>{Array.from({ length: N }, (_, k) => <span key={k} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20"><span key={i} className={`block h-full rounded-full bg-white ${k < i ? 'w-full' : k === i && i < N - 1 ? 'story-bar' : k === i ? 'w-full' : 'w-0'}`} style={k === i ? { animationDuration: `${dur / 1000}s`, animationPlayState: paused ? 'paused' : 'running' } : undefined} /></span>)}</div>
       <div className="relative flex items-center gap-3 px-4 py-3"><Dish r={r} w={120} className="h-9 w-9 rounded-full" /><span className="min-w-0 flex-1"><b className="block truncate">{rname(r.n, lang)}</b><span className="text-[11px] text-white/60">{sv} {t('servings', lang)} · ⏱ {r.t} min</span></span><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-sm" onClick={() => setPaused(!paused)} aria-label={paused ? (lang === 'en' ? 'Play' : 'Lecture') : 'Pause'}>{paused ? '▶' : '❚❚'}</button><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close">✕</button></div>
@@ -70,7 +66,7 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
       <div className="relative flex-1" style={{ perspective: 1100 }}>
         <button className="absolute inset-y-0 start-0 z-10 w-1/3" onClick={() => { if (!held.current) go(Math.max(0, i - 1)) }} aria-label="‹" />
         <button className="absolute inset-y-0 end-0 z-10 w-2/3" onClick={() => { if (held.current) return; if (i < N - 1) go(i + 1); else onClose() }} aria-label="›" />
-        <div className="scene3d h-full" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
+        <div className="scene3d h-full">
         <div key={i} className={`${dir > 0 ? 'flip-in-r' : 'flip-in-l'} flex h-full flex-col justify-center px-6`}>
           {i === 0 && <><div className="story-pop mb-6 flex items-center gap-4" style={{ transform: 'translateZ(50px)' }}><Dish r={r} w={240} className="h-24 w-24 shrink-0 rounded-full shadow-[0_24px_40px_-12px_rgba(0,0,0,.8)] ring-4 ring-white/15" /><div><p className="font-display text-[26px] font-extrabold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-sm text-white/70">👥 {sv} · ⏱ {r.t} min</p></div></div><p className="text-[12px] font-bold uppercase tracking-[.22em] text-white/60">{lang === 'en' ? 'You need' : 'Il vous faut'} · {ings.length}</p>
             <div className="mt-4 grid grid-cols-3 gap-3" style={{ transformStyle: 'preserve-3d' }}>{ings.slice(0, 12).map((x, k) => (
@@ -86,15 +82,10 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
             <p className="mt-2 font-display text-[21px] font-bold leading-snug">{steps[i - 1]}</p>
             <div className="mt-4 flex flex-wrap gap-1.5">{si.slice(0, 4).map((x, k) => <span key={k} className="qty-pop inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-bold text-ink" style={{ animationDelay: `${300 + k * 120}ms` }}><E3 e={x.e} /> {x.q}</span>)}</div>
             <p className="mt-4 text-xs text-white/55">{lang === 'en' ? 'Step' : 'Étape'} {i}/{steps.length} · {lang === 'en' ? 'tap to continue' : 'touchez pour continuer'}</p></div></> })()}
-          {i === N - 1 && <div className="relative grid place-items-center" style={{ height: 380, transformStyle: 'preserve-3d' }}>
-            <div className="orbit absolute" style={{ transformStyle: 'preserve-3d', width: 0, height: 0 }}>{ings.slice(0, 10).map((x, k, a) => <span key={k} className="absolute -ml-5 -mt-5 text-[38px]" style={{ transform: `rotateY(${(360 / a.length) * k}deg) translateZ(${R}px)` }}><E3 e={x.e} /></span>)}</div>
-            <div className="story-pop text-center" style={{ transform: 'translateZ(60px)' }}><Dish r={r} w={300} className="mx-auto h-36 w-36 rounded-full shadow-[0_30px_50px_-15px_rgba(0,0,0,.8)] ring-4 ring-white/20" />
-              <p className="mt-4 font-display text-3xl font-extrabold">{lang === 'en' ? 'Enjoy your meal!' : lang === 'ar' ? 'بالصحة والعافية' : 'Bon appétit !'}</p><p className="mt-1 text-white/70">{rname(r.n, lang)}</p></div>
-          </div>}
+          {i === N - 1 && <div className="text-center"><StepScene text="servir serve" ings={[]} />
+            <p className="story-pop mt-2 font-display text-3xl font-extrabold">{lang === 'en' ? 'Enjoy your meal!' : lang === 'ar' ? 'بالصحة والعافية' : 'Bon appétit !'}</p><p className="mt-1 text-white/70">{rname(r.n, lang)}</p></div>}
         </div></div>
       </div>
-      {i > 0 && (() => { const st = steps[i - 1]; const onion = st && /oignon|onion/i.test(st) && actOf(st) === 'chop'; const line = i === N - 1 ? (lang === 'en' ? 'Bravo chef! Enjoy 🎉' : 'Bravo chef ! Régale-toi 🎉') : onion ? (lang === 'en' ? 'Onions… I’m not crying, you are 😭' : 'Les oignons… c’est pas moi qui pleure 😭') : CHEF_LINE[actOf(st)][lang === 'en' ? 0 : 1]
-        return <ChefPop key={i} line={line} dark className="pointer-events-none absolute bottom-6 start-4 z-20" /> })()}
     </div>, document.body)
 }
 

@@ -148,19 +148,3 @@ export function flyToCart(from: Element | null, emoji: string) {
   } catch { /* decoration only */ }
 }
 
-/** The little chef: pops up from the corner with a funny line, then leaves. */
-export function ChefPop({ line, dark, className = '' }: { line: string; dark?: boolean; className?: string }) {
-  return (
-    <div key={line} className={`chef-pop pointer-events-none flex items-end gap-1.5 ${className}`} aria-live="polite">
-      <span className="chef-body text-[64px] leading-none" style={{ filter: 'drop-shadow(0 12px 10px rgba(0,0,0,.35))' }}><E3 e="🧑‍🍳" /></span>
-      <span className={`chef-bubble relative mb-12 max-w-[210px] rounded-2xl rounded-bl-sm px-3 py-2 text-[13px] font-bold leading-snug shadow-lift ${dark ? 'bg-white text-ink' : 'bg-forest text-white'}`}>{line}</span>
-    </div>)
-}
-/** Site-wide host: any screen can call chefSays('…') to make the chef appear for a moment. */
-export const chefSays = (line: string) => { try { window.dispatchEvent(new CustomEvent('kz-chef', { detail: line })) } catch { /* ignore */ } }
-export function ChefHost() {
-  const [line, setLine] = useState<string | null>(null)
-  useEffect(() => { let id = 0; const f = (e: Event) => { setLine((e as CustomEvent<string>).detail); clearTimeout(id); id = window.setTimeout(() => setLine(null), 3600) }; addEventListener('kz-chef', f); return () => { removeEventListener('kz-chef', f); clearTimeout(id) } }, [])
-  if (!line) return null
-  return createPortal(<ChefPop line={line} className="fixed bottom-[96px] start-3 z-[85] lg:bottom-6 lg:start-[268px]" />, document.body)
-}

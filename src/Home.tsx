@@ -2,7 +2,7 @@ import { zf } from './lib/zgh'
 import { E3 } from './E3'
 import { ArrowRight, Plus, RefreshCw, Shuffle, SlidersHorizontal } from 'lucide-react'
 import { BookOpen, Dumbbell, Ticket, Carrot, Flame, Clock, Dices, Leaf, Sparkles, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from './icons'
-import { useMemo, useRef, useState , useEffect } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { KcalGoal } from './Forme'
 import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
@@ -10,7 +10,7 @@ import { REC, RECIPES, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { entryCost, parseIng, recipeCost } from './lib/engine'
 import { composeSides, cuisineOf, inCuisine, CUISINES, FLAG, REGIONS, type Prefs } from './lib/plan'
-import { Badge, Dish, Sheet, type Tone , chefSays } from './ui'
+import { Badge, Dish, Sheet, type Tone  } from './ui'
 import type { Tab } from './Assist'
 import { Controls, RecipeSheet, ReplaceSheet } from './Screens'
 import { useBasket } from './Flow'
@@ -40,9 +40,6 @@ const when = (off: number, s: Meal, d: number, l: Lang) => {
 /** Home, "Riad" direction: an editorial page built only from the household's real data. */
 export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clear, composeFor }: { composeFor: (o: Partial<Prefs>) => void; clear: () => void; openCountry: () => void; compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: Tab) => void; makeHealthy: () => void }) {
   const { lang, me, house, patchMe, upHouse, toast } = useApp()
-  useEffect(() => { let seen = false; try { seen = !!sessionStorage.getItem('kz-chef') } catch { /* ignore */ } if (seen) return
-    const J = lang === 'en' ? ['Hi! I’ve already planned your week, you just eat 😋', 'Today’s mission: eat well, spend less 💪', 'The fridge called, it misses you 🧊'] : ['Salut ! J’ai déjà prévu ta semaine, tu n’as plus qu’à manger 😋', 'Mission du jour : bien manger, moins dépenser 💪', 'Le frigo a appelé, il s’ennuie de toi 🧊']
-    const id = setTimeout(() => { try { sessionStorage.setItem('kz-chef', '1') } catch { /* ignore */ } chefSays(J[Math.floor(Math.random() * J.length)]) }, 1400); return () => clearTimeout(id) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [eat, setEat] = useState(false); const [wel, setWel] = useState(false); const [kc, setKc] = useState(false)
   const kt = useRef<number | undefined>(undefined)
   const onKcal = (k: number) => { clearTimeout(kt.current); kt.current = window.setTimeout(() => recompose({ kcal: k }), 450) }

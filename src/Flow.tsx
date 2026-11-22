@@ -14,7 +14,7 @@ import { REC } from './data/recipes'
 import { SIDE } from './data/sides'
 import { HOME, HOME_BY } from './data/home'
 import { storesNow, splitTotal, storeTotal } from './lib/stores'
-import { Num, PriceDial, Sheet, Swipe, chefSays, flyToCart } from './ui'
+import { Num, PriceDial, Sheet, Swipe, flyToCart } from './ui'
 import { dayName } from './lib/i18n'
 import { FridgeSheet } from './Extra'
 
@@ -111,7 +111,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   const groups = (Object.keys(AISLE) as Aisle[]).map((a) => [a, buy.filter((l) => l.ing.aisle === a)] as const).filter(([, v]) => v.length)
   const toggle = (key: string, name: string) => {
     const on = !chk[key]; upHouse((h) => { h.checked[key] = on }, on ? `✔ ${name}` : `↩ ${name}`)
-    if (on) { if (done + 1 === items.length) { celebrate(); award(40, t('tripDone', lang)); chefSays(lang === 'en' ? 'All done! You shop faster than me 🏆' : 'Tout est pris ! Plus rapide que moi en cuisine 🏆') } else award(2, name) }
+    if (on) { if (done + 1 === items.length) { celebrate(); award(40, t('tripDone', lang)) } else award(2, name) }
   }
   const openEdit = (key: string, name: string, est: number, line?: Line) => { setEdit({ key, name, est, line }); setVal(house!.paid?.[key] !== undefined ? String(Math.round(house!.paid![key] * curRate() * 100) / 100) : '') }
   const savePaid = () => { if (!edit) return; const v = parseFloat(val.replace(',', '.')) / curRate(); upHouse((h) => { const p = { ...(h.paid ?? {}) }; if (isNaN(v)) delete p[edit.key]; else p[edit.key] = v; h.paid = p; if (!isNaN(v)) h.checked[edit.key] = true }); setEdit(null) }

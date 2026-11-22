@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, setCurrency, t, type Lang } from './lib/i18n'
 import { LANG_LABEL } from './lib/i18n'
-import { Brand, Confetti, Toasts , ChefHost } from './ui'
+import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
 import { Controls, usePrefs, WeekTab } from './Screens'
 import { HomeTab } from './Home'
@@ -260,10 +260,7 @@ function Shell() {
       <CartMode open={caddie} onClose={() => setCaddie(false)} items={cart} onFinish={() => endTrip(celebrate)} />
       {up && <button className="fixed bottom-[6.5rem] end-4 lg:bottom-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
       {/* Pinned shopping: once a trip has started, a slim bar keeps it one tap away from every other screen. */}
-      {tab !== 'list' && cartLeft > 0 && cart.some((x) => h.checked[x.key]) && <button className="pin-bar fixed inset-x-0 z-30 mx-auto flex w-[min(92vw,440px)] items-center gap-2.5 rounded-full bg-apricot py-1.5 pe-4 ps-1.5 text-start text-ink shadow-lift active:scale-[.98] lg:bottom-6" style={{ bottom: 'calc(96px + env(safe-area-inset-bottom))' }} onClick={() => go('list')}>
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-forest text-white"><ShoppingCart size={16} aria-hidden /></span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-bold">📌 {L3(lang, 'Shopping in progress', 'Courses en cours', 'تسوق جارٍ')} · {cart.length - cartLeft}/{cart.length}</span>
-        <span className="text-[13px] font-extrabold text-forest">{L3(lang, 'Resume', 'Reprendre', 'متابعة')} ›</span></button>}
+      
       <BasketStory open={bask} lines={lines} onClose={() => setBask(false)} go={go} />
       <Nav tab={tab} go={go} left={cartLeft} hasCart={cart.length > 0} onCaddie={() => setCaddie(true)} openCountry={() => setCtry(true)} /></>
       <CountrySheet open={ctry} onClose={() => setCtry(false)} onPick={setCountry} />
@@ -284,5 +281,5 @@ export default function App() {
   if (!me) body = mode === 'landing' ? <Landing go={setMode} /> : <Auth mode={mode} setMode={setMode} close={() => setMode('landing')} />
   else if (!house) body = <Onboarding />
   else body = <Shell />
-  return <><Toasts /><ChefHost />{body}</>
+  return <><Toasts />{body}</>
 }

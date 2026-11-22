@@ -258,3 +258,67 @@ button:hover > .ico3d, a:hover > .ico3d { transform: scale(1.15) rotate(-6deg); 
 @keyframes chefBob { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(5deg) translateY(-4px); } }
 .chef-bubble { animation: qtyPop .45s cubic-bezier(.3,1.8,.5,1) .35s both; }
 @media (prefers-reduced-motion: reduce) { .chef-pop * { animation: none !important; } }
+/* SVG chef scene — transforms/opacity only for smooth 60fps */
+.scene-svg g, .scene-svg path, .scene-svg circle, .scene-svg ellipse, .scene-svg text { transform-box: fill-box; }
+.chef-sway { transform-box: view-box; transform-origin: 160px 182px; animation: chefSway 3s ease-in-out infinite; will-change: transform; }
+@keyframes chefSway { 0%,100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.2deg) translateY(-1px); } }
+.toque { transform-origin: 50% 100%; animation: toque 1.5s ease-in-out infinite; }
+@keyframes toque { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg) translateY(-1px); } }
+.stache { transform-origin: 50% 50%; animation: stache 2.2s ease-in-out infinite; }
+@keyframes stache { 0%,80%,100% { transform: none; } 85% { transform: scaleX(1.12) rotate(-3deg); } 90% { transform: scaleX(1.12) rotate(3deg); } }
+.eyes-shut, .tears, .sweat, .mouth-o { opacity: 0; }
+.chef .eyes-open { transform-origin: 50% 50%; animation: blink 4s infinite; }
+@keyframes blink { 0%,94%,100% { transform: none; } 96% { transform: scaleY(.1); } }
+.mood-cry .eyes-open { opacity: 0; } .mood-cry .eyes-shut, .mood-cry .tears { opacity: 1; } .mood-cry .mouth-happy { opacity: 0; } .mood-cry .mouth-o { opacity: 1; animation: sob .5s ease-in-out infinite alternate; }
+.mood-cry .chef-head { transform-box: view-box; transform-origin: 160px 118px; animation: sobHead .5s ease-in-out infinite alternate; }
+@keyframes sob { from { transform: scaleY(.6); } to { transform: scaleY(1.1); } }
+@keyframes sobHead { from { transform: rotate(-3deg); } to { transform: rotate(3deg) translateY(1px); } }
+.tear { animation: tear .84s ease-in infinite both; }
+@keyframes tear { 0% { transform: translate(0,0) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(var(--tx, 0), 46px) scale(1.1); opacity: 0; } }
+.mood-sweat .sweat { opacity: 1; animation: sweat 1.2s ease-in infinite; } .mood-sweat .chef-head { transform-box: view-box; transform-origin: 160px 118px; transform: rotate(-6deg) translateX(-3px); transition: transform .3s; }
+.mood-sweat .mouth-happy { opacity: 0; } .mood-sweat .mouth-o { opacity: 1; }
+@keyframes sweat { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(16px); opacity: 0; } }
+.mood-focus .brows { transform: translateY(2px); transition: transform .3s; }
+.mood-proud .eyes-open { opacity: 0; } .mood-proud .eyes-shut { opacity: 1; }
+.arm-l { transform-box: view-box; transform-origin: 128px 130px; transition: transform .35s ease; }
+.arm-chop { animation: armChop .45s cubic-bezier(.5,0,.4,1) infinite; }
+@keyframes armChop { 0%,100% { transform: rotate(14deg) translateY(-6px); } 50% { transform: rotate(-4deg) translateY(4px); } }
+.arm-r { transform-box: view-box; transform-origin: 192px 130px; transition: transform .4s ease; }
+.hand-pour { transform: rotate(-38deg) translate(-6px,-14px); }
+.hand-pour > g { transform-box: fill-box; transform-origin: 50% 80%; animation: tilt 1.4s ease-in-out both; }
+@keyframes tilt { 0% { transform: rotate(0); } 25%,80% { transform: rotate(105deg); } 100% { transform: rotate(0); } }
+.hand-shake { transform: rotate(-30deg) translate(-4px,-12px); animation: shakeArm .18s ease-in-out infinite alternate; }
+@keyframes shakeArm { from { transform: rotate(-36deg) translate(-4px,-12px); } to { transform: rotate(-22deg) translate(-4px,-16px); } }
+.hand-stir { animation: stirArm 1s ease-in-out infinite; }
+@keyframes stirArm { 0%,100% { transform: rotate(-12deg) translate(4px,-4px); } 50% { transform: rotate(-2deg) translate(18px,-2px); } }
+.hand-kiss { transform: rotate(-120deg) translate(10px,-6px); }
+.heart { transform-origin: 50% 50%; animation: heart 1.6s ease-out infinite; }
+@keyframes heart { 0% { transform: translate(0,0) scale(.3); opacity: 0; } 25% { opacity: 1; transform: scale(1.1); } 100% { transform: translate(14px,-40px) scale(.8); opacity: 0; } }
+.drop-board { animation: dropBoard .5s cubic-bezier(.3,1.5,.5,1) both; }
+@keyframes dropBoard { from { transform: translateY(-60px); opacity: 0; } to { transform: none; opacity: 1; } }
+.slice-pop { transform-origin: 50% 50%; animation: slicePop .3s cubic-bezier(.3,1.7,.5,1) both; }
+@keyframes slicePop { from { transform: scale(1.7); opacity: .3; } to { transform: none; opacity: 1; } }
+.to-pot { animation: toPot .9s cubic-bezier(.45,0,.55,1) both; will-change: transform, opacity; }
+@keyframes toPot { 0% { transform: translate(0,0) rotate(0); } 50% { transform: translate(calc(var(--dx) * .5), -70px) rotate(180deg); } 85% { opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) rotate(340deg) scale(.5); opacity: 0; } }
+.v-catch { transform-origin: 50% 100%; animation: vCatch .9s ease-in-out both; }
+@keyframes vCatch { 0%,60%,100% { transform: none; } 75% { transform: scale(1.05,.95); } 88% { transform: scale(.98,1.02); } }
+.v-simmer { transform-origin: 50% 100%; animation: vSim 1.6s ease-in-out infinite; }
+@keyframes vSim { 0%,100% { transform: none; } 50% { transform: translateY(-1px) scale(1.01,.99); } }
+.v-shake { transform-origin: 50% 100%; animation: vShake .4s ease-in-out infinite; }
+@keyframes vShake { 0%,100% { transform: translateX(-3px) rotate(-1.5deg); } 50% { transform: translateX(3px) rotate(1.5deg); } }
+.lid { transform-origin: 50% 100%; animation: lid .9s steps(1) infinite; }
+@keyframes lid { 0%,60%,100% { transform: none; } 70% { transform: translateY(-4px) rotate(-3deg); } 80% { transform: translateY(-2px) rotate(2deg); } }
+.flame { transform-origin: 50% 100%; animation: flame .32s ease-in-out infinite alternate; }
+@keyframes flame { from { transform: scaleY(.8) scaleX(1.05); opacity: .85; } to { transform: scaleY(1.15) scaleX(.92); opacity: 1; } }
+.stream { stroke-dasharray: 60; animation: stream2 1.4s ease-in-out both; }
+@keyframes stream2 { 0%,22% { stroke-dashoffset: 60; opacity: 0; } 35% { stroke-dashoffset: 0; opacity: 1; } 80% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: -60; opacity: 0; } }
+.grain-fall { animation: grainFall .6s ease-in infinite both; }
+@keyframes grainFall { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-22px) translateX(40px) translateY(48px); opacity: 0; } }
+.pop-oil { animation: popOil .7s ease-out infinite both; }
+@keyframes popOil { 0% { transform: translate(0,0); opacity: 1; } 100% { transform: translate(var(--dx), -34px); opacity: 0; } }
+.steam-s { animation: steamS 2s ease-out infinite both; }
+@keyframes steamS { 0% { transform: translateY(8px) scaleY(.6); opacity: 0; } 30% { opacity: .7; } 100% { transform: translateY(-26px) scaleY(1.2); opacity: 0; } }
+.spark-star { transform-origin: 50% 50%; animation: twinkle 1.4s ease-in-out infinite both; }
+.onoma { animation: onoma .45s ease-out both; }
+@keyframes onoma { from { transform: translateY(6px) scale(.6); opacity: 0; } 40% { opacity: 1; transform: scale(1.15); } to { transform: translateY(-8px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .scene-svg * { animation: none !important; } }
