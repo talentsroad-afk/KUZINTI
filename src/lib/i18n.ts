@@ -1,7 +1,8 @@
+import { ZF } from './zgh'
 import { countryOf, type Country } from './countries'
 export type Lang = 'fr' | 'en' | 'ar' | 'zgh'
 /** Tamazight (Tifinagh, beta): a short reviewed-word list; everything else falls back to French. */
-const Z: Record<string, string> = { tHome: 'ⵜⴰⴷⴷⴰⵔⵜ', tWeek: 'ⵉⵎⴰⵍⴰⵙⵙ', country: 'ⵜⴰⵎⴰⵣⵉⵔⵜ', language: 'ⵜⵓⵜⵍⴰⵢⵜ', welcome: 'ⴰⵏⵙⵓⴼ' }
+const Z: Record<string, string> = { tHome: 'ⵜⴰⴷⴷⴰⵔⵜ', tWeek: 'ⵉⵎⴰⵍⴰⵙⵙ', country: 'ⵜⴰⵎⵓⵔⵜ', language: 'ⵜⵓⵜⵍⴰⵢⵜ', welcome: 'ⴰⵏⵙⵓⴼ' }
 export const LANG_LABEL: Record<Lang, string> = { fr: 'FR', en: 'EN', ar: 'ع', zgh: 'ⵣ' }
 type D = Record<string, [string, string, string]> // [en, fr, ar]
 const D: D = {
@@ -76,7 +77,7 @@ const D: D = {
   capFit: ['Feeling light and fit!', 'En pleine forme !', 'خفيف ورشيق!'], capBal: ['Nicely balanced', 'Joliment équilibré', 'متوازن بشكل جميل'], capBelly: ['Hearty week, a little belly ahead 😄', 'Semaine gourmande, petit ventre en vue 😄', 'أسبوع دسم، كرش صغير قادم 😄'],
   veg: ['Vegetarian', 'Végétarien', 'نباتي'], adjustB: ['Adjust my budget', 'Ajuster mon budget', 'عدّل ميزانيتي'], today: ['Today', 'Aujourd’hui', 'اليوم'],
   maison: ['Home essentials', 'La maison', 'مستلزمات المنزل'], maisonHint: ['Tap what you need so nothing is forgotten', 'Touchez ce qu’il vous faut pour ne rien oublier', 'اضغط على ما تحتاجه كي لا تنسى شيئًا'],
-  mine: ['My additions', 'Mes ajouts', 'إضافاتي'], addProd: ['Add a product', 'Ajouter un produit', 'أضف منتجًا'], pName: ['Product', 'Produit', 'المنتج'], pQty: ['Quantity (optional)', 'Quantité (facultatif)', 'الكمية (اختياري)'], pPrice: ['Price in MAD (optional)', 'Prix en MAD (facultatif)', 'السعر بالدرهم (اختياري)'], pNote: ['Note (optional)', 'Note (facultatif)', 'ملاحظة (اختياري)'], save: ['Save', 'Enregistrer', 'حفظ'],
+  mine: ['My additions', 'Mes ajouts', 'إضافاتي'], addProd: ['Add a product', 'Ajouter un produit', 'أضف منتجًا'], pName: ['Product', 'Produit', 'المنتج'], pQty: ['Quantity (optional)', 'Quantité (facultatif)', 'الكمية (اختياري)'], pPrice: ['Price (optional)', 'Prix (facultatif)', 'السعر (اختياري)'], pNote: ['Note (optional)', 'Note (facultatif)', 'ملاحظة (اختياري)'], save: ['Save', 'Enregistrer', 'حفظ'],
   swapped: ['dishes swapped', 'plats remplacés', 'أطباق مستبدلة'], scaled: ['portions reduced', 'portions réduites', 'حصص مخفضة'], saved: ['saved', 'économisés', 'تم توفيره'],
   stats: ['Your progress', 'Votre progression', 'تقدمك'], itemsN: ['items', 'articles', 'منتجات'],
   g: ['Tea time', 'Goûter', 'الشاي'], browse: ['Browse dishes', 'Parcourir les plats', 'تصفح الأطباق'], addTo: ['Add to', 'Ajouter à', 'أضف إلى'], inWeek: ['In your week', 'Dans votre semaine', 'في أسبوعك'], replaces: ['replaces', 'remplace', 'يستبدل'],
@@ -93,7 +94,7 @@ const D: D = {
   weekReady: ['Your week', 'Votre semaine', 'أسبوعك'], ingredientsN: ['ingredients', 'ingrédients', 'مكونات'], seeWeek: ['See my week', 'Voir ma semaine', 'عرض أسبوعي'], myList: ['My shopping list', 'Ma liste de courses', 'لائحة مشترياتي'],
   change: ['Change', 'Changer', 'غيّر'], recipe: ['Recipe', 'Recette', 'الوصفة'], fSame: ['Same cuisine', 'Même cuisine', 'نفس المطبخ'], fAll: ['All', 'Tout', 'الكل'], fCheaper: ['Cheaper', 'Moins cher', 'أرخص'], fHealthier: ['Lighter', 'Plus léger', 'أخف'], fQuick: ['Quicker', 'Plus rapide', 'أسرع'],
   listUpdated: ['Shopping list updated', 'Liste de courses mise à jour', 'تم تحديث اللائحة'], makeHealthy: ['Make my week healthy', 'Rendre ma semaine healthy', 'اجعل أسبوعي صحيًا'], emptyWeek: ['No meals yet. Compose your week in one tap.', 'Pas encore de repas. Composez votre semaine en un geste.', 'لا وجبات بعد. ركّب أسبوعك بلمسة.'],
-  estimated: ['Estimated', 'Estimé', 'تقديري'], spent: ['Spent', 'Dépensé', 'المصروف'], pace: ['At this pace', 'À ce rythme', 'بهذا المعدل'], paid: ['Price paid (MAD)', 'Prix payé (MAD)', 'السعر المدفوع'], pricesAt: ['Prices', 'Prix', 'الأسعار'], ok: ['OK', 'OK', 'حسنًا'], saving: ['under budget', 'sous le budget', 'تحت الميزانية'], with: ['with', 'avec', 'مع'],
+  estimated: ['Estimated', 'Estimé', 'تقديري'], spent: ['Spent', 'Dépensé', 'المصروف'], pace: ['At this pace', 'À ce rythme', 'بهذا المعدل'], paid: ['Price paid', 'Prix payé', 'السعر المدفوع'], pricesAt: ['Prices', 'Prix', 'الأسعار'], ok: ['OK', 'OK', 'حسنًا'], saving: ['under budget', 'sous le budget', 'تحت الميزانية'], with: ['with', 'avec', 'مع'],
   shopShort: ['Shop', 'Courses', 'تسوق'],
   soon: ['Coming next', 'Prochainement', 'قريبًا'], soonItems: ['Supermarket price comparison · AI planner · Push notifications · Admin area', 'Comparateur de prix · Planificateur IA · Notifications push · Espace admin', 'مقارنة الأسعار · مخطط بالذكاء الاصطناعي · إشعارات · لوحة الإدارة'],
   copied: ['Code copied', 'Code copié', 'تم نسخ الرمز'], welcome: ['Welcome to KUZINTI', 'Bienvenue sur KUZINTI', 'مرحبًا بك في كوزينتي'],
@@ -117,9 +118,9 @@ const D: D = {
   ns_shop: ['Start shopping', 'Faire mes courses', 'ابدأ التسوق'], ns_shopD: ['Tick each product as you put it in the basket.', 'Coche chaque produit en le mettant dans le panier.', 'ضع علامة على كل منتج.'],
   ns_done: ['Finish my shopping', 'Terminer mes courses', 'أنهِ التسوق'], ns_doneD: ['Tick everything, then “Finish” at the bottom.', 'Coche tout, puis « Terminer » en bas de la liste.', 'ضع علامة على الكل ثم «إنهاء».'],
   stepHint0: ['Plan: pick your goal and tap “Plan my week”', 'Composer : choisis ton objectif et touche « Composer ma semaine »', 'خطط: اختر هدفك واضغط «خطط أسبوعي»'], stepHint1: ['Week: check and swap your meals', 'Semaine : vérifie et change tes repas', 'الأسبوع: راجع وجباتك'], stepHint2: ['Shopping: tick your products in the store', 'Courses : coche tes produits en magasin', 'التسوق: ضع علامة على منتجاتك'], stepHint3: ['Store: pick where to shop', 'Magasin : choisis où faire tes courses', 'المتجر: اختر أين تتسوق'], stepHint4: ['Done: tick everything and finish', 'Fini : coche tout et termine', 'تم: ضع علامة على الكل وأنهِ'],
-  share: ['Share', 'Partager', 'مشاركة'], shared: ['List copied', 'Liste copiée', 'تم نسخ القائمة'], lWeek: ['Week', 'Semaine', 'الأسبوع'], lDay: ['Day', 'Jour', 'اليوم'],
+  tSport: ['Sport', 'Sport', 'الرياضة'], share: ['Share', 'Partager', 'مشاركة'], shared: ['List copied', 'Liste copiée', 'تم نسخ القائمة'], lWeek: ['Week', 'Semaine', 'الأسبوع'], lDay: ['Day', 'Jour', 'اليوم'],
 }
-export const t = (k: string, l: Lang) => (l === 'zgh' && Z[k]) || (D[k] ?? [k, k, k])[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
+export const t = (k: string, l: Lang) => (l === 'zgh' && (Z[k] || ZF[(D[k] ?? [k, k, k])[1]])) || (D[k] ?? [k, k, k])[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
 export const rname = (n: [string, string, string], l: Lang) => n[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
 export const dayName = (i: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l === 'zgh' ? 'fr' : l, { weekday: 'long' }).format(new Date(2024, 0, 1 + i))
 // Amounts are stored in MAD; France shows an estimated euro equivalent (local price level, not a bank rate).
@@ -127,6 +128,9 @@ let CUR: Country = countryOf('MA')
 export const setCurrency = (c: string) => { CUR = countryOf(c) }
 export const curRate = () => CUR.rate
 export const curSym = () => CUR.sym
-const fmt = (v: string, l: Lang) => CUR.id === 'MA' ? `${v} ${l === 'ar' ? 'د.م.' : 'MAD'}` : CUR.sym === '€' || CUR.sym === '£' || CUR.sym === '$' || CUR.sym === '₺' ? (CUR.sym === '€' ? `${v} €` : `${CUR.sym}${v}`) : `${v} ${CUR.sym}`
+const fmtC = (C: Country, v: string, l: Lang) => C.id === 'MA' ? `${v} ${l === 'ar' ? 'د.م.' : 'MAD'}` : C.sym === '€' || C.sym === '£' || C.sym === '$' || C.sym === '₺' ? (C.sym === '€' ? `${v} €` : `${C.sym}${v}`) : `${v} ${C.sym}`
+const fmt = (v: string, l: Lang) => fmtC(CUR, v, l)
+/** Amount shown in another country's currency (e.g. outings in the city you are visiting). */
+export const moneyIn = (n: number, cc: string, l: Lang) => { const C = countryOf(cc); const v = Math.round(n * C.rate); return fmtC(C, v >= 10000 ? v.toLocaleString('fr-FR').replace(/\u202f/g, ' ') : String(v), l) }
 export const money2 = (n: number, l: Lang) => fmt((n * CUR.rate).toFixed(CUR.dec), l)
 export const money = (n: number, l: Lang) => { const v = Math.round(n * CUR.rate); return fmt(v >= 10000 ? v.toLocaleString('fr-FR').replace(/\u202f/g, ' ') : String(v), l) }

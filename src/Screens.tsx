@@ -2,13 +2,13 @@ import { BookOpen, Coffee, Dices, Moon, RefreshCw, Shuffle, Sun, Sunrise, type L
 import { useMemo, useRef, useState } from 'react'
 import { HEALTH as HP, NUT, healthOk, nutName, nutrientsOf, type Health } from './lib/nutri'
 import { useApp } from './lib/store'
-import { dayName, money, rname, t, type Lang } from './lib/i18n'
+import { dayName, money, money2, rname, t, type Lang } from './lib/i18n'
 import { REC, stepsOf, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { SIDE } from './data/sides'
 import { dailyKcal, entryCost, entryKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
 import { alternatives, FLAG, surpriseOne, composeSides, type Prefs } from './lib/plan'
-import { FoodTile, Sheet, Stepper } from './ui'
+import { Dish, FoodTile, Sheet, Stepper } from './ui'
 import { FormeCard } from './Forme'
 
 export const SLOTS: Meal[] = ['b', 'l', 'd', 'g']
@@ -103,7 +103,7 @@ export function Controls({ setBudget }: { setBudget: (b: number) => void }) {
       <div className="card space-y-3 p-4 text-center">
         <div className="flex items-center justify-center gap-4">
           <button className="btn btn-soft !h-11 !w-11 !min-h-11 !px-0 text-xl" onClick={() => setBudget(Math.max(200, b - 50))} aria-label="−50">−</button>
-          <div><div className="font-display text-4xl font-extrabold tabular-nums text-forest">{b}</div><div className="text-xs font-semibold text-muted">MAD / {t('week2', lang).toLowerCase()}</div></div>
+          <div><div className="font-display text-4xl font-extrabold tabular-nums text-forest">{money(b, lang)}</div><div className="text-xs font-semibold text-muted">/ {t('week2', lang).toLowerCase()}</div></div>
           <button className="btn btn-soft !h-11 !w-11 !min-h-11 !px-0 text-xl" onClick={() => setBudget(Math.min(5000, b + 50))} aria-label="+50">+</button>
         </div>
         <input type="range" min={200} max={3000} step={50} value={Math.min(b, 3000)} onChange={(e) => setBudget(+e.target.value)} className="w-full accent-[#245B43]" aria-label={t('budgetBar', lang)} />
@@ -137,7 +137,7 @@ export function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => vo
           <button key={r.id} className="flex w-full items-center gap-3 py-2.5 text-start active:bg-cream" onClick={() => put(e)}>
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}>{r.e}</span>
             <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{FLAG[['it', 'fr', 'es', 'tr', 'in', 'jp'].find((x) => r.tags.includes(x)) ?? 'ma']} {rname(r.n, lang)}</span><span className="block truncate text-xs text-muted">{t('with', lang)} {sideNames(e.x, lang) || '—'}</span></span>
-            <span className="shrink-0 text-end text-xs"><span className="block font-semibold tabular-nums">{Math.round(entryKcal(e))} kcal</span>{cur && <span className={`tabular-nums ${dc < 0 ? 'text-forest' : 'text-muted'}`}>{dc < 0 ? '−' : '+'}{Math.abs(dc).toFixed(1)} MAD</span>}</span>
+            <span className="shrink-0 text-end text-xs"><span className="block font-semibold tabular-nums">{Math.round(entryKcal(e))} kcal</span>{cur && <span className={`tabular-nums ${dc < 0 ? 'text-forest' : 'text-muted'}`}>{dc < 0 ? '−' : '+'}{money2(Math.abs(dc), lang)}</span>}</span>
           </button>) })}
       </div>
     </Sheet>
@@ -152,7 +152,7 @@ export function WeekTab({ compose, makeHealthy, say, clear }: { compose: () => v
   const { lang, me, house, upHouse } = useApp()
   const p = usePrefs(); const plan = house!.plan
   const today = (new Date().getDay() + 6) % 7
-  const [view, setView] = useState<'day' | 'week' | 'month'>('day'); const [day, setDay0] = useState(today); const [dir, setDir] = useState(1); const tx = useRef(0)
+  const [view, setView] = useState<'day' | 'week' | 'month'>('week'); const [day, setDay0] = useState(today); const [dir, setDir] = useState(1); const tx = useRef(0)
   const setDay = (d: number) => { setDir(d >= day ? 1 : -1); setDay0(d) }; const goDay = (n: number) => { setDir(n); setDay0((day + n + 7) % 7) }
   const [rep, setRep] = useState<string | null>(null); const [rv, setRv] = useState<Recipe | null>(null)
   const dayKc = (d: number) => slots.reduce((a, s) => a + (plan[`${d}-${s}`] ? entryKcal(plan[`${d}-${s}`]) : 0), 0)
@@ -193,12 +193,18 @@ export function WeekTab({ compose, makeHealthy, say, clear }: { compose: () => v
           <div className="divide-y divide-line/70">{slots.map((s) => mealRow(`${day}-${s}`, s))}</div>
         </div>
       </>}
-      {view === 'week' && <div className="card p-2">
-        <div className="grid grid-cols-[1.9rem_repeat(7,minmax(0,1fr))] gap-[3px] text-center">
-          <span />{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => { setDay(d); setView('day') }} className={`rounded-lg py-1 text-[10px] font-bold uppercase ${d === today ? 'bg-leaf/40 text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 2)}</button>)}
-          {slots.map((s) => [<span key={s} className="flex flex-col items-center justify-center leading-none text-forest">{(() => { const I = SLOT_I[s]; return <I size={16} aria-hidden /> })()}<span className="mt-0.5 text-[7.5px] font-bold uppercase text-muted">{({ b: "Matin", l: "Midi", d: "Soir", g: "Goûter" } as Record<string, string>)[s]}</span></span>, ...Array.from({ length: 7 }, (_, d) => { const e = plan[`${d}-${s}`]; return <button key={s + d + (e?.r ?? '')} onClick={() => setRep(`${d}-${s}`)} className="pop flex min-h-[4.25rem] flex-col items-center justify-start gap-0.5 rounded-xl px-0.5 pt-1 active:scale-90" style={{ animationDelay: `${(d + slots.indexOf(s) * 7) * 18}ms`, background: e ? `hsl(${REC[e.r].h} 80% 91%)` : 'rgb(var(--cream))' }} aria-label={e ? rname(REC[e.r].n, lang) : '+'}>{e ? <><span className="text-lg leading-none">{REC[e.r].e}</span><span className="line-clamp-3 break-words text-[8.5px] font-semibold leading-[1.15]">{short(rname(REC[e.r].n, lang))}</span></> : '＋'}</button> })])}
-        </div>
-        <p className="mt-2 text-center text-[11px] text-muted">{t('tapSwap', lang)}</p>
+      {view === 'week' && <div className="stagger space-y-2.5">{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => (
+        <div key={d} className={`overflow-hidden rounded-[22px] bg-surface shadow-soft ${d === today ? 'ring-2 ring-forest/70' : ''}`}>
+          <button className="flex w-full items-baseline justify-between px-3.5 pb-1 pt-2.5 text-start" onClick={() => { setDay(d); setView('day') }}>
+            <span className="font-display text-[15px] font-extrabold capitalize">{d === today ? (lang === 'en' ? 'Today' : lang === 'ar' ? 'اليوم' : 'Aujourd’hui') : dayName(d, lang)}</span>
+            <span className="text-[11px] text-muted tabular-nums">{Math.round(dayKc(d))} kcal · {money(dayCost(d), lang)} ›</span></button>
+          <div className="flex gap-2 overflow-x-auto px-3 pb-3" data-noswipe>{slots.map((s) => { const k = `${d}-${s}`; const e = plan[k]; const r = e ? REC[e.r] : null; return (
+            <button key={s} className="flex w-[46%] min-w-[140px] shrink-0 items-center gap-2 rounded-2xl bg-cream/70 p-1.5 text-start active:scale-[.97]" onClick={() => setRep(k)}>
+              {r ? <Dish r={r} w={160} className="h-11 w-11 shrink-0 rounded-xl" /> : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border-2 border-dashed border-line text-muted">＋</span>}
+              <span className="min-w-0"><span className="block text-[9.5px] font-bold uppercase tracking-wide text-muted">{SLOT_E[s]} {t(s, lang)}</span><span className="line-clamp-2 block text-[12.5px] font-semibold leading-tight">{r ? rname(r.n, lang) : '—'}</span></span>
+            </button>) })}</div>
+        </div>))}
+        <p className="text-center text-[11px] text-muted">{t('tapSwap', lang)}</p>
       </div>}
       {view === 'month' && <div className="card p-3">
         <p className="mb-2 font-display font-extrabold capitalize">{new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang === 'zgh' ? 'fr' : lang, { month: 'long', year: 'numeric' }).format(new Date())}</p>

@@ -86,3 +86,9 @@ export function dailyKcal(plan: Record<string, PlanEntry>): number {
   return avg(by.b) + avg(by.l) + avg(by.d) + (by.g ? by.g.reduce((x, y) => x + y, 0) / 7 : 0)
 }
 export const healthLevel = (kcal: number): 'fit' | 'balanced' | 'belly' => (kcal <= 1850 ? 'fit' : kcal <= 2250 ? 'balanced' : 'belly')
+
+/** Approximate protein (g) per base unit of each ingredient, for the sport space. Unlisted items count as ~1 %. */
+const PROT: Record<string, number> = { chicken: 0.25, beef: 0.2, lamb: 0.2, sardine: 0.2, fish: 0.2, tuna: 25, egg: 6, flour: 0.1, semolina: 0.12, couscous: 0.12, rice: 0.07, pasta: 0.12, vermicelli: 0.12, lentils: 0.24, chickpeas: 0.19, fava: 0.26, whitebeans: 0.21, oats: 0.13, bread: 9, milk: 0.033, yogurt: 4, cheese: 0.22, almonds: 0.21, sesame: 0.17, warqa: 2, potato: 0.02, butter: 0.01 }
+const protOf = (id: string) => PROT[id] ?? (ING[id]?.base === 'pc' ? 0.5 : 0.01)
+export const entryProt = (e: PlanEntry) => Object.entries(scaleEntry(e)).reduce((a, [id, q]) => a + q * protOf(id), 0) / e.n
+export const protPerServing = (rid: string) => Object.entries(scaleRecipe(rid, REC[rid].s)).reduce((a, [id, q]) => a + q * protOf(id), 0) / REC[rid].s

@@ -119,7 +119,7 @@ details[open] > div { animation: rise .25s ease-out both; } summary::-webkit-det
 .card { border-radius: 20px; }
 h1, h2, h3 { color: rgb(var(--ink)); }
 /* Home, "Riad" direction: editorial, warm, one strong image */
-.riad { display: flex; flex-direction: column; gap: 2.25rem; }
+.riad { display: flex; flex-direction: column; gap: 1.15rem; }
 @media (min-width: 1024px) { .riad { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: row dense; column-gap: 2.5rem; row-gap: 2.75rem; align-items: start; } }
 .kenburns img { animation: kenburns 1.6s var(--ease) both; }
 @keyframes kenburns { from { transform: scale(1.07); } to { transform: scale(1); } }
@@ -141,3 +141,9 @@ h1, h2, h3 { color: rgb(var(--ink)); }
 @keyframes archIn { from { transform: translateY(8px) scaleY(.6); opacity: 0 } to { transform: none; opacity: 1 } }
 .sidenav { position: fixed; inset: 0 auto 0 0; z-index: 45; width: 248px; flex-direction: column; padding: 22px 14px 18px; background: linear-gradient(175deg, #245B43, #173d2d); overflow-y: auto; }
 [dir="rtl"] .sidenav { inset: 0 0 0 auto; }
+.swipe { touch-action: pan-y; }
+.stagger > * { animation: rise .45s cubic-bezier(.2,.8,.2,1) both; } .stagger > *:nth-child(2){animation-delay:.04s} .stagger > *:nth-child(3){animation-delay:.08s} .stagger > *:nth-child(4){animation-delay:.12s} .stagger > *:nth-child(n+5){animation-delay:.16s}
+.dash-tile { transition: transform .25s cubic-bezier(.2,.9,.25,1), box-shadow .25s; } .dash-tile:hover { transform: translateY(-2px); }
+.dash-tile .badge, .tile-hero .badge { transition: transform .35s cubic-bezier(.3,1.6,.5,1); } .dash-tile:active .badge { transform: scale(.9) rotate(-4deg); }
+@media (prefers-reduced-motion: reduce) { .stagger > *, .dash-tile, .swipe * { animation: none !important; transition: none !important; } }
+.pin-bar { animation: fabIn .45s cubic-bezier(.2,.9,.25,1) both; }

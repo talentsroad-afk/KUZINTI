@@ -1,3 +1,4 @@
+import { zf } from './lib/zgh'
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 import { useApp } from './lib/store'
@@ -8,7 +9,7 @@ import { FLAG, type Prefs } from './lib/plan'
 import type { Meal } from './data/recipes'
 import { HEALTH, nutName, type Health } from './lib/nutri'
 
-const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
+const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 const CUIS = ['ma', 'fr', 'med', 'it', 'es', 'tr', 'in', 'jp', 'hint']
 const KCAL: [number, string, string][] = [[1700, '🏃', 'Perdre'], [2100, '🙂', 'Garder'], [2500, '💪', 'Prendre']]
 

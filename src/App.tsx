@@ -1,8 +1,9 @@
+import { zf } from './lib/zgh'
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, setCurrency, t, type Lang } from './lib/i18n'
 import { LANG_LABEL } from './lib/i18n'
-import { Brand, Confetti, Toasts } from './ui'
+import { Brand, Confetti, TONES, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
 import { Controls, usePrefs, WeekTab } from './Screens'
 import { HomeTab } from './Home'
@@ -12,10 +13,11 @@ import { CartMode } from './Cart'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
-import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Search, Sparkles, Wallet, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Search, Sparkles, Ticket, UtensilsCrossed, Wallet, Dumbbell, type LucideIcon } from 'lucide-react'
 import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Nav } from './Nav'
+import { SportTab } from './Sport'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore, setStoreCountry } from './lib/stores'
 import { CountrySheet } from './Country'
@@ -56,7 +58,7 @@ function Landing({ go }: { go: (m: 'signup' | 'login') => void }) {
       </section>
       <section className="relative mx-auto grid max-w-3xl gap-4 px-5 py-10 sm:grid-cols-2">
         <h2 className="text-center text-3xl font-bold text-forest sm:col-span-2">{t('pricing', lang)}</h2>
-        <div className="card p-6"><h3 className="text-xl font-bold">{t('free', lang)} · 0 MAD</h3><p className="mt-2 text-sm text-muted">{t('freeD', lang)}</p></div>
+        <div className="card p-6"><h3 className="text-xl font-bold">{t('free', lang)} · {money(0, lang)}</h3><p className="mt-2 text-sm text-muted">{t('freeD', lang)}</p></div>
         <div className="card p-6 opacity-80"><h3 className="text-xl font-bold">{t('plus', lang)}</h3><p className="mt-2 text-sm text-muted">{t('plusD', lang)}</p></div>
       </section>
       <section className="relative mx-auto max-w-2xl px-5 py-10">
@@ -120,12 +122,14 @@ function Onboarding() {
   )
 }
 
-const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', CalendarDays, 'tWeek'], ['list', ShoppingCart, 'list'], ['sorties', MapPinned, 'tSorties'], ['budget', Wallet, 'tBudget'], ['profile', UserRound, 'profile']]
+const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', CalendarDays, 'tWeek'], ['list', ShoppingCart, 'list'], ['sorties', MapPinned, 'tSorties'], ['budget', Wallet, 'tBudget'], ['sport', Dumbbell, 'tSport'], ['profile', UserRound, 'profile']]
 
 type World = 'food' | 'sorties' | 'budget'
 const SPACES: World[] = ['food', 'sorties', 'budget']
+const W_ICON = { food: UtensilsCrossed, sorties: Ticket, budget: Wallet }
+const W_TONE = { food: 'forest', sorties: 'grape', budget: 'teal' } as const
 const W_LABEL: Record<World, [string, string, string, string]> = { food: ['🍽️', 'Meals', 'Repas', 'الوجبات'], sorties: ['🎈', 'Outings', 'Sorties', 'نزهات'], budget: ['💰', 'Budget', 'Budget', 'الميزانية'] }
-const L3 = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
+const L3 = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
@@ -196,7 +200,7 @@ function Shell() {
   }
   const [up, setUp] = useState(false); const space: 'food' | 'out' = tab === 'sorties' || tab === 'budget' ? 'out' : 'food'
   useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
-  const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { try { history.pushState({ kz: k }, '') } catch { /* sandboxed */ } setTab(k); scrollTo(0, 0) } }
+  const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { const O: Partial<Record<Tab, number>> = { home: 0, week: 1, recipes: 1.5, stores: 2, list: 3, sorties: 4, budget: 5, profile: 6 }; const d = (O[k] ?? 0) - (O[tab] ?? 0); if (d) setWdir(Math.sign(d)); try { history.pushState({ kz: k }, '') } catch { /* sandboxed */ } setTab(k); scrollTo(0, 0) } }
   // Browser / phone back button moves between screens and ends on Home instead of leaving the app.
   useEffect(() => {
     try { history.replaceState({ kz: tab }, '') } catch { /* sandboxed */ }
@@ -242,7 +246,7 @@ function Shell() {
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
           </button>}
         </div>
-        {space === 'food' && (tab !== 'home' || tour) && <><div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-2">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
+        {space === 'food' && tab !== 'sport' && (tab !== 'home' || tour) && <><div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-2">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
           <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${ok ? 'bg-forest text-white' : i === cur ? 'bg-apricot text-ink ring-2 ring-apricot/40' : 'bg-cream text-muted'}`}>{ok ? '✓' : i + 1}</span>
           <span className={`truncate ${i === cur ? 'text-ink' : 'text-muted'}`}>{t(k, lang)}</span>{i < 2 && <span className={`h-0.5 min-w-1 flex-1 rounded ${ok ? 'bg-forest' : 'bg-line'}`} />}</button>)}</div>
         </>}
@@ -251,8 +255,8 @@ function Shell() {
       <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`} onTouchStart={swStart} onTouchEnd={swEnd}>
         <div className="mb-3 flex items-center gap-2">
           <div className="relative grid flex-1 grid-cols-3 rounded-full bg-surface p-1 shadow-soft" role="tablist" aria-label={L3(lang, 'Spaces', 'Espaces', 'الفضاءات')}>
-            <span className="absolute inset-y-1 rounded-full bg-forest transition-all duration-300 ease-out" style={{ width: 'calc((100% - .5rem) / 3)', insetInlineStart: `calc(.25rem + ${SPACES.indexOf(world)} * (100% - .5rem) / 3)` }} aria-hidden />
-            {SPACES.map((w) => <button key={w} role="tab" aria-selected={world === w} onClick={() => goWorld(w)} className={`relative z-10 rounded-full py-1.5 text-[13px] font-bold transition-colors ${world === w ? 'text-white' : 'text-muted'}`}>{W_LABEL[w][0]} {L3(lang, W_LABEL[w][1], W_LABEL[w][2], W_LABEL[w][3])}</button>)}
+            <span className="absolute inset-y-1 rounded-full shadow-soft transition-all duration-500 ease-[cubic-bezier(.2,.9,.25,1)]" style={{ background: TONES[W_TONE[world]], width: 'calc((100% - .5rem) / 3)', insetInlineStart: `calc(.25rem + ${SPACES.indexOf(world)} * (100% - .5rem) / 3)` }} aria-hidden />
+            {SPACES.map((w) => <button key={w} role="tab" aria-selected={world === w} onClick={() => goWorld(w)} className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full py-2 text-[13px] font-bold transition-colors duration-300 ${world === w ? 'text-white' : 'text-muted'}`}>{(() => { const I = W_ICON[w]; return <I size={16} strokeWidth={2.3} className={world === w ? 'pop' : ''} aria-hidden /> })()} {L3(lang, W_LABEL[w][1], W_LABEL[w][2], W_LABEL[w][3])}</button>)}
           </div>
         </div>
         {tab !== 'home' && <Hint tab={tab} />}
@@ -263,6 +267,7 @@ function Shell() {
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
           {tab === 'recipes' && <RecipesTab say={say} />}
+          {tab === 'sport' && <SportTab apply={(k) => { patchMe({ kcal: k, health: 'sport' }); if (hasPlan) composeWith({ kcal: k, health: 'sport' }, true); else composeWith({ kcal: k, health: 'sport' }); go('week') }} />}
           {tab === 'profile' && <ProfileScreen celebrate={celebrate} openCountry={() => setCtry(true)} />}
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
@@ -274,6 +279,11 @@ function Shell() {
       <Tour run={tour} onEnd={() => setTour(false)} />
       <CartMode open={caddie} onClose={() => setCaddie(false)} items={cart} onFinish={() => endTrip(celebrate)} />
       {up && <button className="fixed bottom-[6.5rem] end-4 lg:bottom-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
+      {/* Pinned shopping: once a trip has started, a slim bar keeps it one tap away from every other screen. */}
+      {tab !== 'list' && cartLeft > 0 && cart.some((x) => h.checked[x.key]) && <button className="pin-bar fixed inset-x-0 z-30 mx-auto flex w-[min(92vw,440px)] items-center gap-2.5 rounded-full bg-apricot py-1.5 pe-4 ps-1.5 text-start text-ink shadow-lift active:scale-[.98] lg:bottom-6" style={{ bottom: 'calc(96px + env(safe-area-inset-bottom))' }} onClick={() => go('list')}>
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-forest text-white"><ShoppingCart size={16} aria-hidden /></span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-bold">📌 {L3(lang, 'Shopping in progress', 'Courses en cours', 'تسوق جارٍ')} · {cart.length - cartLeft}/{cart.length}</span>
+        <span className="text-[13px] font-extrabold text-forest">{L3(lang, 'Resume', 'Reprendre', 'متابعة')} ›</span></button>}
       <Nav tab={tab} go={go} left={cartLeft} hasCart={cart.length > 0} onCaddie={() => setCaddie(true)} openCountry={() => setCtry(true)} /></>
       <CountrySheet open={ctry} onClose={() => setCtry(false)} onPick={setCountry} />
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>

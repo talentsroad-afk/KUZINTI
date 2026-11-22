@@ -1,3 +1,4 @@
+import { zf } from './lib/zgh'
 import { useMemo, useState } from 'react'
 import { Check, Search } from 'lucide-react'
 import { useApp } from './lib/store'
@@ -6,7 +7,7 @@ import { COUNTRIES, ZONES, cname, countryOf, storesOf } from './lib/countries'
 import { norm } from './data/products'
 import { type Lang } from './lib/i18n'
 
-const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
+const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 const storeLine = (id: string) => id === 'MA' ? 'Marjane, BIM, Carrefour, souk…' : id === 'FR' ? 'Leclerc, Lidl, Carrefour, marché…' : storesOf(countryOf(id)).slice(0, 3).map((s) => s.name).join(', ') + '…'
 
 /** One-tap country switch: search, recent countries on top, grouped by region. Changing applies at once (currency, stores, cuisine). */

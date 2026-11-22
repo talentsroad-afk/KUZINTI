@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useApp } from './lib/store'
-import { money } from './lib/i18n'
+import { moneyIn } from './lib/i18n'
 
 // Real places, approximate price per person in MAD (0 = free), duration in hours. Prices are indicative only.
 import { WORLD_CITIES, WORLD_COUNTRY_CITIES, WORLD_FOOD, type Act, type Kind } from './data/outings'
@@ -207,7 +207,10 @@ export function SortiesTab() {
   const { me, house, upHouse, patchMe, award } = useApp()
   const ccOf = (c: string) => Object.keys(COUNTRY_CITIES).find((k) => COUNTRY_CITIES[k].includes(c))
   const [cc, setCc] = useState(() => ccOf(me!.city) ?? (COUNTRY_CITIES[me!.country] ? me!.country : 'MA')); const [pickC, setPickC] = useState(false)
-  const list = COUNTRY_CITIES[cc] ?? COUNTRY_CITIES.MA; const city = list.includes(me!.city) ? me!.city : list[0]; const acts = CITIES[city]; const people = me!.size
+  const list = COUNTRY_CITIES[cc] ?? COUNTRY_CITIES.MA; const city = list.includes(me!.city) ? me!.city : list[0]; const ovr = (house as unknown as { outPrice?: Record<string, number> }).outPrice ?? {}; const acts = CITIES[city].map((a) => (ovr[a.id] !== undefined ? { ...a, p: ovr[a.id], p0: a.p } : { ...a, p0: a.p })); const people = me!.size
+  const M$ = (n: number) => moneyIn(n, cc, 'fr'); const CR = countryOf(cc).rate
+  const [editP, setEditP] = useState<string | null>(null)
+  const setPrice = (id: string, v: number | undefined) => upHouse((h) => { const x = h as unknown as { outPrice?: Record<string, number> }; const o = { ...(x.outPrice ?? {}) }; if (v === undefined) delete o[id]; else o[id] = v; x.outPrice = o })
   const [kinds, setKinds] = useState<Kind[]>([]); const [budget, setBudget] = useState(400); const [mode, setMode] = useState<Mode>('day')
   const [mv, setMv] = useState<Move>('taxi'); const fmt = 'auto' as Fmt | 'auto'; const [open, setOpen] = useState<string | null>('d0')
   type O = { outings2?: Partial<Record<Mode, Record<string, Day>>> }
@@ -242,14 +245,16 @@ export function SortiesTab() {
           <button className={`flex shrink-0 items-center gap-1 rounded-2xl px-3 py-2 text-sm font-bold ${pickC ? 'bg-ink text-white' : 'bg-surface shadow-soft'}`} onClick={() => setPickC(!pickC)} aria-expanded={pickC} aria-label="Pays"><span className="text-lg leading-none">{countryOf(cc).f}</span> ▾</button>
           {list.map((c) => <button key={c} className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-bold transition active:scale-95 ${c === city ? 'bg-forest text-white shadow-lift' : 'bg-cream text-ink'}`} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>{c}</button>)}</div>
         {pickC && <div className="fade-up -mx-1 grid grid-cols-5 gap-1.5 rounded-2xl bg-cream/70 p-2">{COUNTRIES.filter((c) => COUNTRY_CITIES[c.id]).map((c) => <button key={c.id} className={`flex flex-col items-center rounded-xl py-1.5 text-[10px] font-bold ${c.id === cc ? 'bg-forest text-white' : 'bg-surface'}`} onClick={() => { setCc(c.id); setPickC(false); patchMe({ city: COUNTRY_CITIES[c.id][0] }); save({}, `${c.f} ${COUNTRY_CITIES[c.id][0]}`, true) }}><span className="text-xl leading-none">{c.f}</span><span className="w-full truncate px-0.5 text-center">{cname(c, 'fr')}</span></button>)}</div>}
-        <div className="grid grid-cols-4 gap-1.5">{([['day', '☀️', 'Journée'], ['eve', '🌙', 'Soirée'], ['we', '🏖️', 'Week-end'], ['week', '🗓️', '7 jours']] as [Mode, string, string][]).map(([m, e, l]) => <button key={m} className={`flex flex-col items-center rounded-2xl py-2 text-[12px] font-bold transition active:scale-95 ${mode === m ? 'bg-forest text-white shadow-lift' : 'bg-cream text-ink'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }} aria-pressed={mode === m}><span className="text-xl leading-none">{e}</span>{l}</button>)}</div>
-        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{KINDS.map(([k, l]) => <button key={k} className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${kinds.includes(k) ? 'bg-ink text-white' : 'bg-cream text-ink'}`} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])} aria-pressed={kinds.includes(k)}>{l}</button>)}</div>
+        <p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Quand ?</p>
+        <div className="grid grid-cols-4 gap-2">{([['day', '☀️', 'Journée', 'linear-gradient(140deg,#ffcf8a,#ee9b45)'], ['eve', '🌙', 'Soirée', 'linear-gradient(140deg,#8b7be0,#3d2f8f)'], ['we', '🏖️', 'Week-end', 'linear-gradient(140deg,#8fd3ff,#3d8fd6)'], ['week', '🗓️', '7 jours', 'linear-gradient(140deg,#7fc79a,#245B43)']] as [Mode, string, string, string][]).map(([m, e, l, g]) => <button key={m} className={`crit relative flex flex-col items-center gap-1 overflow-hidden rounded-[18px] py-2.5 text-[12px] font-bold transition-all duration-300 active:scale-95 ${mode === m ? 'text-white shadow-lift' : 'bg-cream/80 text-ink'}`} style={mode === m ? { background: g } : undefined} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }} aria-pressed={mode === m}><span className={`text-[22px] leading-none ${mode === m ? 'pop' : ''}`}>{e}</span>{l}</button>)}</div>
+        <p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Envie de… <span className="normal-case tracking-normal text-muted/80">(plusieurs choix possibles)</span></p>
+        <div className="grid grid-cols-3 gap-2">{KINDS.map(([k, l]) => { const on = kinds.includes(k); const [e, ...w] = l.split(' '); return <button key={k} className={`crit flex items-center gap-2 rounded-[16px] p-2 text-start text-[12.5px] font-bold transition-all duration-300 active:scale-95 ${on ? 'text-white shadow-lift' : 'bg-cream/80 text-ink'}`} style={on ? { background: KTONE[k][0] } : undefined} onClick={() => setKinds(on ? kinds.filter((x) => x !== k) : [...kinds, k])} aria-pressed={on}><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-lg ${on ? 'pop bg-white/20' : 'bg-surface'}`}>{e}</span><span className="truncate">{w.join(' ')}</span></button> })}</div>
         <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {days.some(([k]) => plan[k]) ? 'Proposer autre chose' : mode === 'day' ? 'Ma journée idéale' : mode === 'eve' ? 'Ma soirée' : mode === 'we' ? 'Mon week-end' : 'Mes 7 jours'}</button>
         <details className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-center gap-1 text-xs font-semibold text-muted"><span>Transport et budget · {MOVES.find(([m]) => m === mv)?.[1]} · {money(budget, 'fr')}</span><span className="transition-transform group-open:rotate-90">›</span></summary>
+          <summary className="flex cursor-pointer list-none items-center justify-center gap-1 text-xs font-semibold text-muted"><span>Transport et budget · {MOVES.find(([m]) => m === mv)?.[1]} · {M$(budget)}</span><span className="transition-transform group-open:rotate-90">›</span></summary>
           <div className="mt-3 space-y-3 rounded-2xl bg-cream/70 p-3">
         <div className="flex gap-2">{MOVES.map(([m, l]) => <button key={m} className="chip flex-1 justify-center" aria-pressed={mv === m} onClick={() => setMv(m)}>{l}</button>)}</div>
-        <div className="flex items-center gap-3"><span className="text-xs font-bold text-muted">Budget</span><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-20 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
+        <div className="flex items-center gap-3"><span className="text-xs font-bold text-muted">Budget</span><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-20 whitespace-nowrap text-end tabular-nums">{M$(budget)}</b></div>
           </div>
         </details>
       </div>
@@ -258,7 +263,7 @@ export function SortiesTab() {
       ) : (<>
         <div className="card flex items-center gap-4 p-4">
           <div className="relative grid h-16 w-16 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(${total > budget ? 'rgb(var(--danger))' : 'rgb(var(--forest))'} ${Math.min(100, (total / Math.max(1, budget)) * 100)}%, rgb(var(--cream)) 0)` }}><span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-[11px] font-extrabold tabular-nums">{Math.round((total / Math.max(1, budget)) * 100)}%</span></div>
-          <div className="min-w-0 flex-1"><p className="text-xs text-muted">Total estimé · {people} pers.</p><p className={`font-display text-2xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{money(total, 'fr')}</p><p className="text-[11px] text-muted">🎟️ {money(sum.a, 'fr')} · 🍽️ {money(sum.m, 'fr')} · 🚕 {money(sum.tr, 'fr')}</p></div>
+          <div className="min-w-0 flex-1"><p className="text-xs text-muted">Total estimé · {people} pers.</p><p className={`font-display text-2xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{M$(total)}</p><p className="text-[11px] text-muted">🎟️ {M$(sum.a)} · 🍽️ {M$(sum.m)} · 🚕 {M$(sum.tr)}</p></div>
         </div>
         {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!; const tone = story(d); const dl = deal(d)
           const kindsHere = [...new Set(d.acts.flatMap((id) => acts.find((a) => a.id === id)?.k ?? []))] as Kind[]
@@ -269,11 +274,12 @@ export function SortiesTab() {
               <div className="relative flex items-end gap-3 p-4">
                 <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wider opacity-80">{f[1].split(' ').slice(1).join(' ')} · {f[2]}</p><p className="font-serif text-2xl font-semibold leading-tight first-letter:uppercase">{label}</p>
                   <p className="mt-1 truncate text-sm opacity-90">{pr.filter((x) => x.id).map((x) => x.n).join(' · ')}</p></div>
-                <div className="shrink-0 text-end"><p className="text-3xl leading-none tracking-tighter">{pr.filter((x) => x.id).map((x) => x.e).join('')}</p><p className="mt-2 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold tabular-nums backdrop-blur">≈ {money(cost(d), 'fr')}</p></div>
+                <div className="shrink-0 text-end"><p className="text-3xl leading-none tracking-tighter">{pr.filter((x) => x.id).map((x) => x.e).join('')}</p><p className="mt-2 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold tabular-nums backdrop-blur">≈ {M$(cost(d))}</p></div>
               </div>
             </button>
-            {dl && <div className="flex items-center gap-3 border-b border-line/70 bg-apricot/15 px-4 py-2.5"><span className="text-xl">💡</span><p className="min-w-0 flex-1 text-xs"><b>Bon plan :</b> {dl.alt.e} {dl.alt.n} au lieu de {dl.top.n.toLowerCase()}, <b className="text-forest">−{money(dl.save, 'fr')}</b></p><button className="shrink-0 rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white active:scale-95" onClick={() => takeDeal(k, d, dl)}>Prendre</button></div>}
+            {dl && <div className="flex items-center gap-3 border-b border-line/70 bg-apricot/15 px-4 py-2.5"><span className="text-xl">💡</span><p className="min-w-0 flex-1 text-xs"><b>Bon plan :</b> {dl.alt.e} {dl.alt.n} au lieu de {dl.top.n.toLowerCase()}, <b className="text-forest">−{M$(dl.save)}</b></p><button className="shrink-0 rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white active:scale-95" onClick={() => takeDeal(k, d, dl)}>Prendre</button></div>}
             {isOpen && <div className="fade-up px-4 pb-4 pt-3">
+              {d.acts.length > 1 && <a className="mb-3 flex items-center gap-2 rounded-2xl bg-forest/10 px-3 py-2 text-xs font-bold text-forest active:scale-[.98]" target="_blank" rel="noreferrer" href={'https://www.google.com/maps/dir/' + d.acts.map((id) => acts.find((a) => a.id === id)).filter(Boolean).map((a) => encodeURIComponent(`${a!.n}, ${a!.a ?? ''} ${city}`)).join('/')}>🗺️ <span className="flex-1">Voir tout le parcours sur la carte</span><span>{d.acts.length} étapes ›</span></a>}
               <ol className="space-y-2">
                 {pr.map((x, i) => { const ac = x.id ? acts.find((q) => q.id === x.id) : undefined; const ai = x.id ? d.acts.indexOf(x.id) : -1; const dist = ai > 0 ? km(d.acts[ai - 1], x.id!) : 0; const M = MOVES.find((m) => m[0] === mv)!
                   return <li key={i}>
@@ -281,10 +287,18 @@ export function SortiesTab() {
                   <div className={`flex gap-3 rounded-2xl p-2.5 ${x.id ? 'bg-cream/70' : ''}`}>
                     <div className="flex w-11 shrink-0 flex-col items-center"><span className="text-[11px] font-extrabold tabular-nums text-forest">{x.t}</span><span className={`mt-1 grid h-9 w-9 place-items-center rounded-xl text-xl ${x.id ? 'bg-surface shadow-soft' : ''}`}>{x.e}</span></div>
                     <div className="min-w-0 flex-1"><p className="font-semibold leading-tight">{x.n}</p><p className="text-xs text-muted">{x.d}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]"><span className={`rounded-full px-2 py-0.5 font-bold ${x.p ? 'bg-surface' : 'bg-leaf/30 text-forest'}`}>{x.p ? `≈ ${money(x.p * people, 'fr')}` : 'Gratuit'}</span>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">{x.id ? <button className={`rounded-full px-2 py-0.5 font-bold active:scale-95 ${x.p ? 'bg-surface' : 'bg-leaf/30 text-forest'}`} onClick={() => setEditP(editP === x.id ? null : x.id!)} aria-expanded={editP === x.id}>{x.p ? `≈ ${M$(x.p * people)}` : 'Gratuit'} ✎</button> : <span className="rounded-full bg-surface px-2 py-0.5 font-bold">≈ {M$(x.p * people)}</span>}
                         {ac?.a && <a className="rounded-full bg-surface px-2 py-0.5 font-bold text-forest" href={`https://www.google.com/maps/search/${encodeURIComponent(ac.n + ' ' + ac.a + ' ' + city)}`} target="_blank" rel="noreferrer">📍 Itinéraire</a>}
                         {x.id && <button className="rounded-full bg-surface px-2 py-0.5 font-bold active:scale-95" onClick={() => swap(k, ai)}>↻ Autre idée</button>}</div>
-                      {ac?.tl && <p className="mt-1 text-[11px] text-ink/70">{ac.tl.join(' → ')}</p>}</div>
+                      {ac?.a && <p className="mt-1 flex items-start gap-1 text-[11px] font-semibold text-ink/80"><span aria-hidden>📍</span><span>{ac.a}, {city}</span></p>}
+                      {ac?.tl && <p className="mt-1 text-[11px] text-ink/70">{ac.tl.join(' → ')}</p>}
+                      {ac && editP === ac.id && (() => { const avg = (ac as Act & { p0: number }).p0; const mx = Math.max(50, avg * 3) * CR; return <div className="fade-up mt-2 rounded-2xl bg-surface p-2.5 shadow-soft">
+                        <div className="flex items-baseline justify-between text-[11px]"><span className="font-bold">Mon prix par personne</span><b className="font-display text-base tabular-nums text-forest">{M$(ac.p)}</b></div>
+                        <input type="range" min={0} max={Math.round(mx)} step={Math.max(1, Math.round(mx / 60))} value={Math.round(ac.p * CR)} onChange={(e) => setPrice(ac.id, +e.target.value / CR)} className="mt-1 w-full accent-[#245B43]" aria-label="Prix par personne" />
+                        <div className="flex items-center justify-between text-[10.5px] text-muted"><span>Gratuit</span><span className="rounded-full bg-cream px-2 py-0.5 font-bold text-ink">Moyenne ≈ {avg ? M$(avg) : 'gratuit'}</span><span>{M$(mx / CR)}</span></div>
+                        <div className="mt-1.5 flex gap-1.5">{[0, avg * 0.5, avg, avg * 1.5].filter((v, i, a) => a.indexOf(v) === i).map((v, i) => <button key={i} className="flex-1 rounded-full bg-cream py-1 text-[11px] font-bold active:scale-95" onClick={() => setPrice(ac.id, v)}>{['Gratuit', 'Petit prix', 'Moyen', 'Confort'][i]}</button>)}</div>
+                        {ac.p !== avg && <button className="mt-1.5 w-full text-[11px] font-bold text-forest" onClick={() => setPrice(ac.id, undefined)}>↺ Revenir au prix moyen</button>}
+                      </div> })()}</div>
                   </div></li> })}
               </ol>
               <div className="mt-3 flex gap-1.5 overflow-x-auto">{([['full', '☀️ Journée'], ['half', '🌤️ Après-midi'], ['night', '🌙 Soirée']] as [Fmt, string][]).map(([fk, fl]) => <button key={fk} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${d.fmt === fk ? 'bg-forest text-white' : 'bg-cream text-muted'}`} onClick={() => setDayFmt(k, fk)}>{fl}</button>)}</div>

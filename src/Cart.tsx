@@ -1,3 +1,4 @@
+import { zf } from './lib/zgh'
 import { Check, LayoutGrid, Layers, RotateCcw, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -5,7 +6,7 @@ import { useApp } from './lib/store'
 import { money, type Lang } from './lib/i18n'
 import type { Aisle } from './data/catalog'
 
-const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
+const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 /** One recognisable icon per ingredient, so a product is found at a glance in the aisle. */
 export const ICON: Record<string, string> = {
   chicken: '🍗', beef: '🥩', lamb: '🍖', sardine: '🐟', tuna: '🥫', egg: '🥚', onion: '🧅', tomato: '🍅', potato: '🥔', carrot: '🥕', zucchini: '🥒', eggplant: '🍆', pumpkin: '🎃', pepper: '🫑', garlic: '🧄', lemon: '🍋', plemon: '🍋', olives: '🫒', banana: '🍌', coriander: '🌿', parsley: '🌿', mint: '🌱', oil: '🫗', flour: '🌾', semolina: '🌾', couscous: '🥣', rice: '🍚', pasta: '🍝', lentils: '🫘', chickpeas: '🫘', fava: '🫘', oats: '🥣', bread: '🥖', milk: '🥛', butter: '🧈', yogurt: '🥛', cheese: '🧀', honey: '🍯', sugar: '🍬', almonds: '🌰', dates: '🌴', tea: '🍵', coffee: '☕', orange: '🍊', apple: '🍎', fish: '🐠', vermicelli: '🍜', warqa: '🫓', sesame: '🌾', whitebeans: '🫘', raisins: '🍇', prunes: '🫐', soy: '🫙', salt: '🧂', cumin: '🧂', paprika: '🌶️', turmeric: '🧂', ginger: '🫚', cinnamon: '🧂',

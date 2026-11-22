@@ -1,10 +1,11 @@
+import { zf } from './lib/zgh'
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Lightbulb, Lock, Plus, ShieldCheck, Target, TrendingUp, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useApp, type MoneyData } from './lib/store'
 import { curRate, money, type Lang } from './lib/i18n'
 import { Sheet } from './ui'
 
-const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
+const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 type Kind = 'need' | 'want'
 // Category catalogue. "need" = essentials (target 50%), "want" = lifestyle (30%), savings = 20%.
 export const CATS: Record<string, { e: string; n: [string, string, string]; k: Kind; fixed?: boolean }> = {
@@ -64,7 +65,7 @@ function Setup({ start, onDone, onCancel, lang, weekly }: { start: MoneyData; on
   const cards: { t: string; s: string; body: JSX.Element; ok: boolean }[] = [
     { t: L(lang, 'Your income', 'Vos revenus', 'مداخيلك'), s: L(lang, 'Net monthly amounts. Only you can see them.', 'Montants nets par mois. Vous seul les voyez.', 'المبالغ الصافية شهريًا. أنت فقط من يراها.'), ok: inc > 0, body: <div className="space-y-3">
       <Field label={L(lang, 'Net salary', 'Salaire net', 'الراتب الصافي')} v={show(salary)} set={(v) => setInc('salary', 'Salaire', num(v))} big />
-      <div className="flex flex-wrap gap-1.5">{[3000, 5000, 8000, 12000, 20000].map((a) => <button key={a} className={`rounded-full px-3 py-1.5 text-sm font-bold tabular-nums transition active:scale-95 ${salary === a ? 'bg-forest text-white' : 'bg-cream'}`} onClick={() => setInc('salary', 'Salaire', a)}>{money(a, lang)}</button>)}</div>
+      <div className="flex flex-wrap gap-1.5">{[3000, 5000, 8000, 12000, 20000].map((a0) => { const v = a0 * r; const q = 10 ** Math.max(0, Math.floor(Math.log10(v)) - 1); return Math.round(v / q) * q / r }).map((a) => <button key={a} className={`rounded-full px-3 py-1.5 text-sm font-bold tabular-nums transition active:scale-95 ${salary === a ? 'bg-forest text-white' : 'bg-cream'}`} onClick={() => setInc('salary', 'Salaire', a)}>{money(a, lang)}</button>)}</div>
       <Field label={L(lang, 'Partner, rent received, extras', 'Conjoint, loyers perçus, extras', 'الزوج، كراء، إضافات')} v={show(other)} set={(v) => setInc('other', 'Autres revenus', num(v))} />
     </div> },
     { t: L(lang, 'Fixed charges', 'Charges fixes', 'المصاريف الثابتة'), s: L(lang, 'What leaves every month, whatever happens.', 'Ce qui part chaque mois, quoi qu’il arrive.', 'ما يُصرف كل شهر مهما حدث.'), ok: true, body: <div className="grid grid-cols-2 gap-2">
@@ -184,6 +185,21 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
   // Savings plan: the owner picks a monthly amount; we split it into 3 pockets and project it.
   const [rate, setRate] = useState(() => Math.round(Math.min(30, Math.max(5, inc ? (saveM / inc) * 100 : 10))))
   const amt = Math.round((inc * rate) / 100)
+  const STYLES: [string, string, string, number, string][] = [
+    ['safe', '🐢', L(lang, 'Gentle', 'Prudent', 'متأنٍّ'), 10, L(lang, 'Comfort first, a cushion that grows slowly', 'Le confort d’abord, un matelas qui grandit doucement', 'الراحة أولا')],
+    ['bal', '⚖️', L(lang, 'Balanced', 'Équilibré', 'متوازن'), 20, L(lang, 'The 50/30/20 rule, the recommended one', 'La règle 50/30/20, celle qu’on conseille', 'قاعدة 50/30/20')],
+    ['amb', '🚀', L(lang, 'Ambitious', 'Ambitieux', 'طموح'), 30, L(lang, 'A project fast: house, car, Hajj', 'Un projet vite : maison, voiture, Hajj', 'مشروع بسرعة')],
+  ]
+  const [scen, setScen] = useState<Record<string, boolean>>({})
+  const outB = m.env.outings ?? Math.round(inc * 0.05); const foodB = m.env.food ?? 0
+  const SCEN: [string, string, string, number][] = ([
+    ['resto', '🍽️', L(lang, 'One restaurant less per week, cooked with KUZINTI instead', 'Un restaurant de moins par semaine, cuisiné avec KUZINTI', 'مطعم أقل أسبوعيا'), Math.round(Math.max(outB * 0.25, 120))],
+    ['store', '🏪', L(lang, 'Groceries at the cheapest store (≈ −12 %)', 'Courses au magasin le moins cher (≈ −12 %)', 'أرخص متجر'), Math.round(foodB * 0.12)],
+    ['phone', '📱', L(lang, 'Renegotiate phone and internet', 'Renégocier téléphone et internet', 'إعادة التفاوض على الهاتف'), Math.round(Math.max(60, (m.fix.phone ?? 0) * 0.25))],
+    ['subs', '📺', L(lang, 'Cancel one unused subscription', 'Résilier un abonnement inutilisé', 'إلغاء اشتراك'), 70],
+    ['walk', '🚶', L(lang, 'Two short trips a week on foot or by tram', 'Deux petits trajets par semaine à pied ou en tram', 'تنقلات مشيا'), 100],
+  ] as [string, string, string, number][]).filter((x) => x[3] > 0)
+  const scenGain = SCEN.filter(([k]) => scen[k]).reduce((a, x) => a + x[3], 0)
   const cushionLeft = Math.max(0, essentials * 3 - (m.goal?.saved ?? 0))
   const pockets: [string, string, number, string][] = cushionLeft > 0
     ? [['🛟', L(lang, 'Safety cushion', 'Matelas de sécurité', 'احتياطي'), 0.6, C.need], ['🎯', m.goal?.n || L(lang, 'Project', 'Projet', 'مشروع'), 0.25, C.want], ['🎉', L(lang, 'Aïd, holidays, gifts', 'Aïd, vacances, cadeaux', 'العيد والعطل'), 0.15, C.save]]
@@ -214,6 +230,10 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
         </ul>
       </section>
       <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => setAdd(true)}><Plus size={20} aria-hidden /> {L(lang, 'Add an expense', 'Ajouter une dépense', 'إضافة مصروف')}</button>
+      {inc > 0 && mon === now && <section className="grid grid-cols-3 gap-2" aria-label={L(lang, 'How to use it', 'Comment en profiter', 'كيف أستفيد')}>
+        {([['✍️', L(lang, 'Note each expense', 'Je note chaque dépense', 'أسجل كل مصروف'), L(lang, '5 seconds, right after paying', '5 secondes, juste après avoir payé', '5 ثوان بعد الدفع')], ['👀', L(lang, 'Check my day', 'Je regarde mon « par jour »', 'أراقب يومي'), `${money(perDay, lang)} ${L(lang, 'today', 'aujourd’hui', 'اليوم')}`], ['🐷', L(lang, 'Pick a style', 'Je choisis un style', 'أختار أسلوبا'), L(lang, 'Savings run on their own', 'L’épargne part toute seule', 'الادخار تلقائي')]] as [string, string, string][]).map(([e, h, b], i) => (
+          <div key={h} className="rise rounded-[20px] bg-surface p-2.5 shadow-soft" style={{ animationDelay: `${i * 70}ms` }}><span className="float inline-block text-2xl" style={{ animationDelay: `${i * 0.4}s` }}>{e}</span><p className="mt-1 text-[12px] font-bold leading-tight">{i + 1}. {h}</p><p className="mt-0.5 text-[10.5px] leading-tight text-muted">{b}</p></div>))}
+      </section>}
       {inc > 0 && <section aria-label={L(lang, 'Strengths and weak points', 'Points forts et points faibles', 'نقاط القوة والضعف')}>
         <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'My improvement plan', 'Mon plan d’amélioration', 'خطة التحسين')}</h2>{potential > 0 && <span className="rounded-full bg-leaf/30 px-2.5 py-1 text-xs font-bold text-forest tabular-nums">{L(lang, 'up to', 'jusqu’à', 'حتى')} +{money(potential, lang)}/{L(lang, 'mo', 'mois', 'شهر')}</span>}</div>
         {strong.length > 0 && <div className="mb-3 flex flex-wrap gap-2">{strong.map((x) => <span key={x.k} className="inline-flex items-center gap-1.5 rounded-full bg-leaf/25 px-3 py-1.5 text-sm font-semibold text-forest"><Check size={15} aria-hidden /> {x.t} <span className="text-xs font-normal opacity-80">· {x.why}</span></span>)}</div>}
@@ -222,6 +242,27 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
           <div className="min-w-0 flex-1 p-3">{i === 0 && <span className="mb-1 inline-block rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-extrabold uppercase text-danger">{L(lang, 'Priority', 'Priorité', 'أولوية')}</span>}<p className="text-sm font-bold leading-tight">{x.t}</p><p className="text-xs text-muted">{x.why}</p><p className="mt-0.5 text-sm text-ink/80">→ {x.act}</p></div>
           {(x.gain ?? 0) > 0 && <div className="grid shrink-0 place-items-center px-3 text-end"><span><span className="block font-display text-lg font-extrabold tabular-nums text-forest">+{money(x.gain!, lang)}</span><span className="block text-[10px] text-muted">{L(lang, 'per month', 'par mois', 'شهريًا')}</span></span></div>}
         </div>)}</div> : <p className="rounded-2xl bg-leaf/20 p-3 text-sm font-semibold text-forest">🌟 {L(lang, 'No weak point: keep it up and raise your savings.', 'Aucun point faible : continuez et augmentez votre épargne.', 'لا نقاط ضعف')}</p>}
+      </section>}
+
+      {inc > 0 && <section aria-label={L(lang, 'Savings styles', 'Styles d’épargne', 'أساليب الادخار')}>
+        <h2 className="font-serif text-[20px] font-semibold">{L(lang, 'My savings style', 'Mon style d’épargne', 'أسلوب ادخاري')}</h2>
+        <p className="mb-3 text-sm text-muted">{L(lang, 'Three ways to save. Tap one to see what it changes for you.', 'Trois façons d’épargner. Touchez-en une pour voir ce que ça change pour vous.', 'ثلاث طرق للادخار.')}</p>
+        <div className="grid grid-cols-3 gap-2">{STYLES.map(([k, e, n, r, d]) => { const on = rate === r; const a = Math.round((inc * r) / 100); return (
+          <button key={k} className={`rounded-[20px] p-2.5 text-start transition-all duration-300 active:scale-95 ${on ? 'bg-forest text-white shadow-lift' : 'bg-surface shadow-soft'}`} onClick={() => setRate(r)} aria-pressed={on}>
+            <span className={`inline-block text-2xl ${on ? 'pop' : ''}`}>{e}</span><b className="block text-[13.5px] leading-tight">{n}</b>
+            <span className={`block text-[11px] ${on ? 'text-white/80' : 'text-muted'}`}>{r} % · {money(a, lang)}</span>
+            <span className={`mt-1 block text-[10.5px] leading-tight ${on ? 'text-white/85' : 'text-muted'}`}>{d}</span></button>) })}</div>
+        <div key={rate} className="fade-up mt-3 grid grid-cols-3 gap-2 rounded-[20px] bg-cream/80 p-3 text-center tabular-nums">
+          <div><p className="text-[10.5px] font-bold uppercase text-muted">{L(lang, 'Saved / month', 'Épargné / mois', 'شهريا')}</p><b className="text-[15px]" style={{ color: C.save }}>{money(amt, lang)}</b></div>
+          <div><p className="text-[10.5px] font-bold uppercase text-muted">{L(lang, 'To live / day', 'Pour vivre / jour', 'للعيش يوميا')}</p><b className="text-[15px] text-forest">{money(Math.max(0, inc - fix - amt) / 30, lang)}</b></div>
+          <div><p className="text-[10.5px] font-bold uppercase text-muted">{L(lang, 'In 1 year', 'Dans 1 an', 'بعد سنة')}</p><b className="text-[15px] text-ink">{money((m.goal?.saved ?? 0) + amt * 12 + scenGain * 12, lang)}</b></div>
+        </div>
+        <h3 className="mb-2 mt-4 text-sm font-extrabold">🔮 {L(lang, 'What if…', 'Et si…', 'ماذا لو…')} <span className="font-normal text-muted">{L(lang, 'tick a scenario', 'cochez un scénario', 'اختر سيناريو')}</span></h3>
+        <div className="space-y-2">{SCEN.map(([k, e, n, g]) => { const on = !!scen[k]; return (
+          <button key={k} className={`flex w-full items-center gap-3 rounded-2xl p-2.5 text-start transition-all duration-300 active:scale-[.98] ${on ? 'bg-leaf/30 ring-2 ring-forest/40' : 'bg-surface shadow-soft'}`} onClick={() => setScen({ ...scen, [k]: !on })} aria-pressed={on}>
+            <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-xl ${on ? 'bg-forest/10' : 'bg-cream'}`}>{e}</span><span className="min-w-0 flex-1 text-[13px] font-semibold leading-tight">{n}</span>
+            <b className="shrink-0 text-sm tabular-nums text-forest">+{money(g, lang)}<span className="text-[10px] font-normal text-muted">/{L(lang, 'mo', 'mois', 'شهر')}</span></b></button>) })}</div>
+        {scenGain > 0 && <p className="fade-up mt-3 rounded-2xl bg-forest p-3 text-sm font-semibold text-white">✨ {L(lang, `With these changes you save ${money(amt + scenGain, lang)} a month, or ${money((amt + scenGain) * 12, lang)} in a year.`, `Avec ces changements vous épargnez ${money(amt + scenGain, lang)} par mois, soit ${money((amt + scenGain) * 12, lang)} en un an.`, `توفر ${money(amt + scenGain, lang)} شهريا.`)}{m.goal?.target ? ' ' + L(lang, `Goal reached in ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / Math.max(1, amt + scenGain))} months instead of ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / Math.max(1, amt))}.`, `Objectif atteint en ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / Math.max(1, amt + scenGain))} mois au lieu de ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / Math.max(1, amt))}.`, '') : ''}</p>}
       </section>}
 
       {inc > 0 && <section className="rounded-[24px] bg-surface p-4 shadow-soft">

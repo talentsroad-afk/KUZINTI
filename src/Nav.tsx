@@ -1,5 +1,6 @@
+import { zf } from './lib/zgh'
 import { useState } from 'react'
-import { BookOpen, CalendarDays, Home, LayoutGrid, MapPinned, ShoppingBasket, ShoppingCart, Store, UserRound, Wallet, type LucideIcon } from 'lucide-react'
+import { Dumbbell, BookOpen, CalendarDays, Home, LayoutGrid, MapPinned, ShoppingBasket, ShoppingCart, Store, UserRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useApp } from './lib/store'
 import { t, type Lang } from './lib/i18n'
 import { LANG_LABEL } from './lib/i18n'
@@ -7,11 +8,11 @@ import { Logo, Sheet } from './ui'
 import { cname, countryOf } from './lib/countries'
 import type { Tab } from './Assist'
 
-const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
+const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 type Item = [Tab, LucideIcon, string, string]
 const items = (lang: Lang): { food: Item[]; life: Item[]; me: Item[] } => ({
   food: [['home', Home, t('tHome', lang), L(lang, 'Today, ideas', 'Aujourd’hui, idées', 'اليوم')], ['week', CalendarDays, t('tWeek', lang), L(lang, 'Your 7 days of meals', 'Vos 7 jours de repas', 'وجبات الأسبوع')], ['recipes', BookOpen, t('tRecipes', lang), L(lang, 'Browse and favourites', 'Parcourir et favoris', 'تصفح')], ['list', ShoppingBasket, t('list', lang), L(lang, 'The list, by aisle', 'La liste, par rayon', 'القائمة')], ['stores', Store, t('tStores', lang), L(lang, 'Compare prices', 'Comparer les prix', 'قارن الأسعار')]],
-  life: [['sorties', MapPinned, t('tSorties', lang), L(lang, 'Outings and deals', 'Idées et bons plans', 'نزهات')], ['budget', Wallet, t('tBudget', lang), L(lang, 'Left to live on, savings', 'Reste à vivre, épargne', 'الميزانية')]],
+  life: [['sorties', MapPinned, t('tSorties', lang), L(lang, 'Outings and deals', 'Idées et bons plans', 'نزهات')], ['budget', Wallet, t('tBudget', lang), L(lang, 'Left to live on, savings', 'Reste à vivre, épargne', 'الميزانية')], ['sport', Dumbbell, t('tSport', lang), L(lang, 'Needs, meals, weight', 'Besoins, repas, poids', 'احتياجات ووجبات')]],
   me: [['profile', UserRound, t('profile', lang), L(lang, 'Household, settings', 'Foyer, réglages', 'الأسرة')]],
 })
 const isOn = (tab: Tab, k: Tab) => tab === k

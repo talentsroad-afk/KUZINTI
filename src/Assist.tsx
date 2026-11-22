@@ -5,7 +5,7 @@ import { money, type Lang } from './lib/i18n'
 import { useBasket } from './Flow'
 import { Sheet } from './ui'
 
-export type Tab = 'home' | 'recipes' | 'week' | 'list' | 'stores' | 'profile' | 'sorties' | 'budget'
+export type Tab = 'home' | 'recipes' | 'week' | 'list' | 'stores' | 'profile' | 'sorties' | 'budget' | 'sport'
 const L = (lang: Lang, fr: string, en: string) => (lang === 'en' ? en : fr)
 const ls = { get: (k: string) => { try { return localStorage.getItem(k) } catch { return null } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* private mode */ } } }
 
@@ -20,6 +20,7 @@ export function pageInfo(tab: Tab, lang: Lang): { name: string; what: string; wh
     sorties: ['Sorties', 'Outings', 'Choisis la ville et la période, puis un seul bouton. Le 💡 bon plan te fait payer moins.', 'Pick the city and when, then one button. The 💡 deal makes it cheaper.', 'Des activités réelles dans ta ville, partagées avec ton foyer. Prix indicatifs.', 'Real activities in your city, shared with your household. Indicative prices.'],
     budget: ['Budget', 'Budget', 'Vos revenus, charges et enveloppes du mois. Ajoutez une dépense en un geste ; les courses KUZINTI s’ajoutent seules.', 'Your income, charges and envelopes. Add an expense in one tap; KUZINTI shopping is added automatically.', 'Savoir chaque jour combien il reste, et où économiser.', 'Know every day what is left and where to save.'],
     profile: ['Profil', 'Profile', 'Ton code foyer pour inviter quelqu’un, ton garde-manger et ton activité.', 'Your household code to invite someone, your pantry and activity.', 'Partage le code : vous verrez la même semaine et la même liste.', 'Share the code: you will both see the same week and list.'],
+    sport: ['Sport', 'Sport', 'Choisis ton sport et ton objectif : tu vois tes besoins du jour et les repas qui vont avec.', 'Pick your sport and goal: see your daily needs and matching meals.', '« Appliquer à ma semaine » adapte tous tes repas.', '“Apply to my week” adapts all your meals.'],
   }
   const p = P[tab]; return lang === 'en' ? { name: p[1], what: p[3], why: p[5] } : { name: p[0], what: p[2], why: p[4] }
 }
