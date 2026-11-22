@@ -7,7 +7,7 @@ import { useApp } from './lib/store'
 import type { Lang } from './lib/i18n'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
-export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number; kcalO?: number; protO?: number; ok?: boolean; lvl?: 'beg' | 'mid' | 'adv' }
+export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number; kcalO?: number; protO?: number; ok?: boolean; sw?: Record<string, number>; lvl?: 'beg' | 'mid' | 'adv' }
 const DEF: SportProfile = { sex: 'm', age: 30, h: 175, w: 75, sport: 'gym', goal: 'fit', days: 3 }
 
 const SPORTS: [string, string, string, string, string][] = [
@@ -57,6 +57,19 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
     : p.w > n.hi && p.goal !== 'bulk' ? L(lang, `Above the range: ${n.hi} kg is a good target, about −0.5 kg a week.`, `Au-dessus de la zone : ${n.hi} kg est une bonne cible, environ −0,5 kg par semaine.`, `أعلى من النطاق`)
     : L(lang, 'You are in the healthy range. Keep it and work on the muscle.', 'Vous êtes dans la zone santé. Gardez-la et travaillez le muscle.', 'أنت في النطاق الصحي')
   const pct = Math.min(100, Math.max(0, ((p.w - (n.lo - 10)) / (n.hi + 10 - (n.lo - 10))) * 100))
+  if (!p.ok) return (
+    <div className="stagger space-y-4 pb-4"><section className="rounded-[24px] bg-surface p-4 shadow-soft">
+      <p className="text-[12px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'Your profile · 10 seconds', 'Votre profil · 10 secondes', 'ملفك · 10 ثوان')}</p>
+      <p className="mt-1 text-sm text-muted">{L(lang, 'Asked once. It sizes your calories, your protein and your plan.', 'Demandé une seule fois. Cela règle vos calories, vos protéines et votre plan.', 'يُطلب مرة واحدة.')}</p>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="col-span-2 flex rounded-full bg-cream p-1">{(['f', 'm'] as const).map((x) => <button key={x} className={`flex-1 rounded-full py-1.5 text-sm font-bold transition ${p.sex === x ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => set({ sex: x })}>{x === 'f' ? L(lang, 'Woman', 'Femme', 'امرأة') : L(lang, 'Man', 'Homme', 'رجل')}</button>)}</div>
+        <Num v={p.w} set={(w) => set({ w })} min={35} max={180} unit="kg" label={L(lang, 'Weight', 'Poids', 'الوزن')} />
+        <Num v={p.h} set={(h) => set({ h })} min={140} max={215} unit="cm" label={L(lang, 'Height', 'Taille', 'الطول')} />
+        <Num v={p.age} set={(age) => set({ age })} min={14} max={90} unit={L(lang, 'yrs', 'ans', 'سنة')} label={L(lang, 'Age', 'Âge', 'العمر')} />
+        <Num v={p.days} set={(days) => set({ days })} min={0} max={7} unit={L(lang, '/wk', '/sem', '/أسبوع')} label={L(lang, 'Sessions', 'Séances', 'حصص')} />
+      </div>
+      <button className="btn btn-primary mt-4 w-full !min-h-14" onClick={() => set({ ok: true })}>{L(lang, 'Continue', 'Continuer', 'متابعة')}</button>
+    </section></div>)
   return (
     <div className="stagger space-y-4 pb-4">
       {p.age < 18 && p.goal === 'cut' && <p className="rounded-2xl bg-apricot/25 px-3 py-2 text-xs font-semibold">{L(lang, 'Under 18: no calorie deficit. Aim for fitness and good habits, and talk to a doctor before changing your weight.', 'Moins de 18 ans : pas de déficit calorique. Visez la forme et les bonnes habitudes, et parlez-en à un médecin avant de changer de poids.', 'أقل من 18 سنة: لا عجز في السعرات.')}</p>}
