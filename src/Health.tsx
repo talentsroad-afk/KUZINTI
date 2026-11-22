@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Share2, RefreshCw, Play, Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, ShoppingBasket, Soup, Sun, Sunrise, type LucideIcon } from 'lucide-react'
 import type { Lang } from './lib/i18n'
 import { Sheet } from './ui'
@@ -17,7 +17,7 @@ const BRK: M[] = [
   ['Yaourt grec, granola, fruits rouges, miel', 'Greek yoghurt, granola, berries, honey', 430, 28, [['Yaourt grec', 250, 'g'], ['Granola', 40, 'g'], ['Fruits rouges', 100, 'g'], ['Miel', 10, 'g']]],
   ['Pancakes avoine-banane-œufs', 'Oat-banana-egg pancakes', 450, 25, [['Flocons d’avoine', 50, 'g'], ['Œufs', 2, 'pc'], ['Banane', 1, 'pc'], ['Fromage blanc', 100, 'g']]],
   ['Œufs brouillés tomate, pain complet', 'Scrambled eggs with tomato, wholegrain bread', 440, 24, [['Œufs', 3, 'pc'], ['Tomates', 150, 'g'], ['Pain complet', 60, 'g'], ['Huile d’olive', 5, 'ml']]],
-  ['Bissara, huile d’olive, pain complet', 'Split-pea soup, olive oil, wholegrain bread', 430, 22, [['Bissara', 300, 'ml'], ['Huile d’olive', 10, 'ml'], ['Pain complet', 60, 'g']]],
+  ['Wrap œufs et fromage blanc', 'Egg and quark wrap', 450, 30, [['Tortilla complète', 1, 'pc'], ['Œufs', 2, 'pc'], ['Fromage blanc', 100, 'g'], ['Huile d’olive', 5, 'ml']]],
   ['Fromage blanc, flocons d’avoine, dattes, amandes', 'Quark, oats, dates, almonds', 470, 30, [['Fromage blanc', 200, 'g'], ['Flocons d’avoine', 40, 'g'], ['Dattes', 3, 'pc'], ['Amandes', 15, 'g']]],
   ['Smoothie banane, lait, avoine, cacahuète', 'Banana, milk, oat and peanut smoothie', 480, 22, [['Lait', 300, 'ml'], ['Banane', 1, 'pc'], ['Flocons d’avoine', 40, 'g'], ['Beurre de cacahuète', 15, 'g']]],
 ]
@@ -27,10 +27,10 @@ const LUN: M[] = [
   ['Bowl lentilles, feta, crudités', 'Lentil bowl, feta, raw veg', 560, 30, [['Lentilles cuites', 200, 'g'], ['Feta', 40, 'g'], ['Crudités', 150, 'g'], ['Huile d’olive', 10, 'ml']]],
   ['Wrap thon, houmous, crudités', 'Tuna wrap, hummus, raw veg', 540, 38, [['Tortilla complète', 1, 'pc'], ['Thon', 120, 'g'], ['Houmous', 40, 'g'], ['Crudités', 100, 'g']]],
   ['Bœuf 5 %, patate douce, haricots verts', 'Lean beef, sweet potato, green beans', 600, 45, [['Bœuf haché 5 %', 150, 'g'], ['Patate douce', 250, 'g'], ['Haricots verts', 150, 'g']]],
-  ['Sardines grillées, salade marocaine, pain complet', 'Grilled sardines, Moroccan salad, wholegrain bread', 560, 38, [['Sardines', 200, 'g'], ['Salade marocaine', 250, 'g'], ['Pain complet', 60, 'g'], ['Huile d’olive', 10, 'ml']]],
-  ['Harira légère, 2 œufs durs, dattes', 'Light harira, 2 boiled eggs, dates', 520, 32, [['Harira', 400, 'ml'], ['Œufs durs', 2, 'pc'], ['Dattes', 3, 'pc']]],
+  ['Sardines grillées, crudités, pain complet', 'Grilled sardines, raw vegetables, wholegrain bread', 560, 38, [['Sardines', 200, 'g'], ['Crudités', 250, 'g'], ['Pain complet', 60, 'g'], ['Huile d’olive', 10, 'ml']]],
+  ['Soupe de lentilles, 2 œufs durs, dattes', 'Lentil soup, 2 boiled eggs, dates', 520, 32, [['Lentilles cuites', 150, 'g'], ['Soupe de légumes', 300, 'ml'], ['Œufs durs', 2, 'pc'], ['Dattes', 3, 'pc']]],
   ['Poulet rôti, lentilles, carottes', 'Roast chicken, lentils, carrots', 610, 55, [['Blanc de poulet', 160, 'g'], ['Lentilles cuites', 180, 'g'], ['Carottes', 150, 'g'], ['Huile d’olive', 10, 'ml']]],
-  ['Kefta de bœuf maigre, riz, légumes', 'Lean beef kefta, rice, vegetables', 620, 44, [['Bœuf haché 5 %', 140, 'g'], ['Riz (cru)', 80, 'g'], ['Légumes', 200, 'g']]],
+  ['Steak haché maigre, riz, légumes', 'Lean beef patty, rice, vegetables', 620, 44, [['Bœuf haché 5 %', 140, 'g'], ['Riz (cru)', 80, 'g'], ['Légumes', 200, 'g']]],
 ]
 const DIN: M[] = [
   ['Cabillaud vapeur, légumes, pommes de terre', 'Steamed cod, vegetables, potatoes', 450, 38, [['Cabillaud', 160, 'g'], ['Pommes de terre', 200, 'g'], ['Légumes', 200, 'g']]],
@@ -38,7 +38,7 @@ const DIN: M[] = [
   ['Curry léger de poulet, riz complet', 'Light chicken curry, brown rice', 520, 40, [['Poulet', 140, 'g'], ['Riz complet (cru)', 60, 'g'], ['Lait de coco light', 80, 'ml']]],
   ['Soupe de légumes, œufs durs, fromage blanc', 'Vegetable soup, boiled eggs, quark', 400, 30, [['Soupe de légumes', 400, 'ml'], ['Œufs durs', 2, 'pc'], ['Fromage blanc', 150, 'g']]],
   ['Tofu sauté, nouilles soba, légumes', 'Stir-fried tofu, soba noodles, vegetables', 480, 26, [['Tofu ferme', 150, 'g'], ['Nouilles soba (crues)', 60, 'g'], ['Légumes', 200, 'g']]],
-  ['Tajine de poulet aux légumes, semoule complète', 'Chicken and vegetable tagine, wholegrain semolina', 520, 42, [['Poulet', 150, 'g'], ['Légumes', 250, 'g'], ['Semoule complète (crue)', 50, 'g']]],
+  ['Poulet mijoté aux légumes, riz complet', 'Braised chicken and vegetables, brown rice', 520, 42, [['Poulet', 150, 'g'], ['Légumes', 250, 'g'], ['Riz complet (cru)', 60, 'g']]],
   ['Lentilles aux légumes, œuf poché', 'Lentils with vegetables, poached egg', 450, 28, [['Lentilles cuites', 220, 'g'], ['Légumes', 150, 'g'], ['Œufs', 1, 'pc']]],
   ['Poisson blanc au four, pommes de terre, courgettes', 'Baked white fish, potatoes, courgettes', 460, 40, [['Poisson blanc', 170, 'g'], ['Pommes de terre', 200, 'g'], ['Courgettes', 200, 'g']]],
   ['Salade de pois chiches, thon, œuf', 'Chickpea, tuna and egg salad', 480, 38, [['Pois chiches cuits', 180, 'g'], ['Thon', 100, 'g'], ['Œufs', 1, 'pc'], ['Crudités', 150, 'g']]],
@@ -127,12 +127,14 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
   const sharePlan = async (wk: number) => { const txt = `${L(lang, 'My meal plan', 'Mon plan d’alimentation')} · ${L(lang, 'week', 'semaine')} ${wk + 1}\n\n${planText(wk)}`; try { if (navigator.share) await navigator.share({ text: txt }); else await navigator.clipboard.writeText(txt) } catch { /* cancelled */ } }
   const day = dayPlan(p, wa, d, kcal, lang, am, sw)
   const [shop, setShop] = useState(false)
-  const shopList = () => { const t: Record<string, [number, string]> = {}; for (let i = 0; i < 7; i++) for (const it of dayPlan(p, wa, i, kcal, lang, am, sw).items) for (const [n, q, u] of it.raw ?? []) { t[n] = [(t[n]?.[0] ?? 0) + q, u] } return Object.entries(t).map(([n, [q, u]]) => [n, u === 'pc' ? `${Math.ceil(q)}` : u === 'g' && q >= 1000 ? `${(q / 1000).toFixed(1)} kg` : u === 'ml' && q >= 1000 ? `${(q / 1000).toFixed(1)} L` : `${Math.round(q / 5) * 5} ${u}`] as [string, string]).sort((a, b) => a[0].localeCompare(b[0], lang)) }
-  const shopText = () => `${L(lang, 'Athlete shopping list', 'Courses du sportif')} · ${L(lang, 'week', 'semaine')} ${wa + 1}\n\n` + shopList().map(([n, q]) => `☐ ${n} · ${q}`).join('\n')
+  useEffect(() => { const h = (e: Event) => { const v = (e as CustomEvent<string>).detail; if (v === 'shop') setShop(true); else if (v === 'week' || v === 'month') { setView(v); document.getElementById('sport-plan')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) } }; window.addEventListener('kz-plan', h); return () => window.removeEventListener('kz-plan', h) }, [])
+  const [shopRange, setShopRange] = useState<'week' | 'month'>('week')
+  const shopList = () => { const t: Record<string, [number, string]> = {}; const weeks = shopRange === 'month' ? [0, 1, 2, 3].map((i) => i + blk * 4) : [wa]; for (const wk of weeks) for (let i = 0; i < 7; i++) for (const it of dayPlan(p, wk, i, kcal, lang, am, sw).items) for (const [n, q, u] of it.raw ?? []) { t[n] = [(t[n]?.[0] ?? 0) + q, u] } return Object.entries(t).map(([n, [q, u]]) => [n, u === 'pc' ? `${Math.ceil(q)}` : u === 'g' && q >= 1000 ? `${(q / 1000).toFixed(1)} kg` : u === 'ml' && q >= 1000 ? `${(q / 1000).toFixed(1)} L` : `${Math.round(q / 5) * 5} ${u}`] as [string, string]).sort((a, b) => a[0].localeCompare(b[0], lang)) }
+  const shopText = () => `${L(lang, 'Athlete shopping list', 'Courses du sportif')} · ${shopRange === 'month' ? L(lang, 'month', 'mois') : `${L(lang, 'week', 'semaine')} ${wa + 1}`}\n\n` + shopList().map(([n, q]) => `☐ ${n} · ${q}`).join('\n')
   const shareShop = async () => { try { if (navigator.share) await navigator.share({ text: shopText() }); else await navigator.clipboard.writeText(shopText()) } catch { /* cancelled */ } }
   const perWeek = p.goal === 'cut' ? -0.5 : p.goal === 'bulk' ? 0.25 : 0
   return (
-    <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+    <section id="sport-plan" className="scroll-mt-28 rounded-[24px] bg-surface p-4 shadow-soft">
       <div className="flex items-center justify-between gap-2"><h2 className="whitespace-nowrap font-display text-[17px] font-extrabold">{L(lang, 'My plan', 'Mon programme')}</h2>
         <div className="flex rounded-full bg-cream p-0.5 text-xs font-bold">{(['day', 'week', 'month'] as const).map((v) => <button key={v} onClick={() => setView(v)} className={`rounded-full px-3 py-1.5 transition ${view === v ? 'bg-forest text-white' : 'text-muted'}`}>{{ day: L(lang, 'Day', 'Jour'), week: L(lang, 'Week', 'Semaine'), month: L(lang, 'Month', 'Mois') }[v]}</button>)}</div></div>
       <div className="mt-3 flex rounded-full bg-cream p-1">{(['beg', 'mid', 'adv'] as Lvl[]).map((l) => <button key={l} onClick={() => set({ lvl: l })} className={`flex-1 rounded-full py-1.5 text-[13px] font-bold transition ${(p.lvl ?? 'beg') === l ? 'bg-surface text-forest shadow-soft' : 'text-muted'}`}>{{ beg: L(lang, 'Beginner', 'Débutant'), mid: L(lang, 'Intermediate', 'Intermédiaire'), adv: L(lang, 'Advanced', 'Confirmé') }[l]}</button>)}</div>
@@ -181,7 +183,7 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
           {op && <div className="fade-up mt-2 space-y-1.5">{DN.map((dn, di) => { const x = dayPlan(p, i + blk * 4, di, kcal, lang, am, sw); return <div key={di} className="rounded-xl bg-surface px-3 py-2 text-[12.5px]"><b className="text-forest">{dn}</b> · {x.tk} kcal{x.items.filter((y) => y.slot === 'b' || y.slot === 'l' || y.slot === 'd').map((y, j) => <div key={j} className="mt-1 leading-snug text-ink/80"><span className="inline-block w-12 text-muted">{y.at}</span>{y.title}<div className="ms-12"><Tags ns={y.tags} lang={lang} /></div></div>)}<button className="mt-1 text-xs font-bold text-forest" onClick={() => { setW(i); setD(di); setView('day') }}>{L(lang, 'Change ›', 'Modifier ›')}</button></div> })}</div>}
         </div>) })}</div>}
       <Sheet open={shop} onClose={() => setShop(false)} title={L(lang, 'Athlete shopping list', 'Courses du sportif')}>
-        <p className="mb-2 text-xs text-muted">{L(lang, 'Week', 'Semaine')} {wa + 1} · {L(lang, 'all ingredients of the 7 days, quantities for one person.', 'tous les ingrédients des 7 jours, quantités pour une personne.')}</p>
+        <div className="mb-2 flex rounded-full bg-cream p-1 text-sm font-bold">{(['week', 'month'] as const).map((r) => <button key={r} onClick={() => setShopRange(r)} className={`flex-1 rounded-full py-1.5 ${shopRange === r ? 'bg-forest text-white' : 'text-muted'}`}>{r === 'week' ? `${L(lang, 'Week', 'Semaine')} ${wa + 1}` : L(lang, 'Month (4 weeks)', 'Mois (4 semaines)')}</button>)}</div><p className="mb-2 text-xs text-muted">{L(lang, 'All ingredients, quantities for one person. Sport meals only, whatever your country.', 'Tous les ingrédients, quantités pour une personne. Uniquement des plats sportifs, quel que soit votre pays.')}</p>
         <ul className="divide-y divide-line/60">{shopList().map(([n, q]) => <li key={n} className="flex justify-between gap-2 py-2 text-sm"><span>{n}</span><b className="tabular-nums">{q}</b></li>)}</ul>
         <button className="btn btn-primary mt-3 w-full" onClick={shareShop}><Share2 size={16} className="me-1.5 inline" aria-hidden />{L(lang, 'Share / copy the list', 'Partager / copier la liste')}</button>
       </Sheet>
