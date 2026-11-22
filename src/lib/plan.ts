@@ -15,7 +15,7 @@ const REGION_DISHES: Record<string, string[]> = {
 }
 const WORLD = ['it', 'fr', 'es', 'tr', 'in', 'jp', 'int']
 export const cuisineOf = (r: Recipe) => WORLD.find((c) => r.tags.includes(c)) ?? 'ma'
-const inCuisine = (r: Recipe, c: string) => c === 'mix' ? true : c === 'med' ? ['ma', 'fr', 'it', 'es', 'tr'].includes(cuisineOf(r)) : c === 'hint' ? cuisineOf(r) !== 'ma' && (r.tags.includes('healthy') || r.tags.includes('vegetarian')) : cuisineOf(r) === c || r.tags.includes(c)
+const inCuisine = (r: Recipe, c: string) => c === 'mix' ? true : c === 'int' ? cuisineOf(r) !== 'ma' : c === 'med' ? ['ma', 'fr', 'it', 'es', 'tr'].includes(cuisineOf(r)) : c === 'hint' ? cuisineOf(r) !== 'ma' && (r.tags.includes('healthy') || r.tags.includes('vegetarian')) : cuisineOf(r) === c || r.tags.includes(c)
 export const modeOf = (goals: string[]): Mode => (goals.includes('healthy') ? 'light' : goals.includes('gourmand') ? 'gourmet' : 'balanced')
 export const modeWeight = (mode: Mode, k: number) => mode === 'light' ? (k <= 350 ? 3 : k <= 550 ? 1 : 0.05) : mode === 'balanced' ? (k <= 350 ? 1 : k <= 650 ? 1.6 : k <= 800 ? 0.8 : 0.3) : (k <= 350 ? 0.15 : k <= 650 ? 1 : 3)
 export const listCost = (plan: Plan, pantry: Record<string, number>, extras: Record<string, number>, qty: Record<string, number> = {}) => buildList(plan, pantry, extras, qty).reduce((a, l) => a + l.cost, 0)
@@ -24,7 +24,11 @@ export const listCost = (plan: Plan, pantry: Record<string, number>, extras: Rec
 export function pool(slot: Meal, p: Pick<Prefs, 'cuisine' | 'diet'>): Recipe[] {
   const base = RECIPES.filter((r) => r.m.includes(slot) && (!p.diet.includes('vegetarian') || r.tags.includes('vegetarian')))
   const c = base.filter((r) => inCuisine(r, p.cuisine))
-  return c.length >= 3 ? c : [...c, ...base.filter((r) => !c.includes(r) && (cuisineOf(r) === 'int' || cuisineOf(r) === 'ma'))]
+  if (c.length >= 4 || p.cuisine === 'ma') return c.length ? c : base
+  // Small foreign catalogs: complete with other world dishes first, Moroccan only as a last resort.
+  const world = base.filter((r) => !c.includes(r) && cuisineOf(r) !== 'ma')
+  const mix = [...c, ...world]
+  return mix.length >= 3 ? mix : [...mix, ...base.filter((r) => cuisineOf(r) === 'ma')]
 }
 function weight(r: Recipe, slot: Meal, p: Prefs, used: Record<string, number>) {
   const g = p.goals

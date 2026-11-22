@@ -6,7 +6,7 @@ import { RECIPES } from './data/recipes'
 import { Controls, HomeTab, usePrefs, WeekTab } from './Screens'
 import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
-import { adaptToBudget, adaptToMode, composeWeek, listCost, offMode } from './lib/plan'
+import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost, offMode } from './lib/plan'
 import { RecipesTab } from './Extra'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore } from './lib/stores'
@@ -128,12 +128,13 @@ function Shell() {
   const say = (m: string, u?: [string, () => void]) => { setNote(m); if (u) setUndo(u); setTimeout(() => setNote((x) => (x === m ? null : x)), u ? 8000 : 5000) }
   const snap = (label: string): [string, () => void] => { const prev = JSON.parse(JSON.stringify(h.plan)); const store = h.store; return [label, () => { upHouse((x) => { x.plan = prev; x.store = store }, '↩ ' + label); setUndo(null); setNote(null) }] }
 
-  const compose = () => {
+  const compose = () => composeWith()
+  const composeWith = (o: Partial<Prefs> = {}, stay = false) => {
     const u = snap(t('composeAuto', lang))
-    const next = composeWeek({ ...p, budget: Math.max(0, budget - extraCost) }, h.pantry, h.extras ?? {})
+    const next = composeWeek({ ...p, ...o, budget: Math.max(0, budget - extraCost) }, h.pantry, h.extras ?? {})
     upHouse((x) => { x.plan = next; x.qty = {} }, 'composed the week'); award(15, '✨'); celebrate()
     const c = listCost(next, h.pantry, h.extras ?? {}) + extraCost
-    say(c <= budget ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); setTab('week')
+    say(c <= budget ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); if (!stay) setTab('week')
   }
   const adapt = (b = budget) => {
     const u = snap(t('h_budget', lang))
@@ -186,7 +187,7 @@ function Shell() {
       <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-2">
         <Hint tab={tab} />
         <div key={tab + lang} className="fade-up">
-          {tab === 'home' && <HomeTab compose={compose} go={go} total={total} items={items.length} />}
+          {tab === 'home' && <HomeTab compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} total={total} items={items.length} />}
           {tab === 'week' && <WeekTab compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}

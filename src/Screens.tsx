@@ -94,19 +94,19 @@ export function Controls({ setBudget }: { setBudget: (b: number) => void }) {
 }
 
 /** Home: the one big action, cuisine and goals visible, everything else folded away. */
-export function HomeTab({ compose, go, total, items }: { compose: () => void; go: (t: 'week' | 'list') => void; total: number; items: number }) {
+export function HomeTab({ compose, recompose, go, total, items }: { compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list') => void; total: number; items: number }) {
   const { lang, me, house, patchMe } = useApp()
   const [more, setMore] = useState(false)
   const cuisine = me!.cuisine ?? 'ma'; const region = me!.region ?? 'all'; const goals = me!.goals ?? []
   const plan = house!.plan; const n = Object.keys(plan).length
-  const tg = (g: string) => patchMe({ goals: goals.includes(g) ? goals.filter((x) => x !== g) : [...goals.filter((x) => !(g === 'healthy' && x === 'gourmand') && !(g === 'gourmand' && x === 'healthy')), g] })
+  const tg = (g: string) => { const ng = goals.includes(g) ? goals.filter((x) => x !== g) : [...goals.filter((x) => !(g === 'healthy' && x === 'gourmand') && !(g === 'gourmand' && x === 'healthy')), g]; patchMe({ goals: ng }); recompose({ goals: ng }) }
   return (
     <div className="space-y-4">
       <div className="rise pt-1"><p className="text-sm text-muted">{t('hello', lang)} {me!.name} 👋</p><h1 className="text-[28px] font-extrabold leading-tight text-forest">{t('homeTitle', lang)}</h1></div>
       <div>
         <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-muted">{t('cuisine', lang)}</p>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" data-noswipe>{CUISINES.map((c) => <button key={c} className="chip shrink-0" aria-pressed={cuisine === c} onClick={() => patchMe({ cuisine: c })}>{FLAG[c]} {t('c_' + c, lang)}</button>)}</div>
-        {cuisine === 'ma' && <div className="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 pb-1" data-noswipe>{REGIONS.map((r) => <button key={r} className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${region === r ? 'bg-leaf/40 text-forest' : 'text-muted'}`} onClick={() => patchMe({ region: r })}>{t('r_' + r, lang)}</button>)}</div>}
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1" data-noswipe>{CUISINES.map((c) => <button key={c} className="chip shrink-0" aria-pressed={cuisine === c} onClick={() => { patchMe({ cuisine: c, region: 'all' }); recompose({ cuisine: c, region: 'all' }) }}>{FLAG[c]} {t('c_' + c, lang)}</button>)}</div>
+        {cuisine === 'ma' && <div className="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 pb-1" data-noswipe>{REGIONS.map((r) => <button key={r} className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${region === r ? 'bg-leaf/40 text-forest' : 'text-muted'}`} onClick={() => { patchMe({ region: r }); recompose({ region: r }) }}>{t('r_' + r, lang)}</button>)}</div>}
       </div>
       <div>
         <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-muted">{t('goals', lang)}</p>
