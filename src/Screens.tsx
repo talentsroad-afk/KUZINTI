@@ -213,7 +213,12 @@ export function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => vo
 const STOP = new Set(['de', 'du', 'des', 'au', 'aux', 'à', 'la', 'le', 'les', 'et', 'with', 'and', 'the', 'of', 'en'])
 const short = (n: string) => n.replace(/\s*\(.*\)/, "").split(/[\s,]+/).filter((w) => w && !STOP.has(w.toLowerCase())).slice(0, 2).join(' ')
 
-export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compose: () => void; makeHealthy: () => void; say: (m: string) => void; clear: () => void; toBasket: () => void }) {
+import { useCriteriaLabels } from './Criteria'
+function CriteriaBar({ onClick }: { onClick: () => void }) {
+  const { lang } = useApp(); const labels = useCriteriaLabels()
+  return <button className="flex w-full items-center gap-2 rounded-2xl bg-surface px-3.5 py-2.5 text-start shadow-soft active:scale-[0.99]" onClick={onClick}><span className="min-w-0 flex-1"><b className="block text-[11px] uppercase tracking-wider text-muted">{lang === 'en' ? 'My criteria' : 'Mes critères'}</b><span className="block truncate text-sm font-semibold">{labels.join(' · ')}</span></span><span className="shrink-0 text-sm font-bold text-forest">{lang === 'en' ? 'Change ›' : 'Modifier ›'}</span></button>
+}
+export function WeekTab({ compose, makeHealthy, say, clear, toBasket, openCriteria }: { openCriteria: () => void; compose: () => void; makeHealthy: () => void; say: (m: string) => void; clear: () => void; toBasket: () => void }) {
   const { lang, me, house, upHouse } = useApp()
   const p = usePrefs(); const plan = house!.plan
   const today = (new Date().getDay() + 6) % 7
@@ -248,6 +253,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
   return (
     <div className="space-y-3">
       {me!.showForme && <FormeCard plan={plan} />}
+      <CriteriaBar onClick={openCriteria} />
       <div className="flex items-center gap-2"><div className="flex flex-1 rounded-full bg-surface p-1 shadow-soft">{(['week', 'month'] as const).map((v) => <button key={v} className={`flex-1 rounded-full py-2 text-sm font-bold transition ${view === v ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setView(v)}>{t('v_' + v, lang)}</button>)}</div>
         <button className="grid h-11 w-11 place-items-center rounded-full bg-surface text-forest shadow-soft active:scale-90" onClick={compose} aria-label={t('reshuffle', lang)} title={t('reshuffle', lang)}><Shuffle size={18} aria-hidden /></button>
         <button className="grid h-11 w-11 place-items-center rounded-full bg-surface text-danger shadow-soft active:scale-90" onClick={clear} aria-label={lang === 'en' ? 'Clear' : 'Vider'} title={lang === 'en' ? 'Clear' : 'Vider'}><Ic e="🗑" /></button></div>
