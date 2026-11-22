@@ -104,6 +104,9 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
         <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted"><Users size={14} aria-hidden /> {house!.name} · {house!.members.length} {L(lang, house!.members.length > 1 ? 'members' : 'member', house!.members.length > 1 ? 'membres' : 'membre', 'أعضاء')}</p>
       </header>
 
+      {/* The main action, always at the top */}
+      <button className="rise btn btn-primary w-full !min-h-14 text-[17px] lg:col-span-7" onClick={compose}>{n ? <RefreshCw size={20} aria-hidden /> : <Sparkles size={20} aria-hidden />} {n ? L(lang, 'Recompose my week', 'Recomposer ma semaine', 'إعادة تركيب أسبوعي') : t('composeAuto', lang)}</button>
+
       {/* Quick choices, always visible */}
       <div className="rise -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:col-span-12 lg:mx-0 lg:flex-wrap lg:px-0" data-noswipe>
         {[['MA', '🇲🇦 Maroc'], ['FR', '🇫🇷 France']].map(([c, l]) => <button key={c} className="chip shrink-0" aria-pressed={me!.country === c} onClick={() => setCountry(c)}>{l}</button>)}
@@ -113,7 +116,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
       </div>
 
       {/* The journey: one clear next action */}
-      <section className="rise lg:col-span-7" aria-label={L(lang, 'Your journey', 'Votre parcours', 'مسارك')}>
+      {n > 0 && <section className="rise lg:col-span-7" aria-label={L(lang, 'Your journey', 'Votre parcours', 'مسارك')}>
         <div className="relative overflow-hidden rounded-[28px] bg-forest p-4 text-white sm:p-5">
           <span className="zellige pointer-events-none absolute inset-0 opacity-[.06]" aria-hidden />
           <ol className="relative flex items-center gap-1.5 text-[12px] font-bold">{STEPS.map((x, i) => <li key={x} className="flex flex-1 items-center gap-1.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs transition ${i < stepI ? 'bg-white text-forest' : i === stepI ? 'bg-apricot text-ink ring-4 ring-apricot/30' : 'bg-white/15 text-white/70'}`}>{i < stepI ? '✓' : i + 1}</span><span className={i === stepI ? 'text-white' : 'text-white/65'}>{x}</span>{i < 2 && <span className={`h-0.5 min-w-2 flex-1 rounded ${i < stepI ? 'bg-white' : 'bg-white/20'}`} />}</li>)}</ol>
@@ -122,9 +125,8 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
             <span className="min-w-0 flex-1"><span className="block font-display text-[17px] font-extrabold leading-tight">{act[0]}</span><span className="block truncate text-xs text-muted">{act[1]}</span></span>
             <ArrowRight size={20} className="shrink-0 text-forest rtl:rotate-180" aria-hidden />
           </button>
-          {stepI === 3 && <button className="relative mt-2 w-full py-1.5 text-sm font-semibold text-white/85" onClick={compose}><RefreshCw size={14} className="-mt-0.5 me-1 inline" aria-hidden />{t('newWeek', lang)}</button>}
         </div>
-      </section>
+      </section>}
 
       <button className="rise group flex w-full self-stretch lg:col-span-5 items-center gap-3 rounded-[24px] bg-apricot/25 p-4 text-start transition active:scale-[.98]" onClick={() => setEat(true)}>
         <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-apricot text-ink"><UtensilsCrossed size={22} aria-hidden /></span>
