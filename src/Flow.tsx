@@ -1,4 +1,5 @@
 import { Share2 } from 'lucide-react'
+import { Ic } from './Ic'
 import { Camera, History, ShoppingCart, Store } from './icons'
 import { E3 } from './E3'
 import { CartMode, iconOf, type CartItem } from './Cart'
@@ -148,7 +149,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
         <span className="text-2xl" aria-hidden>→</span>
       </button>}
       <CartMode open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onFinish={finish} />
-      {!store && <button className="card fade-up flex w-full items-center gap-3 border-2 border-apricot p-4 text-start" onClick={goStores}><span className="text-3xl">🏬</span><span className="flex-1"><b className="block font-display">{lang === 'en' ? 'First, pick your store' : 'D’abord, choisis ton magasin'}</b><span className="text-xs text-muted">{lang === 'en' ? 'Your list will use its prices.' : 'Ta liste utilisera ses prix. Compare les magasins en un coup d’œil.'}</span></span><span className="text-xl text-forest">→</span></button>}
+      {!store && <button className="card fade-up flex w-full items-center gap-3 border-2 border-apricot p-4 text-start" onClick={goStores}><span className="text-3xl"><Ic e="🏬" /> </span><span className="flex-1"><b className="block font-display">{lang === 'en' ? 'First, pick your store' : 'D’abord, choisis ton magasin'}</b><span className="text-xs text-muted">{lang === 'en' ? 'Your list will use its prices.' : 'Ta liste utilisera ses prix. Compare les magasins en un coup d’œil.'}</span></span><span className="text-xl text-forest">→</span></button>}
       <div className="card p-4">
         <div className="grid grid-cols-4 gap-1 text-center">
           {([[t('budgetW', lang), budget, 'ink'], [t('taken', lang), spent, 'forest'], [t('toTake', lang), pace - spent, 'ink'], [t('solde', lang), budget - pace, budget - pace < 0 ? 'danger' : 'forest']] as [string, number, string][]).map(([l, v, c]) => (
@@ -167,27 +168,27 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       </div>
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1">
         <div className="flex shrink-0 rounded-full bg-surface p-1 shadow-soft">{([[-1, t('lWeek', lang)], [TODAY, lang === 'en' ? 'Today' : 'Aujourd’hui'], [(TODAY + 1) % 7, lang === 'en' ? 'Tomorrow' : 'Demain']] as [number, string][]).map(([d, l]) => <button key={l} className={`rounded-full px-3 py-1.5 text-xs font-bold ${day === d ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{l}</button>)}</div>
-        <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={saveList}>📌 {lang === 'en' ? 'Save list' : 'Enregistrer'}</button>
+        <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={saveList}><Ic e="📌" /> {lang === 'en' ? 'Save list' : 'Enregistrer'}</button>
         <button className="shrink-0 rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white shadow-soft" onClick={() => setAdding(true)}>＋ {lang === 'en' ? 'Product' : 'Produit'}</button>
         <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setHistOpen(true)}><History size={14} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'My lists' : 'Mes listes'}</button>
         <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}><Camera size={14} className="inline -mt-0.5" aria-hidden /> {t('fridgeS', lang)}</button>
       </div>
       {day >= 0 && <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`chip shrink-0 capitalize ${d === day ? '!bg-forest !text-white' : ''}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 3)}</button>)}</div>}
       <FridgeSheet open={fridge} onClose={() => setFridge(false)} />
-      {!Object.keys(house!.plan).length && !homeRows.length && !custom.length && <div className="card fade-up space-y-3 p-6 text-center"><p className="text-4xl">🛒</p><p className="font-display text-lg font-extrabold">{t('emptyListT', lang)}</p><p className="text-sm text-muted">{t('emptyListD', lang)}</p><button className="btn btn-primary w-full" onClick={compose}>✨ {t('composeAuto', lang)}</button><p className="text-xs text-muted">{t('emptyListOr', lang)}</p></div>}
+      {!Object.keys(house!.plan).length && !homeRows.length && !custom.length && <div className="card fade-up space-y-3 p-6 text-center"><p className="text-4xl"><Ic e="🛒" /> </p><p className="font-display text-lg font-extrabold">{t('emptyListT', lang)}</p><p className="text-sm text-muted">{t('emptyListD', lang)}</p><button className="btn btn-primary w-full" onClick={compose}><Ic e="✨" /> {t('composeAuto', lang)}</button><p className="text-xs text-muted">{t('emptyListOr', lang)}</p></div>}
       <p className="px-1 text-xs text-muted">{done}/{items.length} · {lang === 'en' ? 'Tap to tick · 🗑 to remove' : lang === 'ar' ? 'المس للتأشير · 🗑 للحذف' : 'Touchez pour cocher · 🗑 pour retirer (annulable)'}</p>
-      {gone && <div className="toast fixed inset-x-0 bottom-28 z-40 mx-auto flex w-[min(92vw,420px)] items-center gap-2 rounded-2xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lift" role="status"><span className="flex-1 truncate">🗑 {gone.n}</span><button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={() => { gone.undo(); setGone(null) }}>↩ {t('undo', lang)}</button></div>}
+      {gone && <div className="toast fixed inset-x-0 bottom-28 z-40 mx-auto flex w-[min(92vw,420px)] items-center gap-2 rounded-2xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lift" role="status"><span className="flex-1 truncate"><Ic e="🗑" /> {gone.n}</span><button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={() => { gone.undo(); setGone(null) }}>↩ {t('undo', lang)}</button></div>}
       {groups.map(([a, rows]) => (
         <div key={a} className="card px-4 py-2"><h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>
           <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} q={fmtQty(l.buy, l.ing.base)} sub={`${unitP(l, mul(a))} · ${l.uses.map((u) => useName(u, lang)).join(', ')}`} est={l.cost * mul(a)} line={l} e={iconOf(l.id, a)} />)}</div></div>
       ))}
       <div className="card px-4 py-2">
-        <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted">🏠 {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>
+        <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted"><Ic e="🏠" /> {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>
         {homeOpen && <div className="grid grid-cols-4 gap-1.5 pb-2">{HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return <button key={x.id} className={`rounded-xl border p-1.5 text-center active:scale-95 ${q ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => upHouse((h) => { h.home = { ...(h.home ?? {}), [x.id]: q ? 0 : 1 } })} aria-pressed={q > 0}><div className="text-xl"><E3 e={x.e} /></div><div className="line-clamp-2 text-[10px] font-semibold leading-tight">{x.n[li(lang)]}</div></button> })}</div>}
         <div className="divide-y divide-line/60">{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} e={x.e} name={HOME_BY[x.id].n[li(lang)]} q={`×${x.q}`} sub='' est={x.q * x.p * mul('grocery')} />)}</div>
       </div>
       <div className="card px-4 py-2">
-        <h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">✍️ {t('mine', lang)}</h3>
+        <h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted"><Ic e="✍️" /> {t('mine', lang)}</h3>
         <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} e={c.e ?? '📝'} name={c.name} q={c.qty || undefined} sub={c.note} est={c.price} />)}</div>
         <button className="w-full py-2.5 text-start text-sm font-bold text-forest" onClick={() => setAdding(true)}>＋ {t('addProd', lang)}</button>
       </div>
@@ -203,12 +204,12 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
             <div className="relative mt-1 flex items-center gap-3"><b className="flex-1 font-display text-[32px] font-extrabold tracking-[.18em] tabular-nums">{house!.code}</b>
               <button className="rounded-full bg-white px-4 py-2 text-sm font-bold text-forest active:scale-95" onClick={() => copy(house!.code, lang === 'en' ? 'Code copied' : 'Code copié')}>{lang === 'en' ? 'Copy' : 'Copier'}</button></div>
             <p className="relative mt-1 text-xs text-white/80">{lang === 'en' ? 'Your partner opens KUZINTI, taps “Join with a code” and sees the same list, ticks and prices in real time.' : lang === 'ar' ? 'يفتح شريكك كوزينتي ويدخل هذا الرمز ليرى نفس القائمة مباشرة.' : 'Votre partenaire ouvre KUZINTI, touche « Rejoindre avec un code » et voit la même liste, les cases cochées et les prix en temps réel.'}</p>
-            <button className="relative mt-3 w-full rounded-2xl bg-white/15 py-2.5 text-sm font-bold active:scale-[.98]" onClick={() => { const m = (lang === 'en' ? 'Join my KUZINTI household to share our shopping list: code ' : 'Rejoins mon foyer KUZINTI pour partager notre liste de courses : code ') + house!.code + ' · ' + location.origin; window.open('https://wa.me/?text=' + encodeURIComponent(m), '_blank') }}>💬 {lang === 'en' ? 'Send the code on WhatsApp' : 'Envoyer le code par WhatsApp'}</button>
+            <button className="relative mt-3 w-full rounded-2xl bg-white/15 py-2.5 text-sm font-bold active:scale-[.98]" onClick={() => { const m = (lang === 'en' ? 'Join my KUZINTI household to share our shopping list: code ' : 'Rejoins mon foyer KUZINTI pour partager notre liste de courses : code ') + house!.code + ' · ' + location.origin; window.open('https://wa.me/?text=' + encodeURIComponent(m), '_blank') }}><Ic e="💬" /> {lang === 'en' ? 'Send the code on WhatsApp' : 'Envoyer le code par WhatsApp'}</button>
           </div>
           <p className="text-xs font-bold uppercase tracking-wider text-muted">{lang === 'en' ? 'Or send the list as text' : 'Ou envoyer la liste en texte'}</p>
           <div className="grid grid-cols-3 gap-2">
             {([['💬', 'WhatsApp', () => window.open('https://wa.me/?text=' + encodeURIComponent(shareTxt), '_blank')], ['✉️', 'Mail', () => { location.href = 'mailto:?subject=' + encodeURIComponent('🛒 KUZINTI') + '&body=' + encodeURIComponent(shareTxt) }], ['📋', lang === 'en' ? 'Copy' : 'Copier', () => copy(shareTxt, t('shared', lang))]] as [string, string, () => void][]).map(([e, l, f]) => (
-              <button key={l} className="dash-tile flex flex-col items-center gap-1 rounded-2xl bg-cream py-3 text-sm font-bold active:scale-95" onClick={f}><span className="text-2xl">{e}</span>{l}</button>))}
+              <button key={l} className="dash-tile flex flex-col items-center gap-1 rounded-2xl bg-cream py-3 text-sm font-bold active:scale-95" onClick={f}><span className="text-2xl"><E3 e={e} /></span>{l}</button>))}
           </div>
           {typeof navigator !== 'undefined' && 'share' in navigator && <button className="btn btn-soft w-full" onClick={() => navigator.share({ text: shareTxt }).catch(() => undefined)}>{lang === 'en' ? 'Other apps…' : 'Autres applications…'}</button>}
         </div>}
@@ -223,10 +224,10 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
         </form>}
       </Sheet>
       <Sheet open={histOpen} onClose={() => setHistOpen(false)} title={lang === 'en' ? 'My lists and history' : 'Mes listes et historique'}>
-        {(house!.saved ?? []).length > 0 && <div className="mb-4 space-y-2"><p className="text-xs font-bold uppercase tracking-wider text-muted">📌 {lang === 'en' ? 'Saved lists' : 'Listes enregistrées'}</p>
+        {(house!.saved ?? []).length > 0 && <div className="mb-4 space-y-2"><p className="text-xs font-bold uppercase tracking-wider text-muted"><Ic e="📌" /> {lang === 'en' ? 'Saved lists' : 'Listes enregistrées'}</p>
           {house!.saved!.map((sv, k) => <details key={sv.t} className="rounded-2xl bg-cream/70 p-3"><summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold"><span className="flex-1 capitalize">{sv.label}</span><span className="text-xs font-semibold text-muted">{sv.items.length} · {money(sv.items.reduce((a, x) => a + x.p, 0), lang)}</span></summary>
             <ul className="mt-2 space-y-1 text-sm">{sv.items.map((x, j) => <li key={j} className="flex justify-between gap-2"><span>{x.n} <span className="text-muted">· {x.q}</span></span><span className="tabular-nums">{money2(x.p, lang)}</span></li>)}</ul>
-            <div className="mt-2 flex gap-2"><button className="btn btn-soft !min-h-9 flex-1 !text-xs" onClick={async () => { const txt = [`🛒 ${sv.label}`, ...sv.items.map((x) => `⬜ ${x.n} — ${x.q}`)].join('\n'); try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); toast(t('shared', lang)) } } catch { /* cancelled */ } }}>📤 {lang === 'en' ? 'Share' : 'Partager'}</button><button className="btn btn-soft !min-h-9 !text-xs text-danger" onClick={() => upHouse((h) => { h.saved = (h.saved ?? []).filter((_, i) => i !== k) }, '🗑 liste')}>🗑</button></div>
+            <div className="mt-2 flex gap-2"><button className="btn btn-soft !min-h-9 flex-1 !text-xs" onClick={async () => { const txt = [`🛒 ${sv.label}`, ...sv.items.map((x) => `⬜ ${x.n} — ${x.q}`)].join('\n'); try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); toast(t('shared', lang)) } } catch { /* cancelled */ } }}>📤 {lang === 'en' ? 'Share' : 'Partager'}</button><button className="btn btn-soft !min-h-9 !text-xs text-danger" onClick={() => upHouse((h) => { h.saved = (h.saved ?? []).filter((_, i) => i !== k) }, '🗑 liste')}><Ic e="🗑" /> </button></div>
           </details>)}</div>}
         {!(house!.trips ?? []).length ? <p className="py-6 text-center text-sm text-muted">{lang === 'en' ? 'Your finished shopping trips will appear here, with date, store and total.' : 'Vos courses terminées apparaîtront ici, avec la date, le magasin et le total.'}</p>
           : <div className="space-y-2">{house!.trips!.map((tr) => (
@@ -245,7 +246,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
                 <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{x.name}</span><span className="text-xs text-muted">≈ {m2(x.p, lang)} / {x.u === 'kg' ? 'kg' : x.u === 'bunch' ? (lang === 'en' ? 'bunch' : 'botte') : (lang === 'en' ? 'unit' : 'unité')}</span></span>
                 {n > 0 ? <span className="pop grid h-8 min-w-8 place-items-center rounded-full bg-forest px-2 text-sm font-bold text-white">×{n}</span> : <span className="grid h-8 w-8 place-items-center rounded-full bg-leaf/30 text-lg font-bold text-forest">＋</span>}
               </button>) })}
-            {q.trim() && <button className="flex w-full items-center gap-3 py-3 text-start font-semibold text-forest" onClick={() => { setF({ ...f, name: q.trim() }); setFree(true) }}><span className="grid h-11 w-11 place-items-center rounded-2xl border-2 border-dashed border-line">✍️</span>{lang === 'en' ? `Create “${q.trim()}”` : `Créer « ${q.trim()} »`}</button>}
+            {q.trim() && <button className="flex w-full items-center gap-3 py-3 text-start font-semibold text-forest" onClick={() => { setF({ ...f, name: q.trim() }); setFree(true) }}><span className="grid h-11 w-11 place-items-center rounded-2xl border-2 border-dashed border-line"><Ic e="✍️" /> </span>{lang === 'en' ? `Create “${q.trim()}”` : `Créer « ${q.trim()} »`}</button>}
           </div>
           <button className="btn btn-primary mt-3 w-full" onClick={() => { setAdding(false); setQ('') }}>{t('ok', lang)}</button>
         </div> : <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); saveCustom(); setFree(false); setQ('') }}>
@@ -313,7 +314,7 @@ export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
           </div>
           <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
             <button className="btn btn-primary !min-h-11 !text-sm" onClick={() => { upHouse((h) => { h.store = s.id }); onShop(s.id) }}><ShoppingCart size={16} aria-hidden /> {lang === 'en' ? 'Shop here' : 'Mes courses ici'}</button>
-            <button className="btn btn-soft !min-h-11 !text-sm" onClick={() => setOpen(s.id)}>🧾 {lang === 'en' ? 'Ticket' : 'Ticket'}</button>
+            <button className="btn btn-soft !min-h-11 !text-sm" onClick={() => setOpen(s.id)}><Ic e="🧾" /> {lang === 'en' ? 'Ticket' : 'Ticket'}</button>
           </div>
         </div>
       ))}
@@ -342,7 +343,7 @@ export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
                 <div className="mt-3 h-8 opacity-70" style={{ background: 'repeating-linear-gradient(90deg, rgb(var(--ink)) 0 2px, transparent 2px 4px, rgb(var(--ink)) 4px 5px, transparent 5px 9px)' }} aria-hidden />
               </div>
               <p className="mb-3 text-[11px] text-muted">{t('storesNote', lang)}</p>
-              <div className="grid gap-2"><button className="btn btn-primary" onClick={() => { upHouse((h) => { h.store = st.id }); setOpen(null); onShop(st.id) }}>🏬 {t('shopHere', lang)}</button><button className="btn btn-soft" onClick={() => { upHouse((h) => { h.store = st.id }); setOpen(null) }}>{chosen === st.id ? '✓ ' : ''}{t('chooseStore', lang)}</button></div>
+              <div className="grid gap-2"><button className="btn btn-primary" onClick={() => { upHouse((h) => { h.store = st.id }); setOpen(null); onShop(st.id) }}><Ic e="🏬" /> {t('shopHere', lang)}</button><button className="btn btn-soft" onClick={() => { upHouse((h) => { h.store = st.id }); setOpen(null) }}>{chosen === st.id ? '✓ ' : ''}{t('chooseStore', lang)}</button></div>
             </div>
           )
         })()}

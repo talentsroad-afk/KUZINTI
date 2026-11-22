@@ -1,4 +1,6 @@
 import { zf } from './lib/zgh'
+import { E3 } from './E3'
+import { Ic } from './Ic'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
 import { rname, type Lang } from './lib/i18n'
@@ -92,14 +94,14 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
         <div className="relative mt-1 flex items-end gap-3"><span className="float text-5xl" aria-hidden>{SPORTS.find((x) => x[0] === p.sport)?.[1]}</span>
           <div><b className="font-display text-[40px] font-extrabold leading-none tabular-nums">{n.kcal}</b><span className="ms-1 text-sm">kcal</span><p className="text-sm text-white/80">{g[1]} {g[4][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p></div></div>
         <div className="relative mt-3 grid grid-cols-4 gap-1.5 text-center">{([['🥩', n.prot, 'g', L(lang, 'protein', 'protéines', 'بروتين')], ['🍚', n.carbs, 'g', L(lang, 'carbs', 'glucides', 'نشويات')], ['🥑', n.fat, 'g', L(lang, 'fat', 'lipides', 'دهون')], ['💧', n.water, 'L', L(lang, 'water', 'eau', 'ماء')]] as [string, number, string, string][]).map(([e, v, u, l], i) => (
-          <div key={l} className="rounded-2xl bg-white/12 p-2" style={{ background: 'rgba(255,255,255,.12)' }}><span className="float inline-block text-xl" style={{ animationDelay: `${i * 0.35}s` }}>{e}</span><b className="block text-[15px] tabular-nums">{v}{u}</b><span className="block text-[10px] text-white/75">{l}</span></div>))}</div>
+          <div key={l} className="rounded-2xl bg-white/12 p-2" style={{ background: 'rgba(255,255,255,.12)' }}><span className="float inline-block text-xl" style={{ animationDelay: `${i * 0.35}s` }}><E3 e={e} /></span><b className="block text-[15px] tabular-nums">{v}{u}</b><span className="block text-[10px] text-white/75">{l}</span></div>))}</div>
       </section>
 
       <section className="rounded-[24px] bg-surface p-4 shadow-soft">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My sport', 'Mon sport', 'رياضتي')}</p>
-        <div className="grid grid-cols-3 gap-2">{SPORTS.map(([k, e, en, fr, ar]) => { const on = p.sport === k; return <button key={k} className={`flex items-center gap-2 rounded-[16px] p-2 text-start text-[12.5px] font-bold transition-all duration-300 active:scale-95 ${on ? 'bg-[#2f6fa8] text-white shadow-lift' : 'bg-cream/80'}`} onClick={() => set({ sport: k })} aria-pressed={on}><span className={`text-xl ${on ? 'pop' : ''}`}>{e}</span><span className="truncate">{L(lang, en, fr, ar)}</span></button> })}</div>
+        <div className="grid grid-cols-3 gap-2">{SPORTS.map(([k, e, en, fr, ar]) => { const on = p.sport === k; return <button key={k} className={`flex items-center gap-2 rounded-[16px] p-2 text-start text-[12.5px] font-bold transition-all duration-300 active:scale-95 ${on ? 'bg-[#2f6fa8] text-white shadow-lift' : 'bg-cream/80'}`} onClick={() => set({ sport: k })} aria-pressed={on}><span className={`text-xl ${on ? 'pop' : ''}`}><E3 e={e} /></span><span className="truncate">{L(lang, en, fr, ar)}</span></button> })}</div>
         <p className="mb-2 mt-4 text-[11px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My goal', 'Mon objectif', 'هدفي')}</p>
-        <div className="grid grid-cols-2 gap-2">{GOALS.map(([k, e, , , t, d]) => { const on = p.goal === k; const li = lang === 'en' ? 0 : lang === 'ar' ? 2 : 1; return <button key={k} className={`rounded-[18px] p-2.5 text-start transition-all duration-300 active:scale-95 ${on ? 'bg-forest text-white shadow-lift' : 'bg-cream/80'}`} onClick={() => set({ goal: k })} aria-pressed={on}><span className={`text-2xl ${on ? 'pop inline-block' : ''}`}>{e}</span><b className="block text-[13.5px]">{t[li]}</b><span className={`block text-[11px] leading-tight ${on ? 'text-white/80' : 'text-muted'}`}>{d[li]}</span></button> })}</div>
+        <div className="grid grid-cols-2 gap-2">{GOALS.map(([k, e, , , t, d]) => { const on = p.goal === k; const li = lang === 'en' ? 0 : lang === 'ar' ? 2 : 1; return <button key={k} className={`rounded-[18px] p-2.5 text-start transition-all duration-300 active:scale-95 ${on ? 'bg-forest text-white shadow-lift' : 'bg-cream/80'}`} onClick={() => set({ goal: k })} aria-pressed={on}><span className={`text-2xl ${on ? 'pop inline-block' : ''}`}><E3 e={e} /></span><b className="block text-[13.5px]">{t[li]}</b><span className={`block text-[11px] leading-tight ${on ? 'text-white/80' : 'text-muted'}`}>{d[li]}</span></button> })}</div>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="col-span-2 flex rounded-full bg-cream p-1">{(['f', 'm'] as const).map((s) => <button key={s} className={`flex-1 rounded-full py-1.5 text-sm font-bold transition ${p.sex === s ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => set({ sex: s })}>{s === 'f' ? L(lang, '👩 Woman', '👩 Femme', '👩 امرأة') : L(lang, '👨 Man', '👨 Homme', '👨 رجل')}</button>)}</div>
           <Num v={p.w} set={(w) => set({ w })} min={35} max={180} unit="kg" label={L(lang, 'Weight', 'Poids', 'الوزن')} />
@@ -110,7 +112,7 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
       </section>
 
       <section className="rounded-[24px] bg-surface p-4 shadow-soft">
-        <div className="flex items-baseline justify-between"><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">⚖️ {L(lang, 'Advised weight', 'Poids conseillé', 'الوزن المنصوح')}</p><b className="font-display text-lg tabular-nums text-forest">{n.lo}–{n.hi} kg</b></div>
+        <div className="flex items-baseline justify-between"><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted"><Ic e="⚖️" /> {L(lang, 'Advised weight', 'Poids conseillé', 'الوزن المنصوح')}</p><b className="font-display text-lg tabular-nums text-forest">{n.lo}–{n.hi} kg</b></div>
         <div className="relative mt-3 h-3 rounded-full" style={{ background: 'linear-gradient(90deg,#8fd3ff 0%,#7fc79a 25%,#7fc79a 75%,#ffcf8a 100%)' }}>
           <span className="absolute -top-1.5 grid h-6 w-6 -translate-x-1/2 place-items-center rounded-full bg-ink text-[10px] font-bold text-white shadow-lift transition-all duration-500" style={{ left: `${pct}%` }}>{p.w}</span></div>
         <p className="mt-3 text-sm">{weightMsg}</p>
@@ -121,7 +123,7 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">🎚️ {L(lang, 'Adjust my targets', 'Ajuster mes objectifs', 'ضبط أهدافي')}</p>
         {([['🔥', L(lang, 'Calories', 'Calories', 'سعرات'), n.kcal, n0.kcal, 1200, 4500, 50, 'kcal', (v?: number) => set({ kcalO: v })], ['🥩', L(lang, 'Protein', 'Protéines', 'بروتين'), n.prot, n0.prot, 40, 260, 5, 'g', (v?: number) => set({ protO: v })]] as [string, string, number, number, number, number, number, string, (v?: number) => void][]).map(([e, l, v, rec, mn, mx, st, u, f]) => (
           <div key={l} className="mb-3">
-            <div className="flex items-center gap-2"><span className="text-xl">{e}</span><span className="flex-1 text-sm font-bold">{l}</span>
+            <div className="flex items-center gap-2"><span className="text-xl"><E3 e={e} /></span><span className="flex-1 text-sm font-bold">{l}</span>
               <button className="grid h-8 w-8 place-items-center rounded-full bg-cream font-bold active:scale-90" onClick={() => f(Math.max(mn, v - st))} aria-label="−">−</button>
               <b key={v} className="pop w-20 text-center font-display text-lg tabular-nums">{v} <span className="text-[11px] text-muted">{u}</span></b>
               <button className="grid h-8 w-8 place-items-center rounded-full bg-cream font-bold active:scale-90" onClick={() => f(Math.min(mx, v + st))} aria-label="+">+</button></div>
@@ -131,13 +133,13 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
       </section>
 
       <section>
-        <div className="mb-2 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'My meals today', 'Mes repas du jour', 'وجباتي اليوم')}</h2><button className="text-sm font-bold text-forest" onClick={() => setShift(shift + 1)}>🎲 {L(lang, 'Others', 'Autres', 'أخرى')}</button></div>
+        <div className="mb-2 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'My meals today', 'Mes repas du jour', 'وجباتي اليوم')}</h2><button className="text-sm font-bold text-forest" onClick={() => setShift(shift + 1)}><Ic e="🎲" /> {L(lang, 'Others', 'Autres', 'أخرى')}</button></div>
         <div className="mb-3 space-y-2 rounded-[20px] bg-surface p-3 shadow-soft">{BAR.map(([e, l, v, t, u, c]) => <div key={l}>
           <div className="flex items-baseline justify-between text-xs"><span className="font-bold">{e} {l}</span><span className="tabular-nums"><b>{Math.round(v)}</b> / {t} {u}</span></div>
           <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (v / t) * 100)}%`, background: c }} /></div></div>)}
           <p className={`rounded-xl px-2.5 py-1.5 text-[11.5px] font-semibold ${Math.abs(gapK) < n.kcal * 0.08 && gapP < 10 ? 'bg-leaf/25 text-forest' : 'bg-apricot/20'}`}>{Math.abs(gapK) < n.kcal * 0.08 && gapP < 10 ? L(lang, '✅ Right on target today.', '✅ Pile dans l’objectif aujourd’hui.', '✅ في الهدف') : `${gapK > 0 ? L(lang, `🔥 ${Math.round(gapK)} kcal missing`, `🔥 Il manque ${Math.round(gapK)} kcal`, `ينقص ${Math.round(gapK)}`) : L(lang, `🔥 ${Math.round(-gapK)} kcal over`, `🔥 ${Math.round(-gapK)} kcal en trop`, `زيادة ${Math.round(-gapK)}`)}${gapP > 0 ? ' · ' + L(lang, `🥩 ${Math.round(gapP)} g protein missing`, `🥩 il manque ${Math.round(gapP)} g de protéines`, `ينقص ${Math.round(gapP)} غ`) : ''}`}</p>
           {(gapK > 80 || gapP > 8) && <div><p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted">{L(lang, 'My suggestions to fill the gap', 'Mes propositions pour combler', 'اقتراحاتي')}</p>
-            <div className="grid grid-cols-2 gap-1.5">{ranked.map(([k, e, l, kc, pr]) => <button key={k} className="flex items-center gap-2 rounded-2xl bg-cream/80 p-2 text-start active:scale-95" onClick={() => setAdd([...add, k])}><span className="text-xl">{e}</span><span className="min-w-0"><b className="block truncate text-[12px]">{l}</b><span className="text-[10.5px] text-muted">+{kc} kcal · +{pr} g</span></span><span className="ms-auto text-forest">＋</span></button>)}</div></div>}
+            <div className="grid grid-cols-2 gap-1.5">{ranked.map(([k, e, l, kc, pr]) => <button key={k} className="flex items-center gap-2 rounded-2xl bg-cream/80 p-2 text-start active:scale-95" onClick={() => setAdd([...add, k])}><span className="text-xl"><E3 e={e} /></span><span className="min-w-0"><b className="block truncate text-[12px]">{l}</b><span className="text-[10.5px] text-muted">+{kc} kcal · +{pr} g</span></span><span className="ms-auto text-forest">＋</span></button>)}</div></div>}
           {add.length > 0 && <div className="flex flex-wrap gap-1.5">{ADD.filter((x) => add.includes(x[0])).map(([k, e, l]) => <button key={k} className="pop rounded-full bg-forest px-2.5 py-1 text-[11px] font-bold text-white" onClick={() => setAdd(add.filter((y) => y !== k))}>{e} {l} ✕</button>)}</div>}
         </div>
         <div className="space-y-2">{day.map(({ s, e, lab, target, x }) => x && (
@@ -145,14 +147,14 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
             <Dish r={x.r} w={200} className="h-16 w-16 shrink-0 rounded-2xl" />
             <span className="min-w-0 flex-1"><span className="block text-[10.5px] font-bold uppercase tracking-wide text-muted">{e} {lab[lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]} · {L(lang, 'target', 'cible', 'الهدف')} {Math.round(target)} kcal</span>
               <span className="block truncate font-semibold">{rname(x.r.n, lang)}</span>
-              <span className="mt-0.5 flex gap-1.5 text-[11px] font-bold"><span className="rounded-full bg-apricot/30 px-2 py-0.5">🔥 {Math.round(x.k)}</span><span className="rounded-full bg-[#e2574c]/15 px-2 py-0.5">🥩 {Math.round(x.pr)} g</span></span></span>
+              <span className="mt-0.5 flex gap-1.5 text-[11px] font-bold"><span className="rounded-full bg-apricot/30 px-2 py-0.5"><Ic e="🔥" /> {Math.round(x.k)}</span><span className="rounded-full bg-[#e2574c]/15 px-2 py-0.5">🥩 {Math.round(x.pr)} g</span></span></span>
           </button>))}</div>
         <div className="mt-3 rounded-[20px] bg-cream/80 p-3 text-[12px] leading-relaxed">
-          <p>⏱️ <b>{L(lang, 'Before training', 'Avant la séance', 'قبل التمرين')}</b> · {L(lang, 'banana, dates or bread with honey, 1 h before', 'banane, dattes ou pain au miel, 1 h avant', 'موز أو تمر قبل ساعة')}</p>
+          <p><Ic e="⏱️" /> <b>{L(lang, 'Before training', 'Avant la séance', 'قبل التمرين')}</b> · {L(lang, 'banana, dates or bread with honey, 1 h before', 'banane, dattes ou pain au miel, 1 h avant', 'موز أو تمر قبل ساعة')}</p>
           <p>🔁 <b>{L(lang, 'After', 'Après', 'بعد')}</b> · {L(lang, 'protein within 2 h: eggs, yogurt, tuna, chicken', 'des protéines dans les 2 h : œufs, yaourt, thon, poulet', 'بروتين خلال ساعتين')}</p>
-          <p>💧 <b>{n.water} L</b> {L(lang, 'of water a day, more on training days', 'd’eau par jour, plus les jours d’entraînement', 'ماء يوميا')}</p>
+          <p><Ic e="💧" /> <b>{n.water} L</b> {L(lang, 'of water a day, more on training days', 'd’eau par jour, plus les jours d’entraînement', 'ماء يوميا')}</p>
         </div>
-        <button className="btn btn-primary mt-3 w-full !min-h-14" onClick={() => apply(n.kcal)}>✨ {L(lang, `Apply ${n.kcal} kcal to my week`, `Appliquer ${n.kcal} kcal à ma semaine`, `تطبيق ${n.kcal} على أسبوعي`)}</button>
+        <button className="btn btn-primary mt-3 w-full !min-h-14" onClick={() => apply(n.kcal)}><Ic e="✨" /> {L(lang, `Apply ${n.kcal} kcal to my week`, `Appliquer ${n.kcal} kcal à ma semaine`, `تطبيق ${n.kcal} على أسبوعي`)}</button>
         <p className="mt-2 text-center text-[10.5px] text-muted">{L(lang, 'Estimates for healthy adults. Pregnancy, illness or a competition: ask a doctor or a coach.', 'Estimations pour adultes en bonne santé. Grossesse, maladie ou compétition : demandez l’avis d’un médecin ou d’un coach.', 'تقديرات للبالغين الأصحاء.')}</p>
       </section>
       {rv && <RecipeSheet r={rv} onClose={() => setRv(null)} />}

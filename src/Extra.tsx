@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Ic } from './Ic'
 import { useApp } from './lib/store'
 import { rname, t, type Lang } from './lib/i18n'
 import { RECIPES, type Meal, type Recipe } from './data/recipes'
@@ -39,7 +40,7 @@ export function RecipesTab({ say }: { say: (m: string) => void }) {
           <div key={r.id} className="card overflow-hidden">
             <button className="block w-full text-start" onClick={() => setView(r)}>
               <FoodTile r={r} className="h-28" />
-              <div className="p-2.5"><p className="line-clamp-2 text-sm font-bold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-[11px] text-muted">⏱ {r.t} min · {Math.round(kcalPerServing(r.id))} kcal</p></div>
+              <div className="p-2.5"><p className="line-clamp-2 text-sm font-bold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-[11px] text-muted"><Ic e="⏱" /> {r.t} min · {Math.round(kcalPerServing(r.id))} kcal</p></div>
             </button>
             <div className="flex items-center justify-between px-2.5 pb-2.5">
               <button className="text-xl" aria-pressed={on} aria-label="favorite" onClick={() => fav(r)}>{on ? '❤️' : '🤍'}</button>
@@ -68,7 +69,7 @@ export function FridgeSheet({ open, onClose }: { open: boolean; onClose: () => v
   return (
     <Sheet open={open} onClose={onClose} title={`📸 ${t('fridge', lang)}`}>
       <label className="relative block cursor-pointer overflow-hidden rounded-3xl bg-cream">
-        {img ? <img src={img} alt="" className="h-48 w-full object-cover" /> : <div className="grid h-40 place-items-center text-center text-muted"><span className="text-4xl">📷</span><span className="text-sm font-semibold">{t('fridgeShot', lang)}</span></div>}
+        {img ? <img src={img} alt="" className="h-48 w-full object-cover" /> : <div className="grid h-40 place-items-center text-center text-muted"><span className="text-4xl"><Ic e="📷" /> </span><span className="text-sm font-semibold">{t('fridgeShot', lang)}</span></div>}
         <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setImg(URL.createObjectURL(file)) }} />
       </label>
       <p className="mt-3 text-sm font-semibold">{t('fridgeHave', lang)}</p>

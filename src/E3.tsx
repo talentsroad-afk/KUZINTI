@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Ic, hasIc } from './Ic'
 
 /** Fluent Emoji 3D (Microsoft, MIT) served from public npm mirrors; the plain emoji stays visible until the 3D image has loaded, and if it never does. */
 // Google Noto animated emoji (CC BY 4.0) for the few that exist animated; Fluent 3D for everything else.
@@ -11,6 +12,7 @@ const ok = new Set<string>()
 export function E3({ e, className = '' }: { e: string; className?: string }) {
   const cp = cpOf(e); const anim = ANIM.has(cp) && !animBad; const [h, setH] = useState(anim ? -1 : host); const [loaded, setLoaded] = useState(ok.has(e))
   if (!e) return null
+  if (hasIc(e)) return <span className={`inline-grid place-items-center leading-none ${className}`} style={{ width: '1.15em', height: '1.15em' }} aria-hidden><Ic e={e} size="1em" /></span>
   const off = h >= HOSTS.length || fails > 24
   return (
     <span className={`relative inline-grid place-items-center leading-none ${className}`} style={{ width: '1.15em', height: '1.15em' }} role="img" aria-hidden>

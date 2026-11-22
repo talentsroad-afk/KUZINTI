@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Ic } from './Ic'
 import { E3 } from './E3'
 import { StoreLogo } from './Flow'
 import { createPortal } from 'react-dom'
@@ -46,9 +47,9 @@ export function BasketStory({ open, lines, onClose, go }: { open: boolean; lines
           <div className="flex items-center gap-3"><span className="pop grid h-14 w-14 place-items-center rounded-2xl bg-leaf/40 text-3xl">👫</span><div><p className="text-[11px] font-bold uppercase tracking-[.16em] text-terracotta">2/2 · {L(lang, 'Shop together', 'Faire les courses à deux', 'التسوق معا')}</p><p className="font-display text-xl font-extrabold">{L(lang, 'Split the list live', 'Partagez la liste en direct', 'شارك القائمة مباشرة')}</p></div></div>
           <div className="rounded-[22px] bg-cream p-4 text-center"><p className="text-xs font-semibold text-muted">{L(lang, 'Household code for your partner', 'Code du foyer pour votre partenaire', 'رمز الأسرة')}</p><p className="font-display text-[30px] font-extrabold tracking-[.18em]">{house.code}</p>
             <p className="text-xs text-muted">{L(lang, 'Each of you ticks in the store: the other sees it instantly.', 'Chacun coche en rayon : l’autre le voit tout de suite.', 'كل واحد يؤشر والآخر يرى فورا.')}</p>
-            <p className="mt-1 text-xs font-semibold text-forest">👥 {house.members.length} {L(lang, house.members.length > 1 ? 'members connected' : 'member for now', house.members.length > 1 ? 'membres connectés' : 'membre pour l’instant', 'أعضاء')}</p></div>
-          <div className="grid grid-cols-2 gap-2"><button className="btn btn-soft !min-h-12" onClick={share}>💬 WhatsApp</button><button className="btn btn-soft !min-h-12" onClick={() => { try { navigator.clipboard.writeText(house.code) } catch { /* ignore */ } }}>📋 {L(lang, 'Copy', 'Copier', 'نسخ')}</button></div>
-          <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => { onClose(); go('list') }}>🛒 {L(lang, 'Start shopping', 'Commencer les courses', 'ابدأ التسوق')} ›</button>
+            <p className="mt-1 text-xs font-semibold text-forest"><Ic e="👥" /> {house.members.length} {L(lang, house.members.length > 1 ? 'members connected' : 'member for now', house.members.length > 1 ? 'membres connectés' : 'membre pour l’instant', 'أعضاء')}</p></div>
+          <div className="grid grid-cols-2 gap-2"><button className="btn btn-soft !min-h-12" onClick={share}><Ic e="💬" /> WhatsApp</button><button className="btn btn-soft !min-h-12" onClick={() => { try { navigator.clipboard.writeText(house.code) } catch { /* ignore */ } }}><Ic e="📋" /> {L(lang, 'Copy', 'Copier', 'نسخ')}</button></div>
+          <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => { onClose(); go('list') }}><Ic e="🛒" /> {L(lang, 'Start shopping', 'Commencer les courses', 'ابدأ التسوق')} ›</button>
         </div>}
       </div>}
     </div>, document.body)

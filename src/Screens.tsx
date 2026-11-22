@@ -1,4 +1,5 @@
 import { RefreshCw, Shuffle } from 'lucide-react'
+import { Ic } from './Ic'
 import { BookOpen, Coffee, Dices, Moon, Sun, Sunrise, type LucideIcon } from './icons'
 import { E3 } from './E3'
 import { StepScene, actOf, ACT_LABEL } from './StepScene'
@@ -68,7 +69,7 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
         <button className="absolute inset-y-0 end-0 z-10 w-2/3" onClick={() => { if (held.current) return; if (i < N - 1) go(i + 1); else onClose() }} aria-label="›" />
         <div className="scene3d h-full">
         <div key={i} className={`${dir > 0 ? 'flip-in-r' : 'flip-in-l'} flex h-full flex-col justify-center px-6`}>
-          {i === 0 && <><div className="story-pop mb-6 flex items-center gap-4" style={{ transform: 'translateZ(50px)' }}><Dish r={r} w={240} className="h-24 w-24 shrink-0 rounded-full shadow-[0_24px_40px_-12px_rgba(0,0,0,.8)] ring-4 ring-white/15" /><div><p className="font-display text-[26px] font-extrabold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-sm text-white/70">👥 {sv} · ⏱ {r.t} min</p></div></div><p className="text-[12px] font-bold uppercase tracking-[.22em] text-white/60">{lang === 'en' ? 'You need' : 'Il vous faut'} · {ings.length}</p>
+          {i === 0 && <><div className="story-pop mb-6 flex items-center gap-4" style={{ transform: 'translateZ(50px)' }}><Dish r={r} w={240} className="h-24 w-24 shrink-0 rounded-full shadow-[0_24px_40px_-12px_rgba(0,0,0,.8)] ring-4 ring-white/15" /><div><p className="font-display text-[26px] font-extrabold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-sm text-white/70"><Ic e="👥" /> {sv} · ⏱ {r.t} min</p></div></div><p className="text-[12px] font-bold uppercase tracking-[.22em] text-white/60">{lang === 'en' ? 'You need' : 'Il vous faut'} · {ings.length}</p>
             <div className="mt-4 grid grid-cols-3 gap-3" style={{ transformStyle: 'preserve-3d' }}>{ings.slice(0, 12).map((x, k) => (
               <div key={k} className="ing3d relative flex flex-col items-center rounded-[20px] border border-white/15 bg-white/[.08] px-2 pb-2.5 pt-3 text-center shadow-[0_18px_40px_-12px_rgba(0,0,0,.6)] backdrop-blur-md" style={{ animationDelay: `${k * 260}ms`, ['--fz' as string]: `${(k % 3) * 8}px` }}>
                 <span className="ing-emoji text-[40px] leading-none drop-shadow-[0_10px_8px_rgba(0,0,0,.45)]" style={{ animationDelay: `${k * 260 + 700}ms` }}><E3 e={x.e} /></span>
@@ -102,7 +103,7 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
     <Sheet open onClose={onClose} title={rname(r.n, lang)}>
       <FoodTile r={r} className="mb-4 h-36 rounded-2xl" />
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-muted">
-        <span>⏱ {r.t} {t('min', lang)}</span><span>·</span><span>≈ {money(recipeCost(r.id, sv) / sv, lang)} {t('perServing', lang)}</span><span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${kb.c}`}>{kb.k} kcal</span>
+        <span><Ic e="⏱" /> {r.t} {t('min', lang)}</span><span>·</span><span>≈ {money(recipeCost(r.id, sv) / sv, lang)} {t('perServing', lang)}</span><span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${kb.c}`}>{kb.k} kcal</span>
         <button className="ms-auto text-2xl" aria-pressed={fav} aria-label="favorite" onClick={() => { patchMe({ favs: fav ? me!.favs.filter((x) => x !== r.id) : [...me!.favs, r.id] }); if (!fav) award(2, '❤️') }}>{fav ? '❤️' : '🤍'}</button>
       </div>
       <NutriChips r={r} />
@@ -121,9 +122,9 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
         })}
       </ul>
       {!onServings && r.m.length > 0 && <div className="mb-5 rounded-2xl bg-leaf/15 p-3">
-        <p className="mb-2 text-sm font-bold">🛒 {lang === 'en' ? 'Add to my week and shopping list' : 'Ajouter à ma semaine et à mes courses'}</p>
+        <p className="mb-2 text-sm font-bold"><Ic e="🛒" /> {lang === 'en' ? 'Add to my week and shopping list' : 'Ajouter à ma semaine et à mes courses'}</p>
         <div className="mb-2 grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`rounded-lg py-1.5 text-[11px] font-bold uppercase ${d === day ? 'bg-forest text-white' : 'bg-surface'}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 2)}</button>)}</div>
-        <div className="flex gap-2">{r.m.map((sl) => <button key={sl} className="btn btn-primary !min-h-10 flex-1 !px-2 !text-sm" onClick={() => addToWeek(sl)}>{SLOT_E[sl]} {t(sl, lang)}</button>)}</div>
+        <div className="flex gap-2">{r.m.map((sl) => <button key={sl} className="btn btn-primary !min-h-10 flex-1 !px-2 !text-sm" onClick={() => addToWeek(sl)}><Ic e={SLOT_E[sl]} /> {t(sl, lang)}</button>)}</div>
         <p className="mt-1.5 text-[11px] text-muted">{lang === 'en' ? `For ${sv} people · replaces the dish already planned there.` : `Pour ${sv} personne(s) · remplace le plat déjà prévu à ce moment.`}</p>
       </div>}
       <h3 className="mb-2 font-bold">{t('steps', lang)}</h3>
@@ -174,7 +175,7 @@ export function Controls({ setBudget }: { setBudget: (b: number) => void }) {
       </div>
       <div className="card divide-y divide-line/70">
         <div className="flex items-center justify-between p-3"><span className="font-semibold">👤 {t('people', lang)}</span><Stepper v={me!.size} set={(n) => patchMe({ size: n })} max={12} /></div>
-        <div className="flex items-center justify-between gap-2 p-3"><span className="font-semibold">{t('mealsIncl', lang)}</span><span className="flex gap-1">{SLOTS.map((s) => <button key={s} className="chip !px-2.5" aria-pressed={meals.includes(s)} onClick={() => patchMe({ meals: meals.includes(s) ? meals.filter((x) => x !== s) : SLOTS.filter((x) => x === s || meals.includes(x)) })} aria-label={t(s, lang)}>{SLOT_E[s]}</button>)}</span></div>
+        <div className="flex items-center justify-between gap-2 p-3"><span className="font-semibold">{t('mealsIncl', lang)}</span><span className="flex gap-1">{SLOTS.map((s) => <button key={s} className="chip !px-2.5" aria-pressed={meals.includes(s)} onClick={() => patchMe({ meals: meals.includes(s) ? meals.filter((x) => x !== s) : SLOTS.filter((x) => x === s || meals.includes(x)) })} aria-label={t(s, lang)}><Ic e={SLOT_E[s]} /></button>)}</span></div>
         <div className="flex items-center justify-between p-3"><span className="font-semibold">🌱 {t('veg', lang)}</span><button className="chip" aria-pressed={me!.diet.includes('vegetarian')} onClick={() => patchMe({ diet: me!.diet.includes('vegetarian') ? [] : ['vegetarian'] })}>{me!.diet.includes('vegetarian') ? '✓' : '—'}</button></div>
       </div>
     </div>
@@ -191,7 +192,7 @@ export function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => vo
   const curCost = cur ? entryCost(cur) / cur.n : 0
   const put = (e: { r: string; n: number; x?: string[] }) => { upHouse((h) => { h.plan[k] = e }, `→ ${REC[e.r].n[0]}`); award(5, rname(REC[e.r].n, lang)); say(`✅ ${rname(REC[e.r].n, lang)} · ${t('listUpdated', lang)}`); onClose() }
   return (
-    <Sheet open onClose={onClose} title={`${dayName(+d, lang)} · ${SLOT_E[slot]} ${t(slot, lang)}`}>
+    <Sheet open onClose={onClose} title={`${dayName(+d, lang)} · ${t(slot, lang)}`}>
       <button className="btn btn-warm mb-3 w-full !min-h-12" onClick={() => put(surpriseOne(k, plan, p))}><Dices size={18} className="inline -mt-0.5" aria-hidden /> {t('surprise', lang)}</button>
       <div className="-mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1 pb-1">{[['same', 'fSame'], ['all', 'fAll'], ['cheaper', 'fCheaper'], ['healthier', 'fHealthier'], ['quick', 'fQuick'], ['veg', 'veg']].map(([id, key]) => <button key={id} className="chip shrink-0" aria-pressed={f === id} onClick={() => setF(id)}>{t(key, lang)}</button>)}</div>
       {!q && list.length > 2 && <div className="mb-3 grid grid-cols-3 gap-2">{list.slice(0, 3).map((r) => { const e = { r: r.id, n: cur?.n ?? p.size, x: composeSides(r.id, slot) }; return <button key={r.id} className="flex flex-col items-center gap-1 rounded-2xl bg-cream/70 p-2 text-center transition active:scale-95" onClick={() => put(e)}><span className="grid h-14 w-14 place-items-center rounded-2xl text-3xl" style={{ background: `hsl(${r.h} 80% 90%)` }}><E3 e={r.e} /></span><span className="line-clamp-2 text-[12px] font-bold leading-tight">{rname(r.n, lang)}</span><span className="text-[10px] text-muted">{r.t} min</span></button> })}</div>}
@@ -225,13 +226,13 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
   const monthCells = [...Array(first).fill(null), ...Array.from({ length: nDays }, (_, i) => ({ n: i + 1, wd: (first + i) % 7, today: i + 1 === now.getDate() }))] as ({ n: number; wd: number; today: boolean } | null)[]
   const mealRow = (k: string, s: Meal) => {
     const e = plan[k]
-    if (!e) return <button key={s} className="flex w-full items-center gap-3 px-4 py-3 text-start text-muted" onClick={() => setRep(k)}><span className="w-6 text-center">{SLOT_E[s]}</span><span className="font-semibold">＋ {t(s, lang)}</span></button>
+    if (!e) return <button key={s} className="flex w-full items-center gap-3 px-4 py-3 text-start text-muted" onClick={() => setRep(k)}><span className="w-6 text-center"><Ic e={SLOT_E[s]} /></span><span className="font-semibold">＋ {t(s, lang)}</span></button>
     const r = REC[e.r]
     return (
       <div key={s} className="px-4 py-3">
         <div className="flex gap-3">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}><E3 e={r.e} /></span>
-          <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wide text-muted">{SLOT_E[s]} {t(s, lang)}</p><p className="font-semibold leading-tight">{rname(r.n, lang)}</p>{(e.x ?? []).length > 0 && <p className="mt-0.5 text-xs text-muted">+ {sideNames(e.x, lang)}</p>}</div>
+          <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wide text-muted"><Ic e={SLOT_E[s]} /> {t(s, lang)}</p><p className="font-semibold leading-tight">{rname(r.n, lang)}</p>{(e.x ?? []).length > 0 && <p className="mt-0.5 text-xs text-muted">+ {sideNames(e.x, lang)}</p>}</div>
           <span className="shrink-0 text-xs text-muted tabular-nums">{Math.round(entryKcal(e))} kcal</span>
         </div>
         <div className="mt-2 flex items-center gap-2 ps-[3.75rem]">
@@ -243,11 +244,11 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
     )
   }
   const slots = SLOTS.filter((s) => p.meals.includes(s) || Object.keys(plan).some((k) => k.endsWith('-' + s)))
-  if (!Object.keys(plan).length) return <div className="card space-y-4 p-8 text-center"><p className="text-5xl">🗓️</p><p className="text-muted">{t('emptyWeek', lang)}</p><button className="btn btn-primary w-full" onClick={compose}>✨ {t('composeAuto', lang)}</button></div>
+  if (!Object.keys(plan).length) return <div className="card space-y-4 p-8 text-center"><p className="text-5xl"><Ic e="🗓️" /> </p><p className="text-muted">{t('emptyWeek', lang)}</p><button className="btn btn-primary w-full" onClick={compose}><Ic e="✨" /> {t('composeAuto', lang)}</button></div>
   return (
     <div className="space-y-3">
       {me!.showForme && <FormeCard plan={plan} />}
-      <div className="flex gap-2"><button className="btn btn-soft flex-1 !min-h-11" onClick={compose}><Shuffle size={16} className="inline -mt-0.5" aria-hidden /> {t('reshuffle', lang)}</button><button className="btn btn-soft !min-h-11 !px-4 text-danger" onClick={clear}>🗑 {lang === 'en' ? 'Clear' : lang === 'ar' ? 'إفراغ' : 'Vider'}</button></div>
+      <div className="flex gap-2"><button className="btn btn-soft flex-1 !min-h-11" onClick={compose}><Shuffle size={16} className="inline -mt-0.5" aria-hidden /> {t('reshuffle', lang)}</button><button className="btn btn-soft !min-h-11 !px-4 text-danger" onClick={clear}><Ic e="🗑" /> {lang === 'en' ? 'Clear' : lang === 'ar' ? 'إفراغ' : 'Vider'}</button></div>
       <div className="flex rounded-full bg-surface p-1 shadow-soft">{(['week', 'month'] as const).map((v) => <button key={v} className={`flex-1 rounded-full py-2 text-sm font-bold ${view === v ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setView(v)}>{t('v_' + v, lang)}</button>)}</div>
       {view === 'day' && <>
         <div className="grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => setDay(d)} className={`rounded-2xl py-2 text-center ${d === day ? 'bg-forest text-white' : 'bg-surface'}`}><span className="block text-[10px] font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span><span className="block text-base">{d === today ? '•' : ' '}</span></button>)}</div>
@@ -261,7 +262,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
         <div className="rounded-[22px] bg-surface p-2 shadow-soft">
           <div className="grid gap-1" style={{ gridTemplateColumns: `22px repeat(7, minmax(0, 1fr))` }}>
             <span />{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => <button key={d} onClick={() => setDay(d)} className={`rounded-xl py-1 text-center text-[10px] font-extrabold uppercase transition ${d === day ? 'bg-forest text-white' : d === today ? 'text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 3)}</button>)}
-            {slots.map((s) => [<span key={s} className="grid place-items-center text-[13px]" title={t(s, lang)}>{SLOT_E[s]}</span>, ...Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => { const e = plan[`${d}-${s}`]; const r = e ? REC[e.r] : null; return (
+            {slots.map((s) => [<span key={s} className="grid place-items-center text-[13px]" title={t(s, lang)}><Ic e={SLOT_E[s]} /></span>, ...Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => { const e = plan[`${d}-${s}`]; const r = e ? REC[e.r] : null; return (
               <button key={s + d} onClick={() => setDay(d)} className={`cal-cell flex min-h-[64px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl px-0.5 py-1 transition active:scale-90 ${d === day ? 'ring-2 ring-forest ring-offset-1 ring-offset-surface' : ''}`} style={{ background: SLOT_BG[s] ?? '#F4F1E8' }} aria-label={r ? rname(r.n, lang) : t(s, lang)}>
                 {r ? <><span className="text-[22px] leading-none drop-shadow-sm" aria-hidden><E3 e={r.e} /></span>{rname(r.n, lang).split(/[ ,(]/).filter((w) => w.length > 2).slice(0, 2).map((w, i) => <span key={i} className="block w-full truncate text-center text-[8.5px] font-bold leading-[1.15] text-ink/80">{w}</span>)}</> : <span className="text-muted">＋</span>}</button>) })])}
           </div>
@@ -278,7 +279,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
         </div>
         <p className="mt-2 text-center text-[11px] text-muted">{t('monthNote', lang)}</p>
       </div>}
-      <button className="cta-glow btn btn-primary sticky bottom-28 z-20 w-full !min-h-14 text-base shadow-lift" onClick={toBasket}>🛒 {lang === 'en' ? 'Done choosing → my basket' : lang === 'ar' ? 'انتهيت → سلتي' : 'J’ai fini mes choix → mon panier'}</button>
+      <button className="cta-glow btn btn-primary sticky bottom-28 z-20 w-full !min-h-14 text-base shadow-lift" onClick={toBasket}><Ic e="🛒" /> {lang === 'en' ? 'Done choosing → my basket' : lang === 'ar' ? 'انتهيت → سلتي' : 'J’ai fini mes choix → mon panier'}</button>
       {rep && <ReplaceSheet k={rep} onClose={() => setRep(null)} say={say} />}
       {rv && <RecipeSheet r={rv} onClose={() => setRv(null)} />}
       <p className="px-1 text-center text-xs text-muted">{me!.size} 👤 · {t('c_' + p.cuisine, lang)}</p>

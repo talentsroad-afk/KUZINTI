@@ -1,4 +1,5 @@
 import { FormeCard, KcalGoal } from './Forme'
+import { Ic } from './Ic'
 import { useState } from 'react'
 import { E3 } from './E3'
 import { useApp } from './lib/store'
@@ -63,7 +64,7 @@ export function ProfileScreen({ celebrate, openCountry }: { celebrate: () => voi
       <section className="card space-y-3 p-4">
         <div className="flex items-center gap-2"><span className="text-2xl"><E3 e="🏡" /></span><h2 className="flex-1 font-display text-lg font-extrabold">{house!.name}</h2><span className="flex -space-x-2">{house!.members.map((m) => <span key={m.id} className="grid h-8 w-8 place-items-center rounded-full bg-leaf/50 text-xs font-bold ring-2 ring-surface" title={m.name}>{m.name[0]}</span>)}</span></div>
         <div className="rounded-2xl bg-cream p-3 text-center"><p className="text-xs font-semibold text-muted">{t('invite', lang)}</p><p className="font-display text-[28px] font-extrabold tracking-[.18em] text-forest">{house!.code}</p></div>
-        <div className="grid grid-cols-2 gap-2"><button className="btn btn-primary !min-h-12" onClick={share}>💬 WhatsApp</button><button className="btn btn-soft !min-h-12" onClick={copy}>📋 {t('copy', lang)}</button></div>
+        <div className="grid grid-cols-2 gap-2"><button className="btn btn-primary !min-h-12" onClick={share}><Ic e="💬" /> WhatsApp</button><button className="btn btn-soft !min-h-12" onClick={copy}><Ic e="📋" /> {t('copy', lang)}</button></div>
       </section>
       <section className="card divide-y divide-line/70 overflow-hidden !p-0">
         <Row e="🌍" label={lang === 'en' ? 'Country' : 'Pays'} onClick={openCountry}><span className="text-sm text-muted">{c.f} {cname(c, lang)}</span></Row>
