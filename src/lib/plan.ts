@@ -110,7 +110,39 @@ export function composeWeek(p: Prefs, pantry: Record<string, number>, extras: Re
     const r = fri.length ? fri[Math.floor(Math.random() * fri.length)] : pickW(pl, pl.map((x) => weight(x, s, p, used) * (ma ? rhythm(x, s, d) : 1)))
     used[r.id] = (used[r.id] ?? 0) + 1; plan[`${d}-${s}`] = entry(r.id, p.size, s)
   }
-  return adaptToBudget(plan, p.budget, pantry, extras, p).plan
+  const fit = adaptToBudget(plan, p.budget, pantry, extras, p).plan
+  return raiseToTarget(fit, p.budget, pantry, extras, p)
+}
+
+/** The budget is a target, not a ceiling: when the week costs well under it, move up to richer dishes, then cook bigger batches. */
+export function raiseToTarget(plan: Plan, target: number, pantry: Record<string, number>, extras: Record<string, number>, p: Pick<Prefs, 'cuisine' | 'diet'>, size = 0): Plan {
+  const cur: Plan = JSON.parse(JSON.stringify(plan)); let cost = listCost(cur, pantry, extras); const keys = Object.keys(cur)
+  if (!keys.length || cost >= target * 0.93) return cur
+  const uses = (id: string) => keys.filter((k) => cur[k].r === id).length
+  for (let it = 0; it < 14 && cost < target * 0.93; it++) {
+    let best: { k: string; e: PlanEntry; c: number } | null = null
+    for (const k of keys) {
+      const slot = k.split('-')[1] as Meal; if (slot === 'g') continue
+      const here = recipeCost(cur[k].r, cur[k].n)
+      for (const r of pool(slot, p)) {
+        if (r.id === cur[k].r || uses(r.id) >= 2 || recipeCost(r.id, cur[k].n) <= here) continue
+        const e = { r: r.id, n: cur[k].n, x: composeSides(r.id, slot, () => 0.01) }
+        const c = listCost({ ...cur, [k]: e }, pantry, extras)
+        if (c > cost && c <= target && (!best || c > best.c || (c === best.c && Math.random() < 0.5))) best = { k, e, c }
+      }
+    }
+    if (!best) break
+    cur[best.k] = best.e; cost = best.c
+  }
+  const base = size || Math.max(...keys.map((k) => cur[k].n))
+  for (let round = 0; round < 3 && cost < target * 0.93; round++) {
+    for (const k of keys) {
+      const slot = k.split('-')[1]; if (slot === 'g' || slot === 'b' || cur[k].n >= base + 3) continue
+      const c = listCost({ ...cur, [k]: { ...cur[k], n: cur[k].n + 1 } }, pantry, extras)
+      if (c <= target) { cur[k] = { ...cur[k], n: cur[k].n + 1 }; cost = c; if (cost >= target * 0.93) break }
+    }
+  }
+  return cur
 }
 /** Replace one meal with a relevant random dish (Surprise me). */
 export function surpriseOne(key: string, plan: Plan, p: Prefs): PlanEntry {
