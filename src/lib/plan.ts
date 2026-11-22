@@ -4,7 +4,10 @@ import { buildList, entryCost, kcalPerServing, recipeCost, type PlanEntry } from
 
 export type Mode = 'light' | 'balanced' | 'gourmet'
 type Plan = Record<string, PlanEntry>
-export interface Prefs { size: number; diet: string[]; cuisine: string; region: string; goals: string[]; meals: Meal[]; budget: number }
+export interface Prefs { size: number; diet: string[]; cuisine: string; region: string; goals: string[]; meals: Meal[]; budget: number; kcal?: number }
+// Share of the daily calorie target per meal; sides (bread, drink, salad) add roughly 150 kcal to main meals.
+const SHARE: Record<Meal, number> = { b: 0.25, l: 0.37, d: 0.28, g: 0.1 }
+const kcalFit = (kc: number, slot: Meal, target: number) => { const want = Math.max(150, target * SHARE[slot] - (slot === 'g' ? 0 : 150)); const z = (kc - want) / (0.3 * want); return Math.exp(-z * z) + 0.02 }
 export const CUISINES = ['ma', 'mix', 'med', 'fr', 'it', 'es', 'tr', 'in', 'jp', 'hint']
 export const FLAG: Record<string, string> = { ma: '🇲🇦', mix: '🌍', med: '🫒', fr: '🇫🇷', it: '🇮🇹', es: '🇪🇸', tr: '🇹🇷', in: '🇮🇳', jp: '🇯🇵', hint: '🥗' }
 export const REGIONS = ['all', 'fes', 'casa', 'rabat', 'mrk', 'souss', 'nord']
@@ -32,7 +35,7 @@ export function pool(slot: Meal, p: Pick<Prefs, 'cuisine' | 'diet'>): Recipe[] {
 }
 function weight(r: Recipe, slot: Meal, p: Prefs, used: Record<string, number>) {
   const g = p.goals
-  return (1 / (1 + (used[r.id] ?? 0) * (g.includes('varied') ? 10 : 4))) * modeWeight(modeOf(g), kcalPerServing(r.id))
+  return (1 / (1 + (used[r.id] ?? 0) * (g.includes('varied') ? 10 : 4))) * (p.kcal ? kcalFit(kcalPerServing(r.id), slot, p.kcal) : modeWeight(modeOf(g), kcalPerServing(r.id)))
     * (g.includes('cheap') ? 8 / (2 + recipeCost(r.id) / r.s) : 1) * (g.includes('quick') ? (r.t <= 35 ? 3 : 0.4) : 1)
     * (p.region !== 'all' && REGION_DISHES[p.region]?.includes(r.id) ? 2.5 : 1) * (r.tags.includes('sweet') && slot !== 'g' && slot !== 'b' ? 0.1 : 1)
 }

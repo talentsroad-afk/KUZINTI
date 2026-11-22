@@ -85,3 +85,10 @@ button:active:not(:disabled) { transform: scale(.97); }
 .tab-on { font-weight: 800; }
 input.input, .input { border-radius: 1rem; }
 ::selection { background: rgb(var(--leaf) / .45); }
+/* Life: staggered entrances, floating illustrations, gentle card lift */
+.stagger > * { animation: rise .45s cubic-bezier(.2,.8,.2,1) both; }
+.stagger > *:nth-child(2) { animation-delay: .06s } .stagger > *:nth-child(3) { animation-delay: .12s } .stagger > *:nth-child(4) { animation-delay: .18s } .stagger > *:nth-child(5) { animation-delay: .24s } .stagger > *:nth-child(n+6) { animation-delay: .3s }
+.float { display: inline-block; animation: float 3s ease-in-out infinite; }
+main .fade-up > .space-y-3 > *, main .fade-up > .space-y-4 > * { animation: rise .4s cubic-bezier(.2,.8,.2,1) both; }
+main .fade-up > .space-y-3 > *:nth-child(2), main .fade-up > .space-y-4 > *:nth-child(2) { animation-delay: .05s } main .fade-up > .space-y-3 > *:nth-child(3), main .fade-up > .space-y-4 > *:nth-child(3) { animation-delay: .1s } main .fade-up > .space-y-3 > *:nth-child(n+4), main .fade-up > .space-y-4 > *:nth-child(n+4) { animation-delay: .15s }
+@media (hover: hover) { .card { transition: box-shadow .25s, transform .25s; } .card:hover { box-shadow: 0 0 0 1px rgb(var(--line) / .7), 0 18px 34px -22px rgb(var(--shadow) / .45); } }

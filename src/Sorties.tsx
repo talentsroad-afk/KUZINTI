@@ -69,66 +69,109 @@ export const CITIES: Record<string, Act[]> = {
   ],
 }
 type Mode = 'day' | 'week' | 'month'
-type Slot = [string, string, number] // key, label, max hours
-const fmt = (d: Date, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('fr', o).format(d)
-function slotsFor(mode: Mode): Slot[] {
-  const now = new Date()
-  if (mode === 'day') return [['am', 'Matin', 4], ['pm', 'Après-midi', 6], ['ev', 'Soir', 2]]
-  if (mode === 'week') return Array.from({ length: 7 }, (_, i) => { const d = new Date(now); d.setDate(now.getDate() + i); const we = d.getDay() === 0 || d.getDay() === 6; return [`w${i}`, `${fmt(d, { weekday: 'long', day: 'numeric' })}${we ? '' : ' · soirée'}`, we ? 6 : 2] as Slot })
-  const out: Slot[] = []; const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  for (const d = new Date(now); d <= end; d.setDate(d.getDate() + 1)) if (d.getDay() === 0 || d.getDay() === 6) out.push([`m${d.getDate()}`, fmt(d, { weekday: 'long', day: 'numeric', month: 'short' }), 6])
+type Fmt = 'full' | 'half' | 'eve' | 'night'
+const FMT: [Fmt, string, string, number][] = [['full', '☀️ Journée entière', '10h → 21h', 3], ['half', '🌤️ Demi-journée', '14h → 19h', 2], ['eve', '🌇 Fin de journée', '17h → 20h', 1], ['night', '🌙 Soirée', '19h → 23h', 1]]
+// Where to eat and how to move, per city (real, well-known spots; prices indicative per person).
+const FOOD: Record<string, { lunch: [string, number][]; cafe: [string, number][]; dinner: [string, number][]; move: string }> = {
+  Casablanca: { lunch: [['Grillades du Marché Central', 80], ['Snack au quartier Maârif', 60], ['Poissons au port (Le Port de Pêche)', 120]], cafe: [['Café de la Corniche face à l’océan', 30], ['Pâtisserie Bennis aux Habous', 25]], dinner: [['Rick’s Café (dîner)', 350], ['Restaurant à La Corniche', 200], ['Tajine en médina', 90]], move: 'Tramway T1/T2 (8 MAD) ou petit taxi rouge (15–30 MAD).' },
+  Rabat: { lunch: [['Poissons à la marina du Bouregreg', 120], ['Snack de l’avenue Mohammed V', 60]], cafe: [['Café Maure des Oudayas', 25], ['Salon de thé de l’Agdal', 30]], dinner: [['Dîner sur la marina du Bouregreg', 200], ['Tajine en médina', 90]], move: 'Tramway Rabat–Salé (6 MAD) ou petit taxi bleu (10–25 MAD).' },
+  Marrakech: { lunch: [['Méchoui de la rue Mechouia', 90], ['Terrasse d’un riad en médina', 120]], cafe: [['Café des Épices (place Rahba Kedima)', 35], ['Terrasse sur Jemaa el-Fna', 30]], dinner: [['Stands de Jemaa el-Fna', 70], ['Tanjia en médina', 100], ['Dîner dans un riad', 300]], move: 'À pied en médina, petit taxi beige (20–40 MAD) en dehors.' },
+  'Fès': { lunch: [['Bissara et brochettes à Bab Boujloud', 50], ['Restaurant traditionnel de la médina', 120]], cafe: [['Terrasse de Bab Boujloud', 20], ['Café Clock', 40]], dinner: [['Pastilla en médina', 150], ['Restaurant en ville nouvelle', 120]], move: 'Petit taxi rouge (10–25 MAD), puis à pied en médina (prendre un guide officiel).' },
+  Tanger: { lunch: [['Poissons au port', 100], ['Snack du Grand Socco', 50]], cafe: [['Café Hafa', 30], ['Gran Café de Paris', 30]], dinner: [['Restaurant de la Kasbah', 180], ['Poissons sur la corniche', 150]], move: 'Petit taxi bleu (10–30 MAD). Cap Spartel et Achakar : grand taxi ou voiture.' },
+}
+const TIP: Record<Kind, string> = { famille: 'Prévois de l’eau, des en-cas et une casquette pour les enfants.', couple: 'Vise l’heure du coucher du soleil pour les vues et les photos.', sport: 'Pars tôt, prends de l’eau et des chaussures adaptées.', culture: 'Évite le vendredi midi et prévois de la monnaie pour l’entrée.', nature: 'Vérifie la météo et pars avec une petite veste.' }
+type Step = { t: string; e: string; n: string; d: string; p: number; id?: string }
+type Day = { fmt: Fmt; acts: string[] }
+const fmtD = (d: Date, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('fr', o).format(d)
+function daysFor(mode: Mode): [string, string, Fmt][] {
+  const now = new Date(); const we = (d: Date) => d.getDay() === 0 || d.getDay() === 6
+  if (mode === 'day') return [['d0', 'Aujourd’hui', we(now) ? 'full' : 'eve']]
+  if (mode === 'week') return Array.from({ length: 7 }, (_, i) => { const d = new Date(now); d.setDate(now.getDate() + i); return [`w${i}`, fmtD(d, { weekday: 'long', day: 'numeric' }), we(d) ? 'full' : 'eve'] })
+  const out: [string, string, Fmt][] = []; const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  for (const d = new Date(now); d <= end; d.setDate(d.getDate() + 1)) if (we(d)) out.push([`m${d.getDate()}`, fmtD(d, { weekday: 'long', day: 'numeric', month: 'short' }), 'full'])
   return out
 }
-const KINDS: [Kind, string][] = [['famille', '👨‍👩‍👧 Famille'], ['couple', '💑 Couple'], ['sport', '⚽ Sport'], ['culture', '🏛️ Culture'], ['nature', '🌿 Nature']]
-
-function compose(acts: Act[], slots: Slot[], kinds: Kind[], budget: number, people: number, keep: Record<string, string> = {}) {
-  const ok = acts.filter((a) => !kinds.length || a.k.some((k) => kinds.includes(k)))
-  const out: Record<string, string> = { ...keep }; let spent = Object.values(out).reduce((s, id) => s + (acts.find((a) => a.id === id)?.p ?? 0) * people, 0)
-  const shuffle = <T,>(x: T[]) => [...x].sort(() => Math.random() - 0.5)
-  for (const [k, , maxH] of slots) {
-    if (out[k]) continue
-    const used = new Set(Object.values(out)); const fits = (a: Act) => a.h <= maxH && spent + a.p * people <= budget
-    const pick = shuffle(ok.filter((a) => fits(a) && !used.has(a.id)))[0] ?? shuffle(ok.filter(fits))[0] ?? shuffle(acts.filter((a) => a.p === 0 && a.h <= maxH))[0] ?? shuffle(acts.filter((a) => a.p === 0))[0]
-    if (pick) { out[k] = pick.id; spent += pick.p * people }
+const maxH: Record<Fmt, number> = { full: 6, half: 4, eve: 2, night: 2 }
+const pick = <T,>(x: T[]) => x[Math.floor(Math.random() * x.length)]
+function pickActs(acts: Act[], kinds: Kind[], fmt: Fmt, left: number, people: number, avoid: Set<string>) {
+  const ok = acts.filter((a) => (!kinds.length || a.k.some((k) => kinds.includes(k))) && a.h <= maxH[fmt])
+  const n = FMT.find((f) => f[0] === fmt)![3]; const out: string[] = []
+  for (let i = 0; i < n; i++) {
+    const c = ok.filter((a) => !out.includes(a.id) && a.p * people <= left)
+    const a = pick(c.filter((x) => !avoid.has(x.id))) ?? pick(c) ?? pick(acts.filter((x) => x.p === 0 && !out.includes(x.id)))
+    if (a) { out.push(a.id); left -= a.p * people }
   }
   return out
 }
+/** Turns a day's activities into a concrete hour-by-hour program with meals, café and transport. */
+function program(city: string, acts: Act[], day: Day): Step[] {
+  const F = FOOD[city]; const A = day.acts.map((id) => acts.find((a) => a.id === id)!).filter(Boolean)
+  const act = (t: string, a: Act): Step => ({ t, e: a.e, n: a.n, d: a.d, p: a.p, id: a.id })
+  const meal = (t: string, e: string, x: [string, number]): Step => ({ t, e, n: x[0], d: 'Pause repas', p: x[1] })
+  const [l, c, d] = [F.lunch[0], F.cafe[0], F.dinner[0]]
+  if (day.fmt === 'full') return [A[0] && act('10:00', A[0]), meal('13:00', '🍽️', l), A[1] && act('15:00', A[1]), A[2] && act('17:30', A[2]), meal('20:00', '🌙', F.dinner[F.dinner.length - 1])].filter(Boolean) as Step[]
+  if (day.fmt === 'half') return [A[0] && act('14:00', A[0]), meal('16:30', '☕', c), A[1] && act('17:15', A[1])].filter(Boolean) as Step[]
+  if (day.fmt === 'eve') return [A[0] && act('17:00', A[0]), meal('19:00', '☕', F.cafe[F.cafe.length - 1])].filter(Boolean) as Step[]
+  return [A[0] && act('19:00', A[0]), meal('20:30', '🌙', d)].filter(Boolean) as Step[]
+}
+const KINDS: [Kind, string][] = [['famille', '👨‍👩‍👧 Famille'], ['couple', '💑 Couple'], ['sport', '⚽ Sport'], ['culture', '🏛️ Culture'], ['nature', '🌿 Nature']]
 
-/** Outings: one tap composes real activities for a day, a week or the month's weekends in your city that fit the budget and who you go out with. */
+/** Outings space: compose a day, a week or the month's weekends of real activities, each with a ready-to-follow program. */
 export function SortiesTab() {
   const { me, house, upHouse, patchMe, award } = useApp()
-  const city = CITIES[me!.city] ? me!.city : 'Casablanca'; const acts = CITIES[city]
-  const people = me!.size
-  const [kinds, setKinds] = useState<Kind[]>([]); const [budget, setBudget] = useState(300); const [mode, setMode] = useState<Mode>('week')
-  const slots = slotsFor(mode)
-  type O = { outings?: Partial<Record<Mode, Record<string, string>>> }
-  const we = (house as unknown as O).outings?.[mode] ?? {}
-  const setWe = (w: Record<string, string>, log: string, all = false) => upHouse((h) => { const x = h as unknown as O; x.outings = all ? {} : { ...(x.outings ?? {}), [mode]: w } }, log)
-  const total = slots.map(([k]) => we[k]).filter(Boolean).reduce((s: number, id) => s + (acts.find((a) => a.id === id)?.p ?? 0) * people, 0)
-  const go = () => { setWe(compose(acts, slots, kinds, budget, people), `🎈 sorties ${city}`); award(10, '🎈') }
-  const swap = (slot: string) => { const rest = { ...we }; delete rest[slot]; const next = compose(acts.filter((a) => a.id !== we[slot]), slots, kinds, budget, people, rest); setWe({ ...we, [slot]: next[slot] ?? we[slot] }, '↻ sortie') }
+  const city = CITIES[me!.city] ? me!.city : 'Casablanca'; const acts = CITIES[city]; const people = me!.size
+  const [kinds, setKinds] = useState<Kind[]>([]); const [budget, setBudget] = useState(400); const [mode, setMode] = useState<Mode>('day')
+  const [fmt, setFmt] = useState<Fmt | 'auto'>('auto'); const [open, setOpen] = useState<string | null>('d0')
+  type O = { outings2?: Partial<Record<Mode, Record<string, Day>>> }
+  const plan = (house as unknown as O).outings2?.[mode] ?? {}
+  const save = (w: Record<string, Day>, log: string, all = false) => upHouse((h) => { const x = h as unknown as O; x.outings2 = all ? {} : { ...(x.outings2 ?? {}), [mode]: w } }, log)
+  const days = daysFor(mode)
+  const cost = (d: Day) => program(city, acts, d).reduce((s, x) => s + x.p * people, 0)
+  const total = days.reduce((s, [k]) => s + (plan[k] ? cost(plan[k]) : 0), 0)
+  const compose = () => {
+    const out: Record<string, Day> = {}; const used = new Set<string>(); let left = budget
+    for (const [k, , def] of days) { const f = fmt === 'auto' ? def : fmt; const per = left / Math.max(1, days.length - Object.keys(out).length); const a = pickActs(acts, kinds, f, Math.max(0, per - 100 * people), people, used); a.forEach((x) => used.add(x)); out[k] = { fmt: f, acts: a }; left -= cost(out[k]) }
+    save(out, `🎈 sorties ${city}`); setOpen(days[0][0]); award(10, '🎈')
+  }
+  const swap = (k: string, i: number) => { const d = plan[k]; const alt = pickActs(acts.filter((a) => !d.acts.includes(a.id)), kinds, d.fmt, budget, people, new Set())[0]; if (!alt) return; const acts2 = [...d.acts]; acts2[i] = alt; save({ ...plan, [k]: { ...d, acts: acts2 } }, '↻ activité') }
+  const setDayFmt = (k: string, f: Fmt) => save({ ...plan, [k]: { fmt: f, acts: pickActs(acts, kinds, f, budget, people, new Set()) } }, 'format')
   return (
-    <div className="space-y-3">
+    <div className="stagger space-y-3">
       <div className="card space-y-3 p-4">
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4">{Object.keys(CITIES).map((c) => <button key={c} className="chip shrink-0" aria-pressed={c === city} onClick={() => { patchMe({ city: c }); setWe({}, `📍 ${c}`, true) }}>📍 {c}</button>)}</div>
-        <div className="flex rounded-full bg-cream p-1">{([['day', 'Jour'], ['week', 'Semaine'], ['month', 'Mois']] as [Mode, string][]).map(([m, l]) => <button key={m} className={`flex-1 rounded-full py-2 text-sm font-bold ${mode === m ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setMode(m)}>{l}</button>)}</div>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">1 · Où ?</p>
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4">{Object.keys(CITIES).map((c) => <button key={c} className="chip shrink-0" aria-pressed={c === city} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>📍 {c}</button>)}</div>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">2 · Quand ?</p>
+        <div className="flex rounded-full bg-cream p-1">{([['day', '📅 Jour'], ['week', '🗓️ Semaine'], ['month', '📆 Mois']] as [Mode, string][]).map(([m, l]) => <button key={m} className={`flex-1 rounded-full py-2 text-sm font-bold ${mode === m ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }}>{l}</button>)}</div>
+        <div className="grid grid-cols-2 gap-2">{([['auto', '✨ Automatique', 'soirée en semaine, journée le week-end'], ...FMT.map((f) => [f[0], f[1], f[2]])] as [string, string, string][]).map(([k, l, h]) => <button key={k} className={`rounded-2xl border p-2 text-start ${fmt === k ? 'border-forest bg-leaf/20' : 'border-line bg-surface'} ${k === 'auto' ? 'col-span-2' : ''}`} onClick={() => setFmt(k as Fmt | 'auto')} aria-pressed={fmt === k}><span className="block text-sm font-bold">{l}</span><span className="block text-[11px] text-muted">{h}</span></button>)}</div>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">3 · Avec qui ?</p>
         <div className="flex flex-wrap gap-2">{KINDS.map(([k, l]) => <button key={k} className="chip" aria-pressed={kinds.includes(k)} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])}>{l}</button>)}</div>
-        <div className="flex items-center gap-3"><span className="text-sm font-semibold">Budget {mode === 'day' ? 'du jour' : mode === 'week' ? 'semaine' : 'du mois'}</span><input type="range" min={0} max={2000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-24 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
-        <button className="btn btn-primary w-full !min-h-14 text-base" onClick={go}>🎈 {mode === 'day' ? 'Composer ma journée' : mode === 'week' ? 'Composer ma semaine de sorties' : 'Composer mes week-ends du mois'}</button>
-        <p className="text-center text-[11px] text-muted">Pour {people} personne(s) · prix indicatifs par personne, à vérifier sur place</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">4 · Combien ?</p>
+        <div className="flex items-center gap-3"><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-24 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
+        <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>🎈 Composer {mode === 'day' ? 'ma journée' : mode === 'week' ? 'ma semaine' : 'mes week-ends'}</button>
+        <p className="text-center text-[11px] text-muted">Pour {people} personne(s) · prix indicatifs, à vérifier sur place</p>
       </div>
-      {!Object.keys(we).length ? (
-        <div className="card space-y-2 p-6 text-center"><p className="text-4xl">🗺️</p><p className="font-display text-lg font-extrabold">Rien de prévu pour l’instant</p><p className="text-sm text-muted">Choisis Jour, Semaine ou Mois, avec qui tu sors et ton budget, puis touche « Composer » : des activités réelles à {city}, adaptées à ton budget et au temps dont tu disposes.</p></div>
+      {!days.some(([k]) => plan[k]) ? (
+        <div className="card space-y-2 p-6 text-center"><p className="float text-5xl">🗺️</p><p className="font-display text-lg font-extrabold">Rien de prévu pour l’instant</p><p className="text-sm text-muted">Réponds aux 4 questions ci-dessus puis touche « Composer » : tu reçois un vrai programme heure par heure à {city}, avec où manger et comment y aller.</p></div>
       ) : (<>
-        <div className="card divide-y divide-line/70">
-          {slots.map(([k, label]) => { const a = acts.find((x) => x.id === we[k]); if (!a) return null; return (
-            <div key={k} className="flex gap-3 px-4 py-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-cream text-2xl">{a.e}</span>
-              <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wide text-muted first-letter:uppercase">{label}</p><p className="font-semibold leading-tight">{a.n}</p><p className="text-xs text-muted">{a.d} · ⏱ {a.h} h · {a.p ? `≈ ${money(a.p * people, 'fr')}` : 'Gratuit'}</p>
-                <button className="mt-1.5 rounded-full bg-forest px-3 py-1 text-xs font-bold text-white" onClick={() => swap(k)}>↻ Changer</button></div>
-            </div>) })}
-        </div>
-        <div className="card flex items-center justify-between p-4"><span className="font-semibold">Total estimé</span><span className={`font-display text-xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{money(total, 'fr')} <span className="text-xs font-semibold text-muted">/ {money(budget, 'fr')}</span></span></div>
+        <div className="card flex items-center justify-between p-4"><span className="font-semibold">💰 Total estimé</span><span className={`font-display text-xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{money(total, 'fr')} <span className="text-xs font-semibold text-muted">/ {money(budget, 'fr')}</span></span></div>
+        {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!
+          const kindsHere = [...new Set(d.acts.flatMap((id) => acts.find((a) => a.id === id)?.k ?? []))] as Kind[]
+          return (
+          <div key={k} className="card overflow-hidden">
+            <button className="flex w-full items-center gap-3 px-4 py-3 text-start" onClick={() => setOpen(isOpen ? null : k)} aria-expanded={isOpen}>
+              <span className="min-w-0 flex-1"><span className="block font-display text-[17px] font-extrabold first-letter:uppercase">{label}</span><span className="text-xs text-muted">{f[1]} · {f[2]} · ≈ {money(cost(d), 'fr')}</span></span>
+              {!isOpen && <span className="text-xl">{pr.filter((x) => x.id).map((x) => x.e).join('')}</span>}<span className={`text-muted transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+            </button>
+            {isOpen && <div className="fade-up border-t border-line/70 px-4 pb-4 pt-3">
+              <div className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1">{FMT.map(([fk, fl]) => <button key={fk} className={`chip shrink-0 !min-h-8 !text-xs ${d.fmt === fk ? '!bg-forest !text-white' : ''}`} onClick={() => setDayFmt(k, fk)}>{fl}</button>)}</div>
+              <ol className="relative space-y-3 border-s-2 border-leaf/50 ps-4">
+                {pr.map((x, i) => <li key={i} className="relative"><span className="absolute -start-[1.45rem] top-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-[11px] ring-2 ring-leaf">{x.e}</span>
+                  <p className="text-[11px] font-bold text-forest">{x.t}</p><p className="font-semibold leading-tight">{x.n}</p><p className="text-xs text-muted">{x.d} · {x.p ? `≈ ${money(x.p * people, 'fr')}` : 'Gratuit'}</p>
+                  {x.id && <button className="mt-1 rounded-full bg-cream px-3 py-1 text-xs font-bold active:scale-95" onClick={() => swap(k, d.acts.indexOf(x.id!))}>↻ Changer cette activité</button>}</li>)}
+              </ol>
+              <div className="mt-3 space-y-1 rounded-2xl bg-cream p-3 text-xs"><p>🚕 <b>Y aller :</b> {FOOD[city].move}</p>{kindsHere.slice(0, 2).map((kk) => <p key={kk}>💡 <b>Conseil :</b> {TIP[kk]}</p>)}</div>
+            </div>}
+          </div>) })}
       </>)}
     </div>
   )
