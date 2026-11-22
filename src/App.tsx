@@ -8,6 +8,7 @@ import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost, offMode } from './lib/plan'
 import { RecipesTab } from './Extra'
+import { SortiesTab } from './Sorties'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore } from './lib/stores'
 import { Logo, Sheet } from './ui'
@@ -110,7 +111,7 @@ function Onboarding() {
   )
 }
 
-const TABS: [Tab, string, string][] = [['home', '🏡', 'tHome'], ['recipes', '📖', 'tRecipes'], ['week', '🗓️', 'tWeek'], ['list', '🛒', 'list'], ['profile', '👤', 'profile']]
+const TABS: [Tab, string, string][] = [['home', '🏡', 'tHome'], ['recipes', '📖', 'tRecipes'], ['week', '🗓️', 'tWeek'], ['list', '🛒', 'list'], ['sorties', '🎈', 'tSorties'], ['profile', '👤', 'profile']]
 
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
@@ -209,6 +210,7 @@ function Shell() {
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
           {tab === 'recipes' && <RecipesTab say={say} />}
+          {tab === 'sorties' && <SortiesTab />}
           {tab === 'profile' && <ProfileScreen celebrate={celebrate} />}
         </div>
       </main>

@@ -4,7 +4,7 @@ import { money, type Lang } from './lib/i18n'
 import { useBasket } from './Flow'
 import { Sheet } from './ui'
 
-export type Tab = 'home' | 'recipes' | 'week' | 'list' | 'stores' | 'profile'
+export type Tab = 'home' | 'recipes' | 'week' | 'list' | 'stores' | 'profile' | 'sorties'
 const L = (lang: Lang, fr: string, en: string) => (lang === 'en' ? en : fr)
 const ls = { get: (k: string) => { try { return localStorage.getItem(k) } catch { return null } }, set: (k: string, v: string) => { try { localStorage.setItem(k, v) } catch { /* private mode */ } } }
 
@@ -16,6 +16,7 @@ export function pageInfo(tab: Tab, lang: Lang): { name: string; what: string; wh
     week: ['Ma semaine', 'My week', 'Touche un plat pour le changer. Jour / Semaine / Mois change la vue.', 'Tap a dish to swap it. Day / Week / Month changes the view.', 'La liste de courses se recalcule toute seule à chaque changement.', 'The shopping list updates itself after every change.'],
     list: ['Courses', 'Shopping', 'Coche chaque produit en magasin. Touche la quantité/prix pour saisir le vrai prix payé.', 'Tick each item in the store. Tap qty/price to enter what you really paid.', 'Ton budget Dépensé / Reste se met à jour en direct, aussi chez ton partenaire.', 'Your Spent / Left budget updates live, for your partner too.'],
     stores: ['Magasins', 'Stores', 'Compare le total de ta liste dans chaque magasin, puis choisis-en un.', 'Compare your list total in each store, then pick one.', 'Les prix sont un indice estimé : saisis les vrais prix en faisant tes courses.', 'Prices are an estimated index: enter real prices while shopping.'],
+    sorties: ['Sorties', 'Outings', 'Choisis Jour, Semaine ou Mois, avec qui tu sors et ton budget, puis « Composer ».', 'Pick Day, Week or Month, who you go out with and a budget, then “Compose”.', 'Des activités réelles dans ta ville, partagées avec ton foyer. Prix indicatifs.', 'Real activities in your city, shared with your household. Indicative prices.'],
     profile: ['Profil', 'Profile', 'Ton code foyer pour inviter quelqu’un, ton garde-manger et ton activité.', 'Your household code to invite someone, your pantry and activity.', 'Partage le code : vous verrez la même semaine et la même liste.', 'Share the code: you will both see the same week and list.'],
   }
   const p = P[tab]; return lang === 'en' ? { name: p[1], what: p[3], why: p[5] } : { name: p[0], what: p[2], why: p[4] }
