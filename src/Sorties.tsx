@@ -149,11 +149,16 @@ export function SortiesTab() {
   const plan = (house as unknown as O).outings2?.[mode] ?? {}
   const save = (w: Record<string, Day>, log: string, all = false) => upHouse((h) => { const x = h as unknown as O; x.outings2 = all ? {} : { ...(x.outings2 ?? {}), [mode]: w } }, log)
   const days = daysFor(mode)
-  const cost = (d: Day) => program(city, acts, d).reduce((s, x) => s + x.p * people, 0)
-  const total = days.reduce((s, [k]) => s + (plan[k] ? cost(plan[k]) : 0), 0)
+  // Cost of a day = activities + meals (per person) + trips between activities (per taxi of 4, or fuel), all live.
+  const parts = (d: Day) => { const pr = program(city, acts, d); const a = pr.filter((x) => x.id).reduce((s, x) => s + x.p * people, 0); const m = pr.filter((x) => !x.id).reduce((s, x) => s + x.p * people, 0)
+    const hops = d.acts.slice(1).map((id, i) => km(d.acts[i], id)); const tr = hops.reduce((s, k) => s + (mv === 'walk' ? 0 : mv === 'car' ? k * 1.2 : Math.ceil(people / 4) * (12 + 4 * k)), 0)
+    return { a, m, tr: Math.round(tr), all: a + m + Math.round(tr) } }
+  const cost = (d: Day) => parts(d).all
+  const sum = days.reduce((s, [k]) => { if (!plan[k]) return s; const q = parts(plan[k]); return { a: s.a + q.a, m: s.m + q.m, tr: s.tr + q.tr } }, { a: 0, m: 0, tr: 0 })
+  const total = sum.a + sum.m + sum.tr
   const compose = () => {
     const out: Record<string, Day> = {}; const used = new Set<string>(); let left = budget
-    for (const [k, , def] of days) { const f = fmt === 'auto' ? def : fmt; const per = left / Math.max(1, days.length - Object.keys(out).length); const a = pickActs(acts, kinds, f, Math.max(0, per - 100 * people), people, used, mv); a.forEach((x) => used.add(x)); out[k] = { fmt: f, acts: a }; left -= cost(out[k]) }
+    for (const [k, , def] of days) { const f = fmt === 'auto' ? def : fmt; const per = left / Math.max(1, days.length - Object.keys(out).length); const meals = parts({ fmt: f, acts: [] }).m; const a = pickActs(acts, kinds, f, Math.max(0, per - meals - 30), people, used, mv); a.forEach((x) => used.add(x)); out[k] = { fmt: f, acts: a }; left -= cost(out[k]) }
     save(out, `🎈 sorties ${city}`); setOpen(days[0][0]); award(10, '🎈')
   }
   const swap = (k: string, i: number) => { const d = plan[k]; const alt = pickActs(acts.filter((a) => !d.acts.includes(a.id)), kinds, d.fmt, budget, people, new Set(), mv, d.acts[i - 1] ?? d.acts[i + 1])[0]; if (!alt) return; const acts2 = [...d.acts]; acts2[i] = alt; save({ ...plan, [k]: { ...d, acts: acts2 } }, '↻ activité') }
@@ -178,13 +183,16 @@ export function SortiesTab() {
       {!days.some(([k]) => plan[k]) ? (
         <div className="card space-y-2 p-6 text-center"><p className="float text-5xl">🗺️</p><p className="font-display text-lg font-extrabold">Rien de prévu pour l’instant</p><p className="text-sm text-muted">Réponds aux 4 questions ci-dessus puis touche « Composer » : tu reçois un vrai programme heure par heure à {city}, avec où manger et comment y aller.</p></div>
       ) : (<>
-        <div className="card flex items-center justify-between p-4"><span className="font-semibold">💰 Total estimé</span><span className={`font-display text-xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{money(total, 'fr')} <span className="text-xs font-semibold text-muted">/ {money(budget, 'fr')}</span></span></div>
+        <div className="card p-4"><div className="flex items-center justify-between"><span className="font-semibold">💰 Total estimé · {people} pers.</span><span className={`font-display text-xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{money(total, 'fr')} <span className="text-xs font-semibold text-muted">/ {money(budget, 'fr')}</span></span></div>
+          <div className="mt-2 grid grid-cols-3 gap-1 text-center text-[11px]">{([['🎟️ Activités', sum.a], ['🍽️ Repas', sum.m], [MOVES.find((m) => m[0] === mv)![1].split(' ')[0] + ' Trajets', sum.tr]] as [string, number][]).map(([l, v]) => <div key={l} className="rounded-xl bg-cream/70 py-1.5"><p className="text-muted">{l}</p><b className="tabular-nums">{money(v, 'fr')}</b></div>)}</div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / Math.max(1, budget)) * 100)}%`, background: total > budget ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></div>
+          <p className="mt-1 text-[11px] text-muted">{total > budget ? `Dépasse de ${money(total - budget, 'fr')} : change une activité ou passe en fin de journée.` : `Reste ${money(budget - total, 'fr')} sur ton budget sorties.`}</p></div>
         {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!
           const kindsHere = [...new Set(d.acts.flatMap((id) => acts.find((a) => a.id === id)?.k ?? []))] as Kind[]
           return (
           <div key={k} className="card overflow-hidden">
             <button className="flex w-full items-center gap-3 px-4 py-3 text-start" onClick={() => setOpen(isOpen ? null : k)} aria-expanded={isOpen}>
-              <span className="min-w-0 flex-1"><span className="block font-display text-[17px] font-extrabold first-letter:uppercase">{label}</span><span className="text-xs text-muted">{f[1]} · {f[2]} · ≈ {money(cost(d), 'fr')}</span></span>
+              <span className="min-w-0 flex-1"><span className="block font-display text-[17px] font-extrabold first-letter:uppercase">{label}</span><span className="text-xs text-muted">{f[1]} · {f[2]} · <b className="text-ink">≈ {money(cost(d), 'fr')}</b> (🎟️ {money(parts(d).a, 'fr')} · 🍽️ {money(parts(d).m, 'fr')} · trajets {money(parts(d).tr, 'fr')})</span></span>
               {!isOpen && <span className="text-xl">{pr.filter((x) => x.id).map((x) => x.e).join('')}</span>}<span className={`text-muted transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
             </button>
             {isOpen && <div className="fade-up border-t border-line/70 px-4 pb-4 pt-3">
