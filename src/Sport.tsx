@@ -3,7 +3,7 @@ import { E3 } from './E3'
 import { HealthPlan } from './Health'
 import { GoalJourney, goalPlan, type GoalP } from './Goal'
 import { Ic } from './Ic'
-import { Beef, Bike, Dumbbell, Flame, Flower2, Footprints, Scale, Swords, Users, Zap } from 'lucide-react'
+import { Beef, Bike, Droplet, Dumbbell, Flame, Flower2, Footprints, Scale, Swords, Users, Wheat, Zap } from 'lucide-react'
 const MODE_IC: Record<string, typeof Scale> = { bulk: Dumbbell, cut: Flame, fit: Scale, perf: Zap }
 const MODE_SHORT: Record<string, [string, string, string]> = { bulk: ['Mass', 'Masse', 'كتلة'], cut: ['Fat loss', 'Perte', 'خسارة'], fit: ['Maintain', 'Maintien', 'حفاظ'], perf: ['Endurance', 'Endurance', 'تحمل'] }
 const SPORT_IC: Record<string, typeof Scale> = { gym: Dumbbell, run: Footprints, team: Users, fight: Swords, bike: Bike, yoga: Flower2 }
@@ -83,33 +83,18 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
           <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'My mode', 'Mon mode', 'وضعي')}</p>
             <b className="block truncate font-display text-[22px] font-extrabold leading-tight">{g[4][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</b></div>
         </div>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-2xl bg-cream px-2 py-2"><Flame size={15} className="mx-auto text-[#e0662a]" aria-hidden /><b className="block font-display text-[18px] tabular-nums leading-tight">{n.kcal}</b><span className="text-[11px] font-semibold text-muted">kcal / {L(lang, 'day', 'jour', 'يوم')}</span></div>
-          <div className="rounded-2xl bg-cream px-2 py-2"><Scale size={15} className="mx-auto text-forest" aria-hidden /><b className="block font-display text-[18px] tabular-nums leading-tight">{g[2] > 0 ? '+' : ''}{g[2]}</b><span className="text-[11px] font-semibold text-muted">{L(lang, 'kcal vs needs', 'kcal vs besoin', 'مقارنة بالحاجة')}</span></div>
-          <div className="rounded-2xl bg-cream px-2 py-2"><Beef size={15} className="mx-auto text-[#c4493d]" aria-hidden /><b className="block font-display text-[18px] tabular-nums leading-tight">{g[3]}</b><span className="text-[11px] font-semibold text-muted">{L(lang, 'g protein/kg', 'g prot./kg', 'بروتين/كغ')}</span></div>
-        </div>
+        <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">{([[Flame, '#e0662a', n.kcal, 'kcal'], [Beef, '#c4493d', n.prot, L(lang, 'g prot.', 'g prot.', 'بروتين')], [Wheat, '#c98a1b', n.carbs, L(lang, 'g carbs', 'g gluc.', 'نشويات')], [Droplet, '#2f7fc4', n.fat, L(lang, 'g fat', 'g lip.', 'دهون')]] as [typeof Scale, string, number, string][]).map(([I, c, v, l], k) => <div key={k} className="rounded-2xl bg-cream px-1 py-2"><I size={15} className="mx-auto" style={{ color: c }} aria-hidden /><b className="block font-display text-[17px] tabular-nums leading-tight">{v}</b><span className="text-[11px] font-semibold text-muted">{l}</span></div>)}</div>
+        <p className="mt-2 text-center text-xs font-semibold text-muted">{L(lang, 'per day', 'par jour', 'في اليوم')} · {g[2] > 0 ? '+' : ''}{g[2]} kcal {L(lang, 'vs your needs', 'par rapport à votre besoin', 'مقارنة بحاجتك')} · {g[3]} g {L(lang, 'protein/kg', 'prot./kg', 'بروتين/كغ')}</p>
         <p className="mt-4 text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'Goal', 'Objectif', 'الهدف')}</p>
         <div className="mt-1.5 grid grid-cols-4 gap-1.5 rounded-[20px] bg-cream p-1">{GOALS.map((x) => { const I = MODE_IC[x[0]] ?? Scale; const on = p.goal === x[0]; return <button key={x[0]} onClick={() => set({ goal: x[0], tw: undefined, kcalO: undefined, protO: undefined } as never)} aria-pressed={on} className={`flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[11.5px] font-bold leading-tight transition active:scale-95 ${on ? 'bg-forest text-white shadow-lift' : 'text-ink/70'}`}><I size={20} strokeWidth={on ? 2.4 : 1.9} aria-hidden /><span className="text-center">{MODE_SHORT[x[0]][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</span></button> })}</div>
         <p className="mt-3 text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'Sport', 'Sport', 'الرياضة')}</p>
         <div className="mt-1.5 grid grid-cols-3 gap-2">{SPORTS.map(([k, , en, fr, ar]) => { const I = SPORT_IC[k] ?? Dumbbell; const on = p.sport === k; return <button key={k} onClick={() => set({ sport: k })} aria-pressed={on} className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-start text-[13px] font-bold transition active:scale-95 ${on ? 'bg-leaf/30 text-forest ring-2 ring-forest' : 'bg-cream text-ink/80'}`}><I size={18} strokeWidth={on ? 2.4 : 1.9} className="shrink-0" aria-hidden /><span className="truncate">{(lang === 'en' ? en : lang === 'ar' ? ar : fr).split(/[,/]/)[0].trim()}</span></button> })}</div>
         <p className="mt-3 text-xs text-muted">{g[5][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}. {L(lang, 'Changing them updates your calories, training and meals right away.', 'Les changer met à jour vos calories, votre entraînement et vos repas tout de suite.', 'تغييرها يحدّث سعراتك وتمارينك ووجباتك فورًا.')}</p>
       </section>
-      <section className="rounded-[24px] bg-surface p-4 shadow-soft">
-        <h2 className="font-display text-[17px] font-extrabold">{L(lang, 'My athlete meals', 'Mes repas de sportif', 'Mes repas de sportif')}</h2>
-        <p className="mt-0.5 text-xs text-muted">{L(lang, 'Sport-nutrition dishes only, the same whatever your country.', 'Uniquement des plats de sportif, les mêmes quel que soit votre pays.', 'Uniquement des plats de sportif, les mêmes quel que soit votre pays.')}</p>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[13px] font-bold">{([['week', '📅', L(lang, 'Week meals', 'Plats de la semaine', 'Plats de la semaine')], ['month', '🗓️', L(lang, 'Month meals', 'Plats du mois', 'Plats du mois')], ['shop', '🛒', L(lang, 'To buy', 'À acheter', 'À acheter')]] as const).map(([k, e, l]) => <button key={k} className="rounded-2xl bg-cream px-1 py-3 leading-tight active:scale-95" onClick={() => window.dispatchEvent(new CustomEvent('kz-plan', { detail: k }))}><span className="block text-2xl" aria-hidden>{e}</span>{l}</button>)}</div>
-      </section>
-      <GoalJourney p={p as GoalP} set={set as never} lang={lang} lo={n.lo} hi={n.hi} />
-      <section className="relative overflow-hidden rounded-[28px] p-4 text-white" style={{ background: 'linear-gradient(140deg,#2f6fa8,#1d3f6e)' }}>
-        <span className="zellige pointer-events-none absolute inset-0 opacity-[.07]" aria-hidden />
-        <p className="relative text-[12px] font-bold uppercase tracking-[.16em] text-white/70">{L(lang, 'My needs today', 'Mes besoins du jour', 'احتياجاتي اليوم')}</p>
-        <div className="relative mt-1 flex items-end gap-3"><span className="float text-5xl" aria-hidden>{SPORTS.find((x) => x[0] === p.sport)?.[1]}</span>
-          <div><b className="font-display text-[40px] font-extrabold leading-none tabular-nums">{n.kcal}</b><span className="ms-1 text-sm">kcal</span><p className="text-sm text-white/80">{g[1]} {g[4][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p></div></div>
-        <div className="relative mt-3 grid grid-cols-4 gap-1.5 text-center">{([['🥩', n.prot, 'g', L(lang, 'protein', 'protéines', 'بروتين')], ['🍚', n.carbs, 'g', L(lang, 'carbs', 'glucides', 'نشويات')], ['🥑', n.fat, 'g', L(lang, 'fat', 'lipides', 'دهون')], ['💧', n.water, 'L', L(lang, 'water', 'eau', 'ماء')]] as [string, number, string, string][]).map(([e, v, u, l], i) => (
-          <div key={l} className="rounded-2xl bg-white/12 p-2" style={{ background: 'rgba(255,255,255,.12)' }}><span className="float inline-block text-xl" style={{ animationDelay: `${i * 0.35}s` }}><E3 e={e} /></span><b className="block text-[15px] tabular-nums">{v}{u}</b><span className="block text-[12px] text-white/75">{l}</span></div>))}</div>
-      </section>
 
       <HealthPlan wk0={(Math.max(1, goalPlan(p as GoalP, n.lo, n.hi).wk) - 1) % 4} blk={Math.floor((Math.max(1, goalPlan(p as GoalP, n.lo, n.hi).wk) - 1) / 4)} p={p} set={set} lang={lang} kcal={p.kcalO ?? n.kcal} prot={p.protO ?? n.prot} />
+
+      <GoalJourney p={p as GoalP} set={set as never} lang={lang} lo={n.lo} hi={n.hi} />
 
       <details className="group rounded-[24px] bg-surface p-4 shadow-soft"><summary className="flex cursor-pointer list-none items-center justify-between font-display font-extrabold">{L(lang, 'My sports profile', 'Mon profil sportif', 'ملفي الرياضي')}<span className="text-sm font-semibold text-muted">{p.w} kg · {p.days}/{L(lang, 'wk', 'sem', 'أسبوع')} <span className="inline-block transition-transform group-open:rotate-90">›</span></span></summary><div className="mt-3">
         <p className="mb-2 text-[12px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My sport', 'Mon sport', 'رياضتي')}</p>
