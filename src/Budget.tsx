@@ -218,6 +218,9 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
 
   return (
     <div className="space-y-6 pb-4">
+      <button className="flex w-full items-center justify-between rounded-2xl bg-surface px-4 py-3 text-start shadow-soft active:scale-[.99]" onClick={onEdit}>
+        <span><b className="block text-sm">{L(lang, 'My criteria', 'Mes critères', 'معاييري')}</b><span className="text-xs text-muted">{L(lang, `Income ${money(inc, lang)} · fixed ${money(fix, lang)} · savings ${money(saveM, lang)}. Change them any time.`, `Revenus ${money(inc, lang)} · charges ${money(fix, lang)} · épargne ${money(saveM, lang)}. Modifiables à tout moment.`, 'يمكنك التعديل في أي وقت')}</span></span>
+        <span className="rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white">{L(lang, 'Edit', 'Modifier', 'تعديل')}</span></button>
       <div className="flex items-center justify-between">
         <button className="grid h-10 w-10 place-items-center rounded-full bg-surface shadow-soft disabled:opacity-30" disabled={mon <= first} onClick={() => setMon(mon - 1)} aria-label={L(lang, 'Previous month', 'Mois précédent', 'الشهر السابق')}><ChevronLeft size={20} aria-hidden /></button>
         <p className="font-serif text-xl font-semibold capitalize">{monthName(mon, lang)}</p>

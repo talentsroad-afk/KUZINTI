@@ -348,3 +348,12 @@ button:hover > .ico3d, a:hover > .ico3d { transform: scale(1.15) rotate(-6deg); 
 .rope-spin { transform-box: fill-box; transform-origin: 50% 50%; animation: ropeSpin .45s linear infinite; } @keyframes ropeSpin { from { transform: rotateX(0); } to { transform: rotateX(360deg); } }
 .coach-lines { animation: coachLines 1.6s ease-in-out infinite alternate; } @keyframes coachLines { from { transform: translateX(-6px); opacity: .5; } to { transform: translateX(6px); opacity: 1; } }
 .story-paused .coach-lines { animation-play-state: paused; }
+
+@keyframes nudgeL{0%,100%{transform:translateX(0)}50%{transform:translateX(-6px)}}
+@keyframes nudgeR{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+.swipe-nudge-l{animation:nudgeL 1s ease-in-out infinite}.swipe-nudge-r{animation:nudgeR 1s ease-in-out infinite}
+/* Smoother navigation: no tap delay, no accidental zoom, soft overscroll, springy tab presses. */
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+.navbar button, [role=tab] { transition: transform .18s cubic-bezier(.2,.9,.25,1), background-color .25s, color .25s; }
+.navbar button:active, [role=tab]:active { transform: scale(.94); }
+@media (prefers-reduced-motion: reduce) { .swipe-nudge-l, .swipe-nudge-r { animation: none; } }

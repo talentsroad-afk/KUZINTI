@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Play, Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, Soup, Sun, Sunrise, Utensils, type LucideIcon } from 'lucide-react'
+import { RefreshCw, Play, Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, Soup, Sun, Sunrise, type LucideIcon } from 'lucide-react'
 import type { Lang } from './lib/i18n'
 import { buildProgram } from './Program'
 import { WorkoutStory } from './Coach'
@@ -45,29 +45,32 @@ const PRE: M[] = [['Banane et amandes', 'Banana and almonds', 250, 6, [['Banane'
 const POST: M[] = [['Shaker lait et banane', 'Milk and banana shake', 300, 25, [['Lait', 300, 'ml'], ['Banane', 1, 'pc'], ['Whey (option)', 20, 'g']]], ['Skyr et fruit', 'Skyr and fruit', 200, 20, [['Skyr', 200, 'g'], ['Fruit', 1, 'pc']]], ['2 œufs durs et une pomme', '2 boiled eggs and an apple', 230, 13, [['Œufs durs', 2, 'pc'], ['Pomme', 1, 'pc']]]]
 const SNK: M[] = [['Fruit et poignée de noix', 'Fruit and a handful of nuts', 220, 5, [['Fruit', 1, 'pc'], ['Noix', 20, 'g']]], ['Fromage blanc et cannelle', 'Quark and cinnamon', 160, 16, [['Fromage blanc', 200, 'g']]]]
 
-type Item = { at: string; icon: LucideIcon; tone: string; title: string; sub?: string; kcal?: number; prot?: number; list?: [string, string][] }
+type Item = { at: string; icon: LucideIcon; tone: string; title: string; sub?: string; kcal?: number; prot?: number; list?: [string, string][]; slot?: string }
 const fmtQ = (q: number, u: string) => u === 'pc' ? (q < 1 ? '½' : `${Math.round(q * 2) / 2}`) : `${Math.round(q / 5) * 5} ${u}`
+export type Swaps = Record<string, number>
 
-/** One day of the plan: meals sized to the calorie target, the session from the programme, water and sleep, in time order. */
-export function dayPlan(p: SportProfile & { lvl?: Lvl }, week: number, d: number, kcal: number, lang: Lang, am: boolean) {
+/** One day of the plan: meals sized to the calorie target, the session from the programme, water and sleep, in time order.
+ *  `sw` holds the person's own changes: how many options a given meal slot was moved forward. */
+export function dayPlan(p: SportProfile & { lvl?: Lvl }, week: number, d: number, kcal: number, lang: Lang, am: boolean, sw: Swaps = {}) {
   const { days } = buildProgram(p, week); const s = days[d]; const k = d + week * 7
-  const pick = <T,>(a: T[], o = 0) => a[(k + o) % a.length]
-  const meals: [string, M, LucideIcon, string][] = [['b', pick(BRK), Sunrise, '#e8892b'], ['l', pick(LUN, 1), Salad, '#25a35a'], ['d', pick(DIN, 2), Soup, '#5b6bd6']]
-  const snacks: M[] = s ? [pick(PRE), pick(POST, 1)] : [pick(SNK)]
-  const base = meals.reduce((a, m) => a + m[1][2], 0) + snacks.reduce((a, m) => a + m[2], 0)
+  const pick = <T,>(a: T[], o = 0, key = '') => a[(k + o + (sw[`${week}-${d}-${key}`] ?? 0)) % a.length]
+  const meals: [string, M, LucideIcon, string][] = [['b', pick(BRK, 0, 'b'), Sunrise, '#e8892b'], ['l', pick(LUN, 1, 'l'), Salad, '#25a35a'], ['d', pick(DIN, 2, 'd'), Soup, '#5b6bd6']]
+  const snacks: [string, M][] = s ? [['pre', pick(PRE, 0, 'pre')], ['post', pick(POST, 1, 'post')]] : [['snk', pick(SNK, 0, 'snk')]]
+  const base = meals.reduce((a, m) => a + m[1][2], 0) + snacks.reduce((a, m) => a + m[1][2], 0)
   const f = Math.max(0.7, Math.min(1.6, kcal / base))
   const meal = (m: M): Pick<Item, 'title' | 'kcal' | 'prot' | 'list'> => ({ title: lang === 'en' ? m[1] : m[0], kcal: Math.round(m[2] * f / 10) * 10, prot: Math.round(m[3] * f), list: m[4].map(([n, q, u]) => [n, fmtQ(q * f, u)]) })
+  const sn = (i: number) => ({ ...meal(snacks[i][1]), slot: snacks[i][0] })
   const items: Item[] = [
     { at: '07:00', icon: Droplet, tone: '#2f9be6', title: L(lang, 'Wake up · big glass of water', 'Réveil · un grand verre d’eau'), sub: '500 ml' },
-    { at: '07:30', icon: meals[0][2], tone: meals[0][3], ...meal(meals[0][1]) },
+    { at: '07:30', icon: meals[0][2], tone: meals[0][3], slot: 'b', ...meal(meals[0][1]) },
   ]
   const sess: Item | null = s ? { at: am ? '09:30' : '18:00', icon: Dumbbell, tone: ['#25a35a', '#e0a526', '#e5484d'][s.hard - 1], title: s.t, sub: `${s.min} min`, list: s.ex.map(([a, b]) => [a, b]) } : null
-  if (s && am) items.push({ at: '09:00', icon: Apple, tone: '#e0a526', ...meal(snacks[0]) }, sess!, { at: '10:45', icon: Coffee, tone: '#9a6a3a', ...meal(snacks[1]) })
-  else if (!s) items.push({ at: '10:30', icon: Apple, tone: '#e0a526', ...meal(snacks[0]) })
-  items.push({ at: '12:30', icon: meals[1][2], tone: meals[1][3], ...meal(meals[1][1]) })
-  if (s && !am) items.push({ at: '16:30', icon: Apple, tone: '#e0a526', ...meal(snacks[0]) }, sess!, { at: '19:15', icon: Sandwich, tone: '#9a6a3a', ...meal(snacks[1]) })
+  if (s && am) items.push({ at: '09:00', icon: Apple, tone: '#e0a526', ...sn(0) }, sess!, { at: '10:45', icon: Coffee, tone: '#9a6a3a', ...sn(1) })
+  else if (!s) items.push({ at: '10:30', icon: Apple, tone: '#e0a526', ...sn(0) })
+  items.push({ at: '12:30', icon: meals[1][2], tone: meals[1][3], slot: 'l', ...meal(meals[1][1]) })
+  if (s && !am) items.push({ at: '16:30', icon: Apple, tone: '#e0a526', ...sn(0) }, sess!, { at: '19:15', icon: Sandwich, tone: '#9a6a3a', ...sn(1) })
   if (!s) items.push({ at: '18:00', icon: Sun, tone: '#25a35a', title: L(lang, 'Active rest · 30 min walk', 'Repos actif · 30 min de marche'), sub: L(lang, 'or 15 min of stretching', 'ou 15 min d’étirements') })
-  items.push({ at: '20:00', icon: meals[2][2], tone: meals[2][3], ...meal(meals[2][1]) }, { at: '22:30', icon: BedDouble, tone: '#5b6bd6', title: L(lang, 'Sleep 7–9 h', 'Dodo 7 à 9 h'), sub: L(lang, 'Muscles grow while you sleep', 'Les muscles se construisent en dormant') })
+  items.push({ at: '20:00', icon: meals[2][2], tone: meals[2][3], slot: 'd', ...meal(meals[2][1]) }, { at: '22:30', icon: BedDouble, tone: '#5b6bd6', title: L(lang, 'Sleep 7–9 h', 'Dodo 7 à 9 h'), sub: L(lang, 'Muscles grow while you sleep', 'Les muscles se construisent en dormant') })
   const tk = items.reduce((a, x) => a + (x.kcal ?? 0), 0); const tp = items.reduce((a, x) => a + (x.prot ?? 0), 0)
   return { items, tk, tp, s }
 }
@@ -76,7 +79,10 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
   const today = (new Date().getDay() + 6) % 7
   const [view, setView] = useState<'day' | 'week' | 'month'>('day'); const [w, setW] = useState(wk0); const [d, setD] = useState(today); const [open, setOpen] = useState<number | null>(null); const [am, setAm] = useState(false); const [story, setStory] = useState<{ t: string; ex: [string, string][] } | null>(null)
   const DN = lang === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-  const day = dayPlan(p, w + blk * 4, d, kcal, lang, am)
+  const sw = p.sw ?? {}; const wa = w + blk * 4
+  const swap = (wk: number, dd: number, slot: string) => { const key = `${wk}-${dd}-${slot}`; set({ sw: { ...sw, [key]: (sw[key] ?? 0) + 1 } }) }
+  const [wOpen, setWOpen] = useState<number | null>(null); const [mOpen, setMOpen] = useState<number | null>(null)
+  const day = dayPlan(p, wa, d, kcal, lang, am, sw)
   const perWeek = p.goal === 'cut' ? -0.5 : p.goal === 'bulk' ? 0.25 : 0
   return (
     <section className="rounded-[24px] bg-surface p-4 shadow-soft">
@@ -94,27 +100,34 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
             <span className="w-10 shrink-0 pt-2.5 text-end text-[12px] font-bold tabular-nums text-muted">{x.at}</span>
             <span className="relative z-10 mt-1.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-white ring-4 ring-surface" style={{ background: x.tone }}><x.icon size={14} strokeWidth={2.4} aria-hidden /></span>
             <button className={`min-w-0 flex-1 rounded-2xl px-3 py-2 text-start transition ${x.list ? 'active:scale-[.99]' : ''} ${x.icon === Dumbbell ? 'bg-forest text-white' : 'bg-cream/70'}`} onClick={() => x.list && setOpen(open === i ? null : i)} aria-expanded={open === i}>
-              <span className="flex items-start gap-2"><b className="flex-1 text-[14px] leading-snug">{x.title}</b>{x.list && <ChevronDown size={16} className={`mt-0.5 shrink-0 opacity-60 transition-transform ${open === i ? 'rotate-180' : ''}`} aria-hidden />}</span>
+              <span className="flex items-start gap-2"><b className="flex-1 text-[14px] leading-snug">{x.title}</b>{x.slot && <span role="button" tabIndex={0} aria-label={L(lang, 'Another meal', 'Autre repas')} onClick={(ev) => { ev.stopPropagation(); swap(wa, d, x.slot!) }} className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-forest shadow-soft active:scale-90"><RefreshCw size={14} aria-hidden /></span>}{x.list && <ChevronDown size={16} className={`mt-0.5 shrink-0 opacity-60 transition-transform ${open === i ? 'rotate-180' : ''}`} aria-hidden />}</span>
               <span className={`block text-xs ${x.icon === Dumbbell ? 'text-white/75' : 'text-muted'}`}>{x.kcal ? `${x.kcal} kcal · ${x.prot} g ${L(lang, 'protein', 'prot.')}` : x.sub}</span>
               {open === i && x.list && <ul className="fade-up mt-2 space-y-0.5 border-t border-current/10 pt-2">{x.list.map(([n, q], j) => <li key={j} className="flex justify-between gap-2 text-[13px]"><span>{n}</span><b className="tabular-nums">{q}</b></li>)}</ul>}
               {x.icon === Dumbbell && x.list && <span role="button" tabIndex={0} onClick={(ev) => { ev.stopPropagation(); setStory({ t: x.title, ex: x.list! }) }} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-apricot py-2 text-sm font-extrabold text-ink active:scale-95"><Play size={15} aria-hidden /> {L(lang, 'Start with the coach', 'Démarrer avec le coach')}</span>}
             </button></li>))}</ol>
       </>}
 
-      {view === 'week' && <div key={w} className="stagger mt-3 space-y-1.5">{DN.map((n, i) => { const x = dayPlan(p, w + blk * 4, i, kcal, lang, am); return (
-        <button key={i} onClick={() => { setD(i); setView('day') }} className="flex w-full items-center gap-3 rounded-2xl bg-cream/70 px-3 py-2.5 text-start active:scale-[.99]">
-          <span className="w-9 text-[12px] font-extrabold uppercase text-muted">{n}</span>
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: x.s ? ['#25a35a', '#e0a526', '#e5484d'][x.s.hard - 1] : '#9aa3ab' }}>{x.s ? <Dumbbell size={16} aria-hidden /> : <Moon size={16} aria-hidden />}</span>
-          <span className="min-w-0 flex-1"><b className="block truncate text-sm">{x.s ? `${x.s.t} · ${x.s.min} min` : L(lang, 'Rest + walk', 'Repos + marche')}</b><span className="block truncate text-xs text-muted">{x.items.filter((y) => y.kcal).length} {L(lang, 'meals', 'repas')} · {x.tk} kcal · {x.tp} g</span></span>
-          <Utensils size={15} className="text-muted" aria-hidden /></button>) })}</div>}
+      {view === 'week' && <div key={w} className="stagger mt-3 space-y-1.5">{DN.map((n, i) => { const x = dayPlan(p, wa, i, kcal, lang, am, sw); const op = wOpen === i; return (
+        <div key={i} className="overflow-hidden rounded-2xl bg-cream/70">
+          <button onClick={() => setWOpen(op ? null : i)} aria-expanded={op} className="flex w-full items-center gap-3 px-3 py-2.5 text-start active:scale-[.99]">
+            <span className="w-9 text-[12px] font-extrabold uppercase text-muted">{n}</span>
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: x.s ? ['#25a35a', '#e0a526', '#e5484d'][x.s.hard - 1] : '#9aa3ab' }}>{x.s ? <Dumbbell size={16} aria-hidden /> : <Moon size={16} aria-hidden />}</span>
+            <span className="min-w-0 flex-1"><b className="block truncate text-sm">{x.s ? `${x.s.t} · ${x.s.min} min` : L(lang, 'Rest + walk', 'Repos + marche')}</b><span className="block truncate text-xs text-muted">{x.items.filter((y) => y.kcal).length} {L(lang, 'meals', 'repas')} · {x.tk} kcal · {x.tp} g</span></span>
+            <ChevronDown size={16} className={`text-muted transition-transform ${op ? 'rotate-180' : ''}`} aria-hidden /></button>
+          {op && <ul className="fade-up space-y-1 border-t border-line/60 px-3 py-2">{x.items.filter((y) => y.kcal).map((y, j) => <li key={j} className="flex items-center gap-2 text-[13px]"><span className="w-10 shrink-0 tabular-nums text-muted">{y.at}</span><span className="min-w-0 flex-1 leading-snug">{y.title}<span className="block text-xs text-muted">{y.kcal} kcal · {y.prot} g</span></span>{y.slot && <button className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-forest shadow-soft active:scale-90" onClick={() => swap(wa, i, y.slot!)} aria-label={L(lang, 'Another meal', 'Autre repas')}><RefreshCw size={13} aria-hidden /></button>}</li>)}
+            <li><button className="mt-1 w-full text-center text-xs font-bold text-forest" onClick={() => { setD(i); setView('day') }}>{L(lang, 'Open the day ›', 'Ouvrir la journée ›')}</button></li></ul>}
+        </div>) })}</div>}
 
-      {view === 'month' && <div className="mt-3 space-y-2">{[0, 1, 2, 3].map((i) => { const pr = buildProgram(p, i + blk * 4); const n = pr.days.filter(Boolean).length; const min = pr.days.reduce((a, x) => a + (x?.min ?? 0), 0); return (
-        <button key={i} onClick={() => { setW(i); setView('week') }} className={`w-full rounded-2xl p-3 text-start active:scale-[.99] ${i === 3 ? 'bg-leaf/20' : 'bg-cream/70'}`}>
-          <div className="flex items-center justify-between"><b className="font-display">{L(lang, 'Week', 'Semaine')} {i + 1}</b><span className="rounded-full bg-surface px-2 py-0.5 text-[12px] font-bold text-forest">{['Base', '+15 %', '+30 %', L(lang, 'Recovery', 'Récupération')][i]}</span></div>
-          <p className="mt-1 text-xs text-muted">{n} {L(lang, 'sessions', 'séances')} · {min} min · {kcal} kcal/{L(lang, 'day', 'jour')} · {prot} g {L(lang, 'protein', 'protéines')}</p>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface"><div className="grow-x h-full rounded-full bg-forest" style={{ width: `${[60, 75, 90, 45][i]}%` }} /></div>
-          <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold"><Scale size={13} aria-hidden /> {L(lang, 'Sunday weigh-in', 'Pesée le dimanche')}{perWeek ? ` · ${L(lang, 'target', 'objectif')} ${perWeek > 0 ? '+' : ''}${(perWeek * (i + 1)).toFixed(perWeek % 0.5 ? 2 : 1)} kg` : ` · ${L(lang, 'keep your weight', 'garder ton poids')}`}</p>
-        </button>) })}</div>}
+      {view === 'month' && <div className="mt-3 space-y-2">{[0, 1, 2, 3].map((i) => { const pr = buildProgram(p, i + blk * 4); const n = pr.days.filter(Boolean).length; const min = pr.days.reduce((a, x) => a + (x?.min ?? 0), 0); const op = mOpen === i; return (
+        <div key={i} className={`rounded-2xl p-3 ${i === 3 ? 'bg-leaf/20' : 'bg-cream/70'}`}>
+          <button className="w-full text-start active:scale-[.99]" onClick={() => { setW(i); setView('week') }}>
+            <div className="flex items-center justify-between"><b className="font-display">{L(lang, 'Week', 'Semaine')} {i + 1}</b><span className="rounded-full bg-surface px-2 py-0.5 text-[12px] font-bold text-forest">{['Base', '+15 %', '+30 %', L(lang, 'Recovery', 'Récupération')][i]}</span></div>
+            <p className="mt-1 text-xs text-muted">{n} {L(lang, 'sessions', 'séances')} · {min} min · {kcal} kcal/{L(lang, 'day', 'jour')} · {prot} g {L(lang, 'protein', 'protéines')}</p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface"><div className="grow-x h-full rounded-full bg-forest" style={{ width: `${[60, 75, 90, 45][i]}%` }} /></div>
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold"><Scale size={13} aria-hidden /> {L(lang, 'Sunday weigh-in', 'Pesée le dimanche')}{perWeek ? ` · ${L(lang, 'target', 'objectif')} ${perWeek > 0 ? '+' : ''}${(perWeek * (i + 1)).toFixed(perWeek % 0.5 ? 2 : 1)} kg` : ` · ${L(lang, 'keep your weight', 'garder ton poids')}`}</p></button>
+          <button className="mt-2 flex w-full items-center justify-between rounded-xl bg-surface px-3 py-2 text-xs font-bold text-forest" onClick={() => setMOpen(op ? null : i)} aria-expanded={op}>{L(lang, 'Meals of the week', 'Repas de la semaine')}<ChevronDown size={15} className={`transition-transform ${op ? 'rotate-180' : ''}`} aria-hidden /></button>
+          {op && <div className="fade-up mt-2 space-y-1.5">{DN.map((dn, di) => { const x = dayPlan(p, i + blk * 4, di, kcal, lang, am, sw); return <div key={di} className="rounded-xl bg-surface px-3 py-2 text-[12.5px]"><b className="text-forest">{dn}</b> · {x.tk} kcal{x.items.filter((y) => y.slot === 'b' || y.slot === 'l' || y.slot === 'd').map((y, j) => <p key={j} className="mt-0.5 leading-snug text-ink/80"><span className="inline-block w-12 text-muted">{y.at}</span>{y.title}</p>)}<button className="mt-1 text-xs font-bold text-forest" onClick={() => { setW(i); setD(di); setView('day') }}>{L(lang, 'Change ›', 'Modifier ›')}</button></div> })}</div>}
+        </div>) })}</div>}
       {story && <WorkoutStory title={story.t} ex={story.ex} lang={lang} onClose={() => setStory(null)} />}
     </section>)
 }
