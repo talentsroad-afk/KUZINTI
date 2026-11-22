@@ -8,6 +8,7 @@ import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { adaptToBudget, adaptToMode, composeWeek, listCost, offMode } from './lib/plan'
 import { RecipesTab } from './Extra'
+import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore } from './lib/stores'
 import { Logo, Sheet } from './ui'
 import { FoodTile } from './ui'
@@ -109,7 +110,6 @@ function Onboarding() {
   )
 }
 
-type Tab = 'home' | 'recipes' | 'week' | 'list' | 'stores' | 'profile'
 const TABS: [Tab, string, string][] = [['home', '🏡', 'tHome'], ['recipes', '📖', 'tRecipes'], ['week', '🗓️', 'tWeek'], ['list', '🛒', 'list'], ['profile', '👤', 'profile']]
 
 function Shell() {
@@ -123,22 +123,27 @@ function Shell() {
   const { extraCost, total, items, lines, homeCost, customCost } = useBasket()
   const budget = me!.budget; const over = total > budget
   const celebrate = () => setBoom((b) => b + 1)
-  const say = (m: string) => { setNote(m); setTimeout(() => setNote((x) => (x === m ? null : x)), 5000) }
+  const [undo, setUndo] = useState<[string, () => void] | null>(null)
+  const [assist, setAssist] = useState(false); const [tour, setTour] = useState(() => !tourDone())
+  const say = (m: string, u?: [string, () => void]) => { setNote(m); if (u) setUndo(u); setTimeout(() => setNote((x) => (x === m ? null : x)), u ? 8000 : 5000) }
+  const snap = (label: string): [string, () => void] => { const prev = JSON.parse(JSON.stringify(h.plan)); const store = h.store; return [label, () => { upHouse((x) => { x.plan = prev; x.store = store }, '↩ ' + label); setUndo(null); setNote(null) }] }
 
   const compose = () => {
+    const u = snap(t('composeAuto', lang))
     const next = composeWeek({ ...p, budget: Math.max(0, budget - extraCost) }, h.pantry, h.extras ?? {})
     upHouse((x) => { x.plan = next; x.qty = {} }, 'composed the week'); award(15, '✨'); celebrate()
     const c = listCost(next, h.pantry, h.extras ?? {}) + extraCost
-    say(c <= budget ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang)); setTab('week')
+    say(c <= budget ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); setTab('week')
   }
   const adapt = (b = budget) => {
+    const u = snap(t('h_budget', lang))
     const fit = adaptToBudget(h.plan, Math.max(0, b - extraCost), h.pantry, h.extras ?? {}, p)
     upHouse((x) => { x.plan = fit.plan; x.qty = {} }, 'fitted the budget')
     const bits = [fit.swapped && `${fit.swapped} ${t('swapped', lang)}`, fit.scaled && `${fit.scaled} ${t('scaled', lang)}`].filter(Boolean).join(' · ')
-    say(fit.after + extraCost <= b ? `✅ ${bits || t('fitted', lang)} · −${money(fit.before - fit.after, lang)}` : `${t('tight', lang)} ${bits}`)
+    say(fit.after + extraCost <= b ? `✅ ${bits || t('fitted', lang)} · −${money(fit.before - fit.after, lang)}` : `${t('tight', lang)} ${bits}`, u)
   }
   const setBudget = (b: number) => { patchMe({ budget: b }); if (hasPlan && total > b) adapt(b) }
-  const makeHealthy = () => { const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`); award(10, '🥗'); celebrate() }
+  const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
   const [up, setUp] = useState(false)
   useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
   const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { setTab(k); scrollTo(0, 0) } }
@@ -146,13 +151,20 @@ function Shell() {
   const steps: [string, Tab, boolean][] = [['st_compose', 'home', hasPlan], ['st_week', 'week', hasPlan], ['st_list', 'list', nChk > 0], ['st_store', 'stores', !!h.store], ['st_done', 'list', items.length > 0 && nChk >= items.length]]
   const cur = steps.findIndex((x) => !x[2])
 
-  const pickBest = () => { const b = bestStore(lines, (s) => homeCost * s.m.grocery + customCost); upHouse((x) => { x.store = b.id }, `🏬 ${b.name}`); say(`👑 ${b.name} · ${t('bestPicked', lang)}`); go('list') }
+  const pickBest = () => { const u = snap(t('h_store', lang)); const b = bestStore(lines, (s) => homeCost * s.m.grocery + customCost); upHouse((x) => { x.store = b.id }, `🏬 ${b.name}`); say(`👑 ${b.name} · ${t('bestPicked', lang)}`, u); go('list') }
   const help: [string, () => void] = !hasPlan || tab === 'home' || tab === 'recipes' ? [t('composeAuto', lang), compose]
     : over ? [t('h_budget', lang), () => adapt()]
     : tab === 'week' ? (offMode(h.plan, 'light') > 3 && p.goals.includes('healthy') ? [t('makeHealthy', lang), makeHealthy] : [t('h_shop', lang), () => go('list')])
     : tab === 'list' && !h.store ? [t('h_store', lang), pickBest]
     : tab === 'stores' ? [t('h_store', lang), pickBest]
     : [t('h_shop', lang), () => go('list')]
+  const more: [string, () => void][] = [
+    ...(hasPlan && tab !== 'week' ? [[`🗓️ ${t('tWeek', lang)}`, () => go('week')] as [string, () => void]] : []),
+    ...(hasPlan && tab !== 'list' ? [[`🛒 ${t('list', lang)}`, () => go('list')] as [string, () => void]] : []),
+    ...(hasPlan && tab !== 'stores' ? [[`🏬 ${t('compareStores', lang)}`, () => go('stores')] as [string, () => void]] : []),
+    ...(over ? [[`💰 ${t('h_budget', lang)}`, () => adapt()] as [string, () => void]] : []),
+    [`⚙️ ${t('adjustB', lang)}`, () => setSheet(true)],
+  ].filter((x) => x[0] !== help[0]) as [string, () => void][]
   const title = t(tab === 'stores' ? 'tStores' : TABS.find((x) => x[0] === tab)![2], lang)
 
   return (
@@ -161,29 +173,35 @@ function Shell() {
       <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.88)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-2.5">
           <Logo size={32} /><span className="font-display text-lg font-extrabold">{title}</span>
-          <button className="ms-auto min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
+          <button data-tour="budget" className="ms-auto min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
             <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
           </button>
         </div>
-        <div className="mx-auto flex max-w-2xl items-center px-4 pb-2">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
+        <div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-2">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
           <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${ok ? 'bg-forest text-white' : i === cur ? 'bg-apricot text-ink ring-2 ring-apricot/40' : 'bg-cream text-muted'}`}>{ok ? '✓' : i + 1}</span>
           <span className={`truncate ${i === cur ? 'text-ink' : 'text-muted'}`}>{t(k, lang)}</span>{i < 4 && <span className={`h-0.5 min-w-1 flex-1 rounded ${ok ? 'bg-forest' : 'bg-line'}`} />}</button>)}</div>
-        {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><button className="w-full rounded-2xl bg-forest px-4 py-2 text-start text-sm font-semibold text-white" onClick={() => setNote(null)}>{note}</button></div>}
+        {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
       <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-2">
+        <Hint tab={tab} />
         <div key={tab + lang} className="fade-up">
           {tab === 'home' && <HomeTab compose={compose} go={go} total={total} items={items.length} />}
           {tab === 'week' && <WeekTab compose={compose} makeHealthy={makeHealthy} say={say} />}
-          {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} />}
+          {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
           {tab === 'recipes' && <RecipesTab say={say} />}
           {tab === 'profile' && <ProfileScreen celebrate={celebrate} />}
         </div>
       </main>
-      <button className="fixed bottom-[5.5rem] start-4 z-40 flex max-w-[70vw] items-center gap-2 rounded-full bg-ink/90 px-4 py-2.5 text-sm font-bold text-white shadow-lg backdrop-blur active:scale-95" onClick={help[1]}><span className="text-base">✨</span><span className="truncate">{help[0]}</span></button>
+      <div data-tour="assist" className="fixed bottom-[5.5rem] start-4 z-40 flex max-w-[78vw] items-center gap-1 rounded-full bg-ink/90 p-1 text-sm font-bold text-white shadow-lg backdrop-blur">
+        <button className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}>✨</button>
+        <button className="truncate px-3 py-2 active:scale-95" onClick={help[1]}>➜ {help[0]}</button>
+      </div>
+      <Assistant open={assist} onClose={() => setAssist(false)} tab={tab} next={help} more={more} undo={undo} onTour={() => setTour(true)} go={go} />
+      <Tour run={tour} onEnd={() => setTour(false)} />
       {up && <button className="fixed bottom-[5.5rem] end-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
-      <nav className="tabbar" aria-label="Main">
+      <nav data-tour="tabs" className="tabbar" aria-label="Main">
         {TABS.map(([k, e, key]) => <button key={k} onClick={() => go(k === 'list' && tab === 'stores' ? 'list' : k)} aria-current={tab === k || (k === 'list' && tab === 'stores') ? 'page' : undefined} className={`tab ${tab === k ? 'tab-on' : ''}`}><span className={`text-[22px] leading-none ${tab === k ? 'pop' : 'grayscale-[.6] opacity-70'}`}>{e}</span><span>{t(key, lang)}</span></button>)}
       </nav>
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>

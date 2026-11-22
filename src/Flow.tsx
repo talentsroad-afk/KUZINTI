@@ -42,7 +42,8 @@ export function useBasket() {
 }
 
 /** Shopping: live budget (planned / spent / left), big checkboxes, tap a price to enter what you really paid. */
-export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goStores: () => void }) {
+export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => void; goStores: () => void; compose: () => void }) {
+  const [sure, setSure] = useState(false)
   const { lang, me, house, upHouse, award, toast } = useApp()
   const { lines, homeRows, custom, store, mul, price, total, spent, items } = useBasket()
   const [edit, setEdit] = useState<{ key: string; name: string; est: number; line?: Line } | null>(null)
@@ -106,6 +107,7 @@ export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goS
       </div>
       {day >= 0 && <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`chip shrink-0 capitalize ${d === day ? '!bg-forest !text-white' : ''}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 3)}</button>)}</div>}
       <FridgeSheet open={fridge} onClose={() => setFridge(false)} />
+      {!Object.keys(house!.plan).length && !homeRows.length && !custom.length && <div className="card fade-up space-y-3 p-6 text-center"><p className="text-4xl">🛒</p><p className="font-display text-lg font-extrabold">{t('emptyListT', lang)}</p><p className="text-sm text-muted">{t('emptyListD', lang)}</p><button className="btn btn-primary w-full" onClick={compose}>✨ {t('composeAuto', lang)}</button><p className="text-xs text-muted">{t('emptyListOr', lang)}</p></div>}
       <p className="px-1 text-xs text-muted">{done}/{items.length} · {t('paid', lang).replace(' (MAD)', '')} → {t('ok', lang)}</p>
       {groups.map(([a, rows]) => (
         <div key={a} className="card px-4 py-2"><h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>
@@ -121,7 +123,9 @@ export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goS
         <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} name={c.name} q={c.qty || undefined} sub={c.note} est={c.price} />)}</div>
         <button className="w-full py-2.5 text-start text-sm font-bold text-forest" onClick={() => setAdding(true)}>＋ {t('addProd', lang)}</button>
       </div>
-      {done > 0 && <button className="btn btn-primary w-full !min-h-14" onClick={finish}>✓ {t('finish', lang)}</button>}
+      {done > 0 && (sure
+        ? <div className="card fade-up space-y-2 p-4 text-center"><p className="text-sm">{t('finishSure', lang)}</p><div className="flex gap-2"><button className="btn btn-soft flex-1" onClick={() => setSure(false)}>{t('cancel', lang)}</button><button className="btn btn-primary flex-1" onClick={() => { setSure(false); finish() }}>✓ {t('confirm', lang)}</button></div></div>
+        : <button className="btn btn-primary w-full !min-h-14" onClick={() => setSure(true)}>✓ {t('finish', lang)}</button>)}
 
       <Sheet open={!!edit} onClose={() => setEdit(null)} title={edit?.name ?? ''}>
         {edit && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); savePaid() }}>

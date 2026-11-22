@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --bg: 244 241 232; --surface: 255 255 252; --ink: 26 43 36; --muted: 96 112 104; --line: 222 226 214;
+  --bg: 247 244 237; --surface: 255 255 253; --ink: 20 38 31; --muted: 104 116 108; --line: 228 226 216;
   --forest: 36 91 67; --leaf: 141 187 145; --apricot: 242 185 107; --cream: 244 241 232; --danger: 190 70 60; --shadow: 36 91 67;
 }
 html, body, #root { min-height: 100%; }
@@ -63,3 +63,25 @@ button, input, select { font: inherit; color: inherit; }
 .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; font-size: 10.5px; font-weight: 600; color: rgb(var(--muted)); border: 0; background: none; cursor: pointer; }
 .tab-on { color: rgb(var(--forest)); }
 .fade-up { animation: rise .22s ease-out both; }
+button, a { -webkit-tap-highlight-color: transparent; transition: transform .12s ease, background-color .2s ease, color .2s ease, box-shadow .2s ease; }
+button:active:not(:disabled) { transform: scale(.97); }
+:focus-visible { outline: 3px solid rgb(var(--forest) / .55); outline-offset: 2px; border-radius: 12px; }
+@media (hover: hover) { .card button:hover, .chip:hover { filter: brightness(.97); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+/* Polish: premium, cohesive KUZINTI surfaces */
+.btn-primary { background: linear-gradient(180deg, rgb(48 112 84), rgb(var(--forest))); box-shadow: inset 0 1px 0 rgb(255 255 255 / .18), 0 12px 26px -14px rgb(var(--forest) / .9); letter-spacing: -.005em; }
+.btn-primary:hover { background: linear-gradient(180deg, rgb(42 102 76), rgb(30 76 56)); }
+.btn-soft { background: rgb(var(--surface)); box-shadow: inset 0 0 0 1px rgb(var(--line)), 0 4px 12px -10px rgb(var(--shadow) / .35); }
+.card { border-radius: 1.35rem; box-shadow: 0 0 0 1px rgb(var(--line) / .7), 0 1px 2px rgb(var(--shadow) / .04), 0 14px 30px -22px rgb(var(--shadow) / .35); }
+.chip { border-width: 1px; background: rgb(var(--surface) / .9); font-weight: 600; }
+.chip[aria-pressed="true"], .chip.\!bg-forest { box-shadow: 0 6px 14px -10px rgb(var(--forest)); }
+.calm { background:
+  radial-gradient(48rem 30rem at 0% -8%, rgb(var(--leaf) / .32), transparent 62%),
+  radial-gradient(40rem 28rem at 105% 0%, rgb(var(--apricot) / .22), transparent 60%),
+  linear-gradient(180deg, rgb(var(--bg)), rgb(250 248 243)); }
+.tabbar { background: rgb(var(--surface) / .82); border-top: 0; box-shadow: 0 -10px 30px -20px rgb(var(--shadow) / .35); }
+.tab { position: relative; transition: color .2s; }
+.tab-on::before { content: ''; position: absolute; top: 0; width: 3.2rem; height: 2rem; border-radius: 9999px; background: rgb(var(--leaf) / .28); z-index: -1; animation: pop .25s ease-out; }
+.tab-on { font-weight: 800; }
+input.input, .input { border-radius: 1rem; }
+::selection { background: rgb(var(--leaf) / .45); }
