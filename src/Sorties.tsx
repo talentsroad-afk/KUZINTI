@@ -82,7 +82,56 @@ export const CITIES: Record<string, Act[]> = {
     A('rif', '🎬', 'Cinémathèque du Rif', 'Film au Grand Socco', 30, 2, 'couple culture'),
     A('velo-tng', '🚴', 'Vélo sur la corniche de Malabata', 'Piste le long de la baie', 50, 2, 'sport'),
   ],
+  Agadir: [
+    A('oufella', '🏰', 'Kasbah d’Agadir Oufella', 'Vue sur toute la baie, montée en téléphérique', 100, 2, 'culture famille couple'),
+    A('souk-had', '🧺', 'Souk El Had', 'Grand marché aux épices, fruits et artisanat', 0, 2, 'culture famille'),
+    A('marina-agadir', '⛵', 'Marina et promenade', 'Balade face aux bateaux, glaces', 0, 2, 'couple famille'),
+    A('plage-agadir', '🏖️', 'Plage d’Agadir', 'Grande plage urbaine et corniche', 0, 3, 'famille nature sport'),
+    A('crocoparc', '🐊', 'Crocoparc', 'Parc botanique et crocodiles du Nil', 80, 2, 'famille nature'),
+    A('paradise-valley', '🏞️', 'Vallée du Paradis', 'Bassins naturels dans l’Atlas (1 h de route)', 0, 6, 'nature sport famille'),
+    A('taghazout', '🏄', 'Surf à Taghazout', 'Cours de 2 h, planche et combinaison', 300, 3, 'sport couple'),
+  ],
+  Chefchaouen: [
+    A('medina-bleue', '💙', 'Médina bleue', 'Ruelles peintes en bleu, artisans', 0, 2, 'culture couple famille'),
+    A('kasbah-chaouen', '🏰', 'Place Outa el Hammam et Kasbah', 'Jardin et musée dans la kasbah', 60, 1, 'culture'),
+    A('ras-el-ma', '💧', 'Source Ras el Ma', 'Cascade et lavoirs à l’entrée de la médina', 0, 1, 'nature famille'),
+    A('mosquee-espagnole', '🌄', 'Mosquée espagnole au coucher du soleil', 'Petite montée, vue sur la ville bleue', 0, 2, 'couple nature sport'),
+    A('akchour', '🏞️', 'Cascades d’Akchour', 'Randonnée et pont de Dieu (45 min de route)', 0, 6, 'nature sport famille'),
+  ],
+  Paris: [
+    A('louvre', '🖼️', 'Musée du Louvre', 'La Joconde, les antiques et la cour Napoléon (réserver)', 140, 3, 'culture couple famille'),
+    A('eiffel', '🗼', 'Tour Eiffel', 'Montée au 2ᵉ étage ou au sommet (réserver)', 180, 2, 'famille couple'),
+    A('orsay', '🎨', 'Musée d’Orsay', 'Impressionnistes dans une ancienne gare', 100, 2, 'culture couple'),
+    A('montmartre', '⛪', 'Montmartre et le Sacré-Cœur', 'Place du Tertre et vue sur Paris', 0, 2, 'culture couple famille'),
+    A('luxembourg', '🌳', 'Jardin du Luxembourg', 'Bassin, voiliers et chaises vertes', 0, 2, 'nature famille couple'),
+    A('canal-martin', '🚶', 'Canal Saint-Martin', 'Écluses et passerelles, pique-nique', 0, 2, 'couple nature'),
+    A('pompidou', '🏛️', 'Centre Pompidou', 'Art moderne et vue depuis le toit', 95, 2, 'culture'),
+    A('buttes-chaumont', '🌿', 'Parc des Buttes-Chaumont', 'Falaises, lac et belvédère', 0, 2, 'nature sport famille'),
+    A('seine-bateau', '⛴️', 'Croisière sur la Seine', 'Une heure entre les ponts et les monuments', 105, 1, 'couple famille'),
+    A('cite-sciences', '🔬', 'Cité des sciences', 'Expositions interactives pour les enfants', 80, 3, 'famille culture'),
+    A('jardin-plantes', '🦕', 'Jardin des Plantes et Grande Galerie', 'Squelettes, évolution et serres', 80, 2, 'famille nature culture'),
+    A('versailles', '👑', 'Château de Versailles', 'Galerie des Glaces et jardins (RER C)', 130, 6, 'culture famille couple'),
+  ],
+  Lyon: [
+    A('fourviere', '⛪', 'Basilique de Fourvière', 'Vue sur toute la ville, montée en funiculaire', 0, 2, 'culture couple famille'),
+    A('vieux-lyon', '🏘️', 'Vieux Lyon et ses traboules', 'Passages Renaissance entre les rues', 0, 2, 'culture couple'),
+    A('tete-or', '🦒', 'Parc de la Tête d’Or', 'Lac, zoo gratuit et roseraie', 0, 3, 'famille nature sport'),
+    A('confluences', '🌍', 'Musée des Confluences', 'Sciences et sociétés, architecture futuriste', 56, 2, 'culture famille'),
+    A('beaux-arts-lyon', '🖼️', 'Musée des Beaux-Arts', 'Collections dans une ancienne abbaye', 50, 2, 'culture'),
+    A('croix-rousse', '🧵', 'Pentes de la Croix-Rousse', 'Quartier des canuts et fresques', 0, 2, 'culture couple sport'),
+    A('berges-rhone', '🚴', 'Berges du Rhône à vélo', 'Piste cyclable le long du fleuve', 30, 2, 'sport nature couple'),
+  ],
+  Marseille: [
+    A('bonne-mere', '⛪', 'Notre-Dame de la Garde', 'La « Bonne Mère » et la vue sur la mer', 0, 2, 'culture famille couple'),
+    A('vieux-port', '⚓', 'Vieux-Port', 'Marché aux poissons du matin et ombrière', 0, 1, 'culture famille couple'),
+    A('mucem', '🏛️', 'MuCEM et fort Saint-Jean', 'Civilisations de la Méditerranée', 70, 2, 'culture couple'),
+    A('panier', '🏘️', 'Quartier du Panier', 'Ruelles colorées et Vieille Charité', 0, 2, 'culture couple'),
+    A('calanques', '🥾', 'Calanque de Sormiou', 'Randonnée et baignade dans les calanques', 0, 4, 'nature sport couple'),
+    A('frioul', '⛴️', 'Îles du Frioul', 'Navette depuis le Vieux-Port, criques', 70, 4, 'nature famille couple'),
+    A('catalans', '🏖️', 'Plage des Catalans et corniche Kennedy', 'Baignade et balade face aux îles', 0, 3, 'famille nature'),
+  ],
 }
+export const COUNTRY_CITIES: Record<string, string[]> = { MA: ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Chefchaouen'], FR: ['Paris', 'Lyon', 'Marseille'] }
 type Mode = 'day' | 'week' | 'month'
 type Fmt = 'full' | 'half' | 'eve' | 'night'
 const FMT: [Fmt, string, string, number][] = [['full', '☀️ Journée entière', '10h → 21h', 3], ['half', '🌤️ Demi-journée', '14h → 19h', 2], ['eve', '🌇 Fin de journée', '17h → 20h', 1], ['night', '🌙 Soirée', '19h → 23h', 1]]
@@ -93,6 +142,11 @@ const FOOD: Record<string, { lunch: [string, number][]; cafe: [string, number][]
   Marrakech: { lunch: [['Méchoui de la rue Mechouia', 90], ['Terrasse d’un riad en médina', 120]], cafe: [['Café des Épices (place Rahba Kedima)', 35], ['Terrasse sur Jemaa el-Fna', 30]], dinner: [['Stands de Jemaa el-Fna', 70], ['Tanjia en médina', 100], ['Dîner dans un riad', 300]], move: 'À pied en médina, petit taxi beige (20–40 MAD) en dehors.' },
   'Fès': { lunch: [['Bissara et brochettes à Bab Boujloud', 50], ['Restaurant traditionnel de la médina', 120]], cafe: [['Terrasse de Bab Boujloud', 20], ['Café Clock', 40]], dinner: [['Pastilla en médina', 150], ['Restaurant en ville nouvelle', 120]], move: 'Petit taxi rouge (10–25 MAD), puis à pied en médina (prendre un guide officiel).' },
   Tanger: { lunch: [['Poissons au port', 100], ['Snack du Grand Socco', 50]], cafe: [['Café Hafa', 30], ['Gran Café de Paris', 30]], dinner: [['Restaurant de la Kasbah', 180], ['Poissons sur la corniche', 150]], move: 'Petit taxi bleu (10–30 MAD). Cap Spartel et Achakar : grand taxi ou voiture.' },
+  Agadir: { lunch: [['Poissons grillés au port de pêche', 90], ['Snack de la corniche', 60]], cafe: [['Café de la marina', 30], ['Salon de thé du centre', 25]], dinner: [['Tajine sur la corniche', 120], ['Poissons à la marina', 180]], move: 'Petit taxi orange (10–30 MAD) ; bus Alsa en ville.' },
+  Chefchaouen: { lunch: [['Tajine sur la place Outa el Hammam', 80], ['Bissara et pain chaud en médina', 30]], cafe: [['Terrasse avec vue sur la ville bleue', 25], ['Café près de Ras el Ma', 20]], dinner: [['Restaurant en terrasse de la médina', 110], ['Fromage de chèvre et tajine local', 90]], move: 'La médina se fait à pied ; petit taxi pour Akchour (ou grand taxi partagé).' },
+  Paris: { lunch: [['Bistrot de quartier, formule du midi', 130], ['Marché des Enfants Rouges', 90]], cafe: [['Café en terrasse', 30], ['Boulangerie, viennoiseries', 20]], dinner: [['Brasserie parisienne', 220], ['Crêperie', 120]], move: 'Métro et RER (ticket ~2,50 €) ; Vélib’ pour les trajets courts.' },
+  Lyon: { lunch: [['Bouchon lyonnais', 150], ['Halles Paul Bocuse', 120]], cafe: [['Café sur les quais', 25], ['Pâtisserie, tarte aux pralines', 30]], dinner: [['Bouchon du Vieux Lyon', 180], ['Pizzeria de la presqu’île', 110]], move: 'Métro, tram et funiculaire (ticket ~2 €) ; Vélo’v en libre-service.' },
+  Marseille: { lunch: [['Panisse et poissons au Vieux-Port', 110], ['Snack du Panier', 70]], cafe: [['Café du Vieux-Port', 25], ['Navettes (biscuits) du four des Navettes', 20]], dinner: [['Bouillabaisse ou soupe de poissons', 250], ['Pizza au feu de bois', 110]], move: 'Métro, tram et navettes maritimes (ticket ~2 €).' },
 }
 const TIP: Record<Kind, string> = { famille: 'Prévois de l’eau, des en-cas et une casquette pour les enfants.', couple: 'Vise l’heure du coucher du soleil pour les vues et les photos.', sport: 'Pars tôt, prends de l’eau et des chaussures adaptées.', culture: 'Évite le vendredi midi et prévois de la monnaie pour l’entrée.', nature: 'Vérifie la météo et pars avec une petite veste.' }
 type Step = { t: string; e: string; n: string; d: string; p: number; id?: string }
@@ -142,7 +196,7 @@ const KINDS: [Kind, string][] = [['famille', '👨‍👩‍👧 Famille'], ['co
 /** Outings space: compose a day, a week or the month's weekends of real activities, each with a ready-to-follow program. */
 export function SortiesTab() {
   const { me, house, upHouse, patchMe, award } = useApp()
-  const city = CITIES[me!.city] ? me!.city : 'Casablanca'; const acts = CITIES[city]; const people = me!.size
+  const list = COUNTRY_CITIES[me!.country] ?? COUNTRY_CITIES.MA; const city = list.includes(me!.city) ? me!.city : list[0]; const acts = CITIES[city]; const people = me!.size
   const [kinds, setKinds] = useState<Kind[]>([]); const [budget, setBudget] = useState(400); const [mode, setMode] = useState<Mode>('day')
   const [mv, setMv] = useState<Move>('taxi'); const [fmt, setFmt] = useState<Fmt | 'auto'>('auto'); const [open, setOpen] = useState<string | null>('d0')
   type O = { outings2?: Partial<Record<Mode, Record<string, Day>>> }
@@ -167,7 +221,7 @@ export function SortiesTab() {
     <div className="stagger space-y-3">
       <div className="card space-y-3 p-4">
         <p className="text-xs font-bold uppercase tracking-wide text-muted">Où ?</p>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4">{Object.keys(CITIES).map((c) => <button key={c} className="chip shrink-0" aria-pressed={c === city} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>📍 {c}</button>)}</div>
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4">{list.map((c) => <button key={c} className="chip shrink-0" aria-pressed={c === city} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>📍 {c}</button>)}</div>
         <p className="text-xs font-bold uppercase tracking-wide text-muted">Quand ?</p>
         <div className="flex rounded-full bg-cream p-1">{([['day', '📅 Jour'], ['week', '🗓️ Semaine'], ['month', '📆 Mois']] as [Mode, string][]).map(([m, l]) => <button key={m} className={`flex-1 rounded-full py-2 text-sm font-bold ${mode === m ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }}>{l}</button>)}</div>
         <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>🎈 Composer {mode === 'day' ? 'ma journée' : mode === 'week' ? 'ma semaine' : 'mes week-ends'}</button>

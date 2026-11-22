@@ -137,6 +137,31 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
   tips.push([L(lang, 'Emergency fund', 'Épargne de précaution', 'احتياطي الطوارئ'), L(lang, `Keep 3 months of essentials aside: about ${money(emergency, lang)}. Build it before any other goal.`, `Gardez 3 mois de dépenses essentielles de côté : environ ${money(emergency, lang)}. Constituez-la avant tout autre objectif.`, `احتفظ بـ ${money(emergency, lang)}.`)])
   if ((m.fix.credit ?? 0) > 0) tips.push([L(lang, 'Loans first', 'Les crédits d’abord', 'القروض أولًا'), L(lang, 'Pay off the most expensive consumer loan first (avalanche method); avoid new revolving credit.', 'Remboursez d’abord le crédit conso le plus cher (méthode avalanche) et évitez tout nouveau crédit renouvelable.', 'سدّد القرض الأغلى أولًا.')])
   if (m.goal?.target && m.goal.monthly) tips.push([L(lang, 'Your goal', 'Votre objectif', 'هدفك'), L(lang, `${m.goal.n || 'Goal'}: ${money(Math.max(0, m.goal.target - m.goal.saved), lang)} to go, about ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / m.goal.monthly)} months at this pace.`, `${m.goal.n || 'Objectif'} : encore ${money(Math.max(0, m.goal.target - m.goal.saved), lang)}, soit environ ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / m.goal.monthly)} mois à ce rythme.`, `${m.goal.n}`)])
+  // Financial health score, 0-100, from five weighted, explainable criteria.
+  const essentials = fix + (m.env.food ?? 0) + (m.env.health ?? 0)
+  const lin = (x: number, good: number, bad: number) => Math.max(0, Math.min(1, (bad - x) / (bad - good)))
+  const envs = VAR.filter((k) => (m.env[k] ?? 0) > 0); const kept = envs.filter((k) => (sp[k] ?? 0) <= (m.env[k] ?? 0)).length
+  const crit: [string, number, number, string][] = inc ? [
+    [L(lang, 'Savings rate', 'Taux d’épargne', 'نسبة الادخار'), 25 * Math.min(1, saveM / (inc * 0.2)), 25, `${pct(saveM)} % / 20 %`],
+    [L(lang, 'Debt load', 'Endettement', 'المديونية'), 25 * lin(debt / inc, 0.3, 0.5), 25, `${pct(debt)} %`],
+    [L(lang, 'Essentials', 'Dépenses essentielles', 'الحاجيات'), 20 * lin(need / inc, 0.5, 0.8), 20, `${pct(need)} %`],
+    [L(lang, 'Safety cushion', 'Matelas de sécurité', 'الاحتياطي'), 15 * Math.min(1, (m.goal?.saved ?? 0) / Math.max(1, essentials * 3)), 15, `${((m.goal?.saved ?? 0) / Math.max(1, essentials)).toFixed(1)} ${L(lang, 'months', 'mois', 'أشهر')}`],
+    [L(lang, 'Envelopes kept', 'Enveloppes tenues', 'الأظرفة المحترمة'), envs.length ? 15 * (kept / envs.length) : 15, 15, `${kept}/${envs.length}`],
+  ] : []
+  const score = Math.round(crit.reduce((a, c) => a + c[1], 0))
+  const grade = score >= 80 ? [L(lang, 'Excellent', 'Excellente', 'ممتازة'), C.need] : score >= 60 ? [L(lang, 'Good', 'Bonne', 'جيدة'), C.want] : score >= 40 ? [L(lang, 'Fragile', 'Fragile', 'هشة'), C.save] : [L(lang, 'To fix', 'À redresser', 'تحتاج إصلاحًا'), 'rgb(var(--danger))']
+  // Personal 6-month programme, built from the weakest points first. Progress is ticked by the owner.
+  const startM = ym(m.since)
+  const prog: [string, string, string][] = []
+  prog.push(['track', L(lang, 'Take control', 'Reprendre le contrôle', 'استعادة السيطرة'), L(lang, `Record every expense for 30 days and set a standing transfer of ${money(Math.max(saveM, inc * 0.1), lang)} on payday.`, `Notez chaque dépense pendant 30 jours et programmez un virement automatique de ${money(Math.max(saveM, inc * 0.1), lang)} le jour de la paie.`, `سجّل كل مصروف لمدة 30 يومًا.`)])
+  if (pct(need) > 50) prog.push(['needs', L(lang, 'Lighten fixed costs', 'Alléger les charges', 'تخفيف المصاريف'), L(lang, `Renegotiate internet, phones and insurance, and shop with KUZINTI’s cheapest store. Target: −${money(need - inc * 0.5, lang)} per month.`, `Renégociez internet, téléphones et assurances, et faites vos courses au magasin le moins cher proposé par KUZINTI. Objectif : −${money(need - inc * 0.5, lang)} par mois.`, `خفّض ${money(need - inc * 0.5, lang)}.`)])
+  prog.push(['cushion1', L(lang, 'One month of safety', 'Un mois de sécurité', 'شهر من الأمان'), L(lang, `Reach ${money(essentials, lang)} on a separate savings account.`, `Atteignez ${money(essentials, lang)} sur un compte épargne séparé.`, `بلوغ ${money(essentials, lang)}.`)])
+  if ((m.fix.credit ?? 0) > 0) prog.push(['debt', L(lang, 'Attack the loans', 'Attaquer les crédits', 'مواجهة القروض'), L(lang, `Put every extra dirham on the most expensive loan (${money(m.fix.credit!, lang)} a month today). No new consumer credit.`, `Mettez chaque dirham en plus sur le crédit le plus cher (${money(m.fix.credit!, lang)} par mois aujourd’hui). Aucun nouveau crédit conso.`, `سدّد القرض الأغلى.`)])
+  if (pct(want) > 30) prog.push(['wants', L(lang, 'Wants back to 30%', 'Envies à 30 %', 'الكماليات إلى 30%'), L(lang, `Trim ${money(want - inc * 0.3, lang)} from outings, clothes and subscriptions.`, `Réduisez de ${money(want - inc * 0.3, lang)} les sorties, vêtements et abonnements.`, `خفّض ${money(want - inc * 0.3, lang)}.`)])
+  prog.push(['cushion3', L(lang, 'Three months of safety', 'Trois mois de sécurité', 'ثلاثة أشهر من الأمان'), L(lang, `Grow the cushion to ${money(essentials * 3, lang)}.`, `Portez le matelas à ${money(essentials * 3, lang)}.`, `بلوغ ${money(essentials * 3, lang)}.`)])
+  prog.push(['goal', m.goal?.n || L(lang, 'Your project', 'Votre projet', 'مشروعك'), m.goal?.target ? L(lang, `Put ${money(m.goal.monthly, lang)} a month towards ${money(m.goal.target, lang)}.`, `Versez ${money(m.goal.monthly, lang)} par mois pour atteindre ${money(m.goal.target, lang)}.`, `ادّخر ${money(m.goal.monthly, lang)} شهريًا.`) : L(lang, 'Choose a project (holidays, Aïd, car, home) and fund it monthly.', 'Choisissez un projet (vacances, Aïd, voiture, logement) et financez-le chaque mois.', 'اختر مشروعًا وموّله شهريًا.')])
+  const steps = prog.slice(0, 6); const curStep = Math.min(steps.length - 1, Math.max(0, now - startM)); const doneN = steps.filter(([k]) => m.prog?.[k]).length
+  const tick = (k: string) => save({ ...m, prog: { ...(m.prog ?? {}), [k]: !m.prog?.[k] } })
   const delExp = (id: string) => save({ ...m, exp: m.exp.filter((e) => e.id !== id) })
   const list = m.exp.filter((e) => ym(e.t) === mon).sort((a, b) => b.t - a.t)
 
@@ -158,6 +183,25 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
           {([[L(lang, 'Income', 'Revenus', 'المداخيل'), inc], [L(lang, 'Fixed', 'Fixes', 'ثابتة'), fix], [L(lang, 'Spent', 'Dépensé', 'مصروف'), varSpent], [L(lang, 'Saved', 'Épargne', 'ادخار'), saveM]] as [string, number][]).map(([l, v]) => <div key={l} className="rounded-xl bg-white/10 px-1 py-2"><p className="text-white/70">{l}</p><p className="font-display text-[13px] font-extrabold tabular-nums">{money(v, lang)}</p></div>)}
         </div>
       </section>
+
+      {inc > 0 && <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+        <div className="flex items-center gap-4">
+          <Gauge v={score} color={grade[1]} />
+          <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'Financial health', 'Santé financière', 'الصحة المالية')}</p><p className="font-serif text-[26px] font-semibold leading-tight">{grade[0]}</p><p className="text-xs text-muted">{L(lang, 'Score out of 100, updated live', 'Note sur 100, mise à jour en direct', 'من 100')}</p></div>
+        </div>
+        <ul className="mt-3 space-y-1.5">{crit.map(([l, v, max, info]) => <li key={l} className="text-sm"><div className="flex items-center gap-2"><span className="flex-1">{l} <span className="text-xs text-muted">· {info}</span></span><b className="tabular-nums">{Math.round(v)}/{max}</b></div><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${(v / max) * 100}%`, background: v / max >= 0.7 ? C.need : v / max >= 0.4 ? C.save : 'rgb(var(--danger))' }} /></div></li>)}</ul>
+      </section>}
+
+      {inc > 0 && <section>
+        <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'Your 6-month programme', 'Votre programme sur 6 mois', 'برنامجك لستة أشهر')}</h2><span className="text-xs font-bold text-forest">{doneN}/{steps.length}</span></div>
+        <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2" data-noswipe>{steps.map(([k, h, b], i) => { const done = !!m.prog?.[k]; const isNow = i === curStep; return (
+          <div key={k} className={`w-[82%] max-w-[320px] shrink-0 snap-center rounded-[24px] p-4 transition ${isNow ? 'bg-forest text-white shadow-lg' : 'bg-surface shadow-soft'} ${done && !isNow ? 'opacity-70' : ''}`}>
+            <p className={`text-[11px] font-bold uppercase tracking-[.16em] ${isNow ? 'text-apricot' : 'text-muted'}`}>{L(lang, 'Month', 'Mois', 'الشهر')} {i + 1} · <span className="capitalize">{monthName(startM + i, lang)}</span></p>
+            <p className="mt-1 font-serif text-[20px] font-semibold leading-tight">{h}</p>
+            <p className={`mt-1 text-sm leading-relaxed ${isNow ? 'text-white/85' : 'text-ink/75'}`}>{b}</p>
+            <button className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold transition active:scale-95 ${done ? (isNow ? 'bg-white text-forest' : 'bg-leaf/40 text-forest') : isNow ? 'bg-white/15 text-white' : 'bg-cream text-ink'}`} onClick={() => tick(k)} aria-pressed={done}><Check size={15} aria-hidden /> {done ? L(lang, 'Done', 'Fait', 'تم') : L(lang, 'Mark as done', 'Marquer fait', 'تم الإنجاز')}</button>
+          </div>) })}</div>
+      </section>}
 
       <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => setAdd(true)}><Plus size={20} aria-hidden /> {L(lang, 'Add an expense', 'Ajouter une dépense', 'إضافة مصروف')}</button>
 
@@ -218,6 +262,15 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
   )
 }
 
+function Gauge({ v, color }: { v: number; color: string }) {
+  const R = 40, C2 = Math.PI * R
+  return (
+    <div className="relative shrink-0" style={{ width: 100, height: 60 }}>
+      <svg width="100" height="60" viewBox="0 0 100 60" role="img" aria-label={`${v} / 100`}><path d="M10 52 A40 40 0 0 1 90 52" fill="none" stroke="rgb(var(--cream))" strokeWidth="10" strokeLinecap="round" /><path d="M10 52 A40 40 0 0 1 90 52" fill="none" stroke={color} strokeWidth="10" strokeLinecap="round" strokeDasharray={`${(v / 100) * C2} ${C2}`} style={{ transition: 'stroke-dasharray .8s var(--ease)' }} /></svg>
+      <b className="absolute inset-x-0 bottom-0 text-center font-display text-2xl font-extrabold tabular-nums">{v}</b>
+    </div>
+  )
+}
 function Donut({ parts, total, label, sub, lang }: { parts: [number, string, string][]; total: number; label: string; sub: string; lang: Lang }) {
   const R = 46, W = 14, C2 = 2 * Math.PI * R; let off = 0
   const [hov, setHov] = useState<number | null>(null)

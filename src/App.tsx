@@ -10,7 +10,7 @@ import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
-import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, Wallet, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Search, Sparkles, Wallet, type LucideIcon } from 'lucide-react'
 import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
@@ -205,8 +205,9 @@ function Shell() {
       <Confetti run={boom} />
       <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.88)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className={`mx-auto flex max-w-2xl items-center gap-3 px-4 py-2.5 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
-          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button>{tab !== 'home' && <span className="font-display text-lg font-extrabold">{title}</span>}
-          {space === 'food' && <button data-tour="budget" className="ms-auto min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
+          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button>{tab !== 'home' && <span className="min-w-0 truncate font-display text-lg font-extrabold">{title}</span>}
+          {space === 'food' && <button className="ms-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface shadow-soft active:scale-90" onClick={() => go('recipes')} aria-label={lang === 'en' ? 'Search recipes' : 'Chercher une recette'}><Search size={18} aria-hidden /></button>}
+          {space === 'food' && <button data-tour="budget" className=" min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
             <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
             <span className={`block text-[10px] font-semibold tabular-nums ${over ? 'text-danger' : 'text-muted'}`}>{t('solde', lang)} {over ? '−' : ''}{money(Math.abs(budget - total), lang)} · {t('taken', lang)} {money(spent, lang)}</span>
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>

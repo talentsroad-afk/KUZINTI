@@ -1,5 +1,5 @@
 import { BookOpen, Coffee, Dices, Moon, RefreshCw, Shuffle, Sun, Sunrise, type LucideIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
 import { REC, type Meal, type Recipe } from './data/recipes'
@@ -138,7 +138,8 @@ export function WeekTab({ compose, makeHealthy, say }: { compose: () => void; ma
   const { lang, me, house, upHouse } = useApp()
   const p = usePrefs(); const plan = house!.plan
   const today = (new Date().getDay() + 6) % 7
-  const [view, setView] = useState<'day' | 'week' | 'month'>('week'); const [day, setDay] = useState(today)
+  const [view, setView] = useState<'day' | 'week' | 'month'>('day'); const [day, setDay0] = useState(today); const [dir, setDir] = useState(1); const tx = useRef(0)
+  const setDay = (d: number) => { setDir(d >= day ? 1 : -1); setDay0(d) }; const goDay = (n: number) => { setDir(n); setDay0((day + n + 7) % 7) }
   const [rep, setRep] = useState<string | null>(null); const [rv, setRv] = useState<Recipe | null>(null)
   const dayKc = (d: number) => slots.reduce((a, s) => a + (plan[`${d}-${s}`] ? entryKcal(plan[`${d}-${s}`]) : 0), 0)
   const dayCost = (d: number) => slots.reduce((a, s) => a + (plan[`${d}-${s}`] ? entryCost(plan[`${d}-${s}`]) : 0), 0)
@@ -172,7 +173,8 @@ export function WeekTab({ compose, makeHealthy, say }: { compose: () => void; ma
       <div className="flex rounded-full bg-surface p-1 shadow-soft">{(['day', 'week', 'month'] as const).map((v) => <button key={v} className={`flex-1 rounded-full py-2 text-sm font-bold ${view === v ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setView(v)}>{t('v_' + v, lang)}</button>)}</div>
       {view === 'day' && <>
         <div className="grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => setDay(d)} className={`rounded-2xl py-2 text-center ${d === day ? 'bg-forest text-white' : 'bg-surface'}`}><span className="block text-[10px] font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span><span className="block text-base">{d === today ? '•' : ' '}</span></button>)}</div>
-        <div className="card overflow-hidden">
+        <div className="flex items-center justify-between text-sm font-semibold"><button className="rounded-full bg-surface px-3 py-1.5 capitalize text-muted shadow-soft active:scale-95" onClick={() => goDay(-1)}>‹ {dayName((day + 6) % 7, lang)}</button><button className="rounded-full bg-surface px-3 py-1.5 capitalize text-muted shadow-soft active:scale-95" onClick={() => goDay(1)}>{dayName((day + 1) % 7, lang)} ›</button></div>
+        <div key={day} className={`card overflow-hidden touch-pan-y ${dir > 0 ? 'slide-in-r' : 'slide-in-l'}`} onTouchStart={(e) => { tx.current = e.touches[0].clientX }} onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - tx.current; if (Math.abs(dx) > 60) goDay(dx < 0 ? 1 : -1) }}>
           <div className="flex items-baseline justify-between px-4 pt-3"><span className="font-display text-lg font-extrabold capitalize">{dayName(day, lang)}</span><span className="text-xs text-muted tabular-nums">{Math.round(dayKc(day))} kcal · {money(dayCost(day), lang)}</span></div>
           <div className="divide-y divide-line/70">{slots.map((s) => mealRow(`${day}-${s}`, s))}</div>
         </div>

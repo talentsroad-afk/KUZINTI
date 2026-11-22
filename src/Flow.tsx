@@ -1,5 +1,7 @@
 import { Camera, History, Share2, ShoppingCart, Store } from 'lucide-react'
 import { CartMode, iconOf, type CartItem } from './Cart'
+import { PRODUCTS, norm } from './data/products'
+import { CATALOG } from './data/catalog'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
 import { curRate, money, money2, rname, t, type Lang } from './lib/i18n'
@@ -52,6 +54,14 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   const [val, setVal] = useState('')
   const [homeOpen, setHomeOpen] = useState(false); const [adding, setAdding] = useState(false)
   const [f, setF] = useState({ name: '', qty: '', price: '', note: '' })
+  const [q, setQ] = useState(''); const [free, setFree] = useState(false)
+  // Search over everyday products + the recipe ingredient catalog, accent-insensitive.
+  const found = useMemo(() => {
+    const nq = norm(q.trim()); const lx = lang === 'en' ? 'en' : lang === 'ar' ? 'ar' : 'fr'
+    const all = [...PRODUCTS.map((x) => ({ key: x.id, name: x[lx], e: x.e, p: x.p, u: x.u, hay: norm(`${x.fr} ${x.en} ${x.ar}`) })), ...CATALOG.filter((c) => !PRODUCTS.some((x) => norm(x.fr) === norm(c.n[1]))).map((c) => ({ key: 'i:' + c.id, name: c.n[li(lang)], e: iconOf(c.id, c.aisle), p: c.base === 'pc' ? c.p : c.p * 1000, u: c.base === 'pc' ? 'pc' : 'kg', hay: norm(c.n.join(' ')) }))]
+    return (nq ? all.filter((x) => x.hay.includes(nq)).sort((a, b) => Number(!norm(a.name).startsWith(nq)) - Number(!norm(b.name).startsWith(nq)) || a.name.length - b.name.length) : all.slice(0, 24)).slice(0, 40)
+  }, [q, lang])
+  const quickAdd = (name: string, e: string, p: number, u: string) => { upHouse((h) => { h.custom = [...(h.custom ?? []), { id: Math.random().toString(36).slice(2, 8), name, qty: u === 'kg' ? '1 kg' : u === 'bunch' ? '1' : '×1', price: Math.round(p * 100) / 100, note: '', e }] }, `+ ${name}`); toast(`＋ ${name}`) }
   const budget = me!.budget; const chk = house!.checked
   const done = items.filter((x) => chk[x.key]).length
   const pace = total; const over = pace > budget
@@ -75,7 +85,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   const savePaid = () => { if (!edit) return; const v = parseFloat(val.replace(',', '.')) / curRate(); upHouse((h) => { const p = { ...(h.paid ?? {}) }; if (isNaN(v)) delete p[edit.key]; else p[edit.key] = v; h.paid = p; if (!isNaN(v)) h.checked[edit.key] = true }); setEdit(null) }
   const cart: CartItem[] = [
     ...groups.flatMap(([a, rows]) => rows.filter((l) => l.buy > 0).map((l) => ({ key: l.id, name: l.ing.n[li(lang)], q: fmtQty(l.buy, l.ing.base), price: price(l.id, l.cost * mul(a)), e: iconOf(l.id, a), aisle: AISLE[a][li(lang)] }))),
-    ...(day < 0 ? [...homeRows.map((x) => ({ key: 'h:' + x.id, name: x.n[li(lang)], q: `×${x.q}`, price: price('h:' + x.id, x.q * x.p * mul('grocery')), e: x.e, aisle: t('maison', lang) })), ...custom.map((c) => ({ key: 'c:' + c.id, name: c.name, q: c.qty, price: price('c:' + c.id, c.price), e: '📝', aisle: t('mine', lang) }))] : []),
+    ...(day < 0 ? [...homeRows.map((x) => ({ key: 'h:' + x.id, name: x.n[li(lang)], q: `×${x.q}`, price: price('h:' + x.id, x.q * x.p * mul('grocery')), e: x.e, aisle: t('maison', lang) })), ...custom.map((c) => ({ key: 'c:' + c.id, name: c.name, q: c.qty, price: price('c:' + c.id, c.price), e: c.e ?? '📝', aisle: t('mine', lang) }))] : []),
   ]
   const [cartOpen, setCartOpen] = useState(false); const [histOpen, setHistOpen] = useState(false)
   const finish = () => {
@@ -121,7 +131,8 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       </div>
       <div className="flex items-center gap-2">
         <div className="flex rounded-full bg-surface p-1 shadow-soft">{[-1, (new Date().getDay() + 6) % 7].map((d, i) => <button key={i} className={`rounded-full px-3 py-1.5 text-xs font-bold ${(i === 0 ? day < 0 : day >= 0) ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{i === 0 ? t('lWeek', lang) : t('lDay', lang)}</button>)}</div>
-        <button className="ms-auto rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setHistOpen(true)}><History size={14} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'History' : 'Historique'}</button>
+        <button className="ms-auto rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white shadow-soft" onClick={() => setAdding(true)}>＋ {lang === 'en' ? 'Product' : 'Produit'}</button>
+        <button className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setHistOpen(true)}><History size={14} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'History' : 'Historique'}</button>
         <button className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}><Camera size={14} className="inline -mt-0.5" aria-hidden /> {t('fridgeS', lang)}</button>
       </div>
       {day >= 0 && <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`chip shrink-0 capitalize ${d === day ? '!bg-forest !text-white' : ''}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 3)}</button>)}</div>}
@@ -139,7 +150,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       </div>
       <div className="card px-4 py-2">
         <h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">✍️ {t('mine', lang)}</h3>
-        <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} e='📝' name={c.name} q={c.qty || undefined} sub={c.note} est={c.price} />)}</div>
+        <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} e={c.e ?? '📝'} name={c.name} q={c.qty || undefined} sub={c.note} est={c.price} />)}</div>
         <button className="w-full py-2.5 text-start text-sm font-bold text-forest" onClick={() => setAdding(true)}>＋ {t('addProd', lang)}</button>
       </div>
       {done > 0 && (sure
@@ -161,13 +172,25 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
               <div className="mt-2 space-y-1 border-t border-line/70 pt-2 text-sm">{tr.items.map((it, i) => <p key={i} className="flex justify-between gap-2"><span className="truncate">{it.n} <span className="text-muted">· {it.q}</span></span><span className="shrink-0 tabular-nums">{m2(it.p, lang)}</span></p>)}</div>
             </details>))}</div>}
       </Sheet>
-      <Sheet open={adding} onClose={() => setAdding(false)} title={t('addProd', lang)}>
-        <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); saveCustom() }}>
+      <Sheet open={adding} onClose={() => { setAdding(false); setQ(''); setFree(false) }} title={t('addProd', lang)}>
+        {!free ? <div>
+          <input autoFocus className="input !min-h-12 text-lg" placeholder={lang === 'en' ? '🔍 Search a product (milk, apples…)' : '🔍 Chercher un produit (lait, pommes…)'} value={q} onChange={(e) => setQ(e.target.value)} aria-label={lang === 'en' ? 'Search a product' : 'Chercher un produit'} />
+          <div className="mt-2 max-h-[52vh] divide-y divide-line/60 overflow-y-auto">
+            {found.map((x) => { const n = custom.filter((c) => c.name === x.name).length; return (
+              <button key={x.key} className="flex w-full items-center gap-3 py-2.5 text-start active:bg-cream" onClick={() => quickAdd(x.name, x.e, x.p, x.u)}>
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cream text-2xl">{x.e}</span>
+                <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{x.name}</span><span className="text-xs text-muted">≈ {m2(x.p, lang)} / {x.u === 'kg' ? 'kg' : x.u === 'bunch' ? (lang === 'en' ? 'bunch' : 'botte') : (lang === 'en' ? 'unit' : 'unité')}</span></span>
+                {n > 0 ? <span className="pop grid h-8 min-w-8 place-items-center rounded-full bg-forest px-2 text-sm font-bold text-white">×{n}</span> : <span className="grid h-8 w-8 place-items-center rounded-full bg-leaf/30 text-lg font-bold text-forest">＋</span>}
+              </button>) })}
+            {q.trim() && <button className="flex w-full items-center gap-3 py-3 text-start font-semibold text-forest" onClick={() => { setF({ ...f, name: q.trim() }); setFree(true) }}><span className="grid h-11 w-11 place-items-center rounded-2xl border-2 border-dashed border-line">✍️</span>{lang === 'en' ? `Create “${q.trim()}”` : `Créer « ${q.trim()} »`}</button>}
+          </div>
+          <button className="btn btn-primary mt-3 w-full" onClick={() => { setAdding(false); setQ('') }}>{t('ok', lang)}</button>
+        </div> : <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); saveCustom(); setFree(false); setQ('') }}>
           <input aria-label={t('pName', lang)} placeholder={t('pName', lang)} className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus />
           <div className="grid grid-cols-2 gap-3"><input aria-label={t('pQty', lang)} placeholder={t('pQty', lang)} className="input" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} /><input aria-label={t('pPrice', lang)} placeholder={t('pPrice', lang)} inputMode="decimal" className="input" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} /></div>
           <input aria-label={t('pNote', lang)} placeholder={t('pNote', lang)} className="input" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
           <button className="btn btn-primary w-full" disabled={!f.name.trim()} style={{ opacity: f.name.trim() ? 1 : 0.5 }}>{t('save', lang)}</button>
-        </form>
+        </form>}
       </Sheet>
     </div>
   )
