@@ -4,6 +4,7 @@ import { money, rname, t, type Lang } from './lib/i18n'
 import { buildList, fmtQty, type Line } from './lib/engine'
 import type { Aisle } from './data/catalog'
 import { REC } from './data/recipes'
+import { SIDE } from './data/sides'
 import { HOME, HOME_BY } from './data/home'
 import { STORES, splitTotal, storeTotal } from './lib/stores'
 import { Sheet } from './ui'
@@ -13,122 +14,107 @@ const AISLE: Record<Aisle, [string, string, string, string]> = {
   produce: ['Fruit & veg', 'Fruits & légumes', 'خضر وفواكه', '🥬'], meat: ['Meat & fish', 'Viande & poisson', 'لحوم وأسماك', '🥩'], dairy: ['Dairy & eggs', 'Laitier & œufs', 'ألبان وبيض', '🥚'],
   grocery: ['Grocery', 'Épicerie', 'بقالة', '🫙'], bakery: ['Bakery', 'Boulangerie', 'مخبزة', '🥖'], spices: ['Spices', 'Épices', 'توابل', '🧂'],
 }
-const BEMOJI: Record<string, string> = { tea: '🍵', sugar: '🍬', mint: '🌿', milk: '🥛', bread: '🥖', egg: '🥚', coffee: '☕', oil: '🫒', yogurt: '🥣', orange: '🍊', banana: '🍌', apple: '🍎', flour: '🌾', rice: '🍚' }
-const BQ: Record<string, number> = { tea: 200, sugar: 1000, mint: 80, milk: 1000, bread: 7, egg: 12, coffee: 250, oil: 1000, yogurt: 4, orange: 6, banana: 6, apple: 6, flour: 1000, rice: 1000 }
 const m2 = (n: number, l: Lang) => `${n.toFixed(2)} ${l === 'ar' ? 'د.م.' : 'MAD'}`
 const stepOf = (l: Line) => (l.ing.base === 'pc' ? 1 : l.buy < 100 && l.ing.aisle === 'spices' ? 10 : 50)
+const useName = (u: string, lang: Lang) => (u === 'basics' ? t('basics', lang) : SIDE[u] ? SIDE[u].n[li(lang)] : REC[u] ? rname(REC[u].n, lang) : u)
 
-/** Everything in the basket: recipe ingredients, home essentials and free-text additions, with one total. */
+/** Everything in the basket with one total. Estimates use the chosen store's price index when one is picked. */
 export function useBasket() {
   const { house } = useApp(); const h = house!
   const lines = useMemo(() => buildList(h.plan, h.pantry, h.extras ?? {}, h.qty ?? {}), [h.plan, h.pantry, h.extras, h.qty])
+  const store = STORES.find((s) => s.id === h.store)
+  const mul = (a: Aisle) => (store ? store.m[a] : 1)
   const homeRows = HOME.filter((x) => (h.home?.[x.id] ?? 0) > 0).map((x) => ({ ...x, q: h.home![x.id] }))
   const custom = h.custom ?? []
-  const foodCost = lines.reduce((a, l) => a + l.cost, 0)
-  const homeCost = homeRows.reduce((a, x) => a + x.q * x.p, 0)
-  const customCost = custom.reduce((a, c) => a + c.price, 0)
-  return { lines, homeRows, custom, foodCost, homeCost, customCost, extraCost: homeCost + customCost, total: foodCost + homeCost + customCost }
+  const items = [
+    ...lines.filter((l) => l.buy > 0).map((l) => ({ key: l.id, est: l.cost * mul(l.ing.aisle) })),
+    ...homeRows.map((x) => ({ key: 'h:' + x.id, est: x.q * x.p * mul('grocery') })),
+    ...custom.map((c) => ({ key: 'c:' + c.id, est: c.price })),
+  ]
+  const price = (k: string, est: number) => h.paid?.[k] ?? est
+  const total = items.reduce((a, x) => a + price(x.key, x.est), 0)
+  const spent = items.filter((x) => h.checked[x.key]).reduce((a, x) => a + price(x.key, x.est), 0)
+  const homeCost = homeRows.reduce((a, x) => a + x.q * x.p, 0); const customCost = custom.reduce((a, c) => a + c.price, 0)
+  return { lines, homeRows, custom, store, mul, price, total, spent, items, homeCost, customCost, extraCost: homeCost + customCost }
 }
 
-const Mini = ({ v, dec, inc, label }: { v: string; dec: () => void; inc: () => void; label?: string }) => (
-  <div className="inline-flex items-center rounded-full bg-cream p-0.5" aria-label={label}>
-    <button className="grid h-8 w-8 place-items-center rounded-full bg-surface font-bold shadow-soft active:scale-90" onClick={dec} aria-label="−">−</button>
-    <span className="min-w-[3.2rem] px-1 text-center text-xs font-bold tabular-nums">{v}</span>
-    <button className="grid h-8 w-8 place-items-center rounded-full bg-surface font-bold shadow-soft active:scale-90" onClick={inc} aria-label="+">+</button>
-  </div>
-)
-
-function Group({ icon, title, count, sub, open, toggle, children }: { icon: string; title: string; count: number; sub: number; open: boolean; toggle: () => void; children: React.ReactNode }) {
-  const { lang } = useApp()
-  return (
-    <div className="card overflow-hidden">
-      <button className="flex w-full items-center gap-3 p-4 text-start" onClick={toggle} aria-expanded={open}>
-        <span className="grid h-11 w-11 place-items-center rounded-2xl bg-leaf/25 text-2xl">{icon}</span>
-        <span className="min-w-0 flex-1"><span className="block font-display font-extrabold">{title}</span><span className="text-xs text-muted">{count} {t('itemsN', lang)}</span></span>
-        <span className="font-bold tabular-nums">{m2(sub, lang)}</span>
-        <span className={`text-muted transition-transform ${open ? 'rotate-90' : ''}`} aria-hidden>›</span>
-      </button>
-      {open && <div className="rise border-t border-line/70 px-4 pb-2">{children}</div>}
-    </div>
-  )
-}
-
-/** Step 3: a short receipt on top, collapsible aisles below. Every quantity is editable. */
-export function BasketStep({ adapt, openBudget }: { adapt: () => void; openBudget: () => void }) {
-  const { lang, me, house, upHouse, award } = useApp()
-  const { lines, homeRows, custom, foodCost, homeCost, customCost, total } = useBasket()
-  const [open, setOpen] = useState<Record<string, boolean>>({})
-  const [adding, setAdding] = useState(false)
+/** Shopping: live budget (planned / spent / left), big checkboxes, tap a price to enter what you really paid. */
+export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goStores: () => void }) {
+  const { lang, me, house, upHouse, award, toast } = useApp()
+  const { lines, homeRows, custom, store, mul, price, total, spent, items } = useBasket()
+  const [edit, setEdit] = useState<{ key: string; name: string; est: number; line?: Line } | null>(null)
+  const [val, setVal] = useState('')
+  const [homeOpen, setHomeOpen] = useState(false); const [adding, setAdding] = useState(false)
   const [f, setF] = useState({ name: '', qty: '', price: '', note: '' })
-  const budget = me!.budget; const over = total > budget; const ex = house!.extras ?? {}
-  const items = lines.filter((l) => l.buy > 0 || l.auto > 0)
-  const groups = (Object.keys(AISLE) as Aisle[]).map((a) => [a, items.filter((l) => l.ing.aisle === a)] as const).filter(([, v]) => v.length)
-  const tog = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }))
-  const setQty = (l: Line, v: number) => upHouse((h) => { h.qty = { ...(h.qty ?? {}), [l.id]: Math.max(0, v) } })
-  const resetQty = (id: string) => upHouse((h) => { const q = { ...(h.qty ?? {}) }; delete q[id]; h.qty = q })
-  const setHome = (id: string, v: number) => upHouse((h) => { h.home = { ...(h.home ?? {}), [id]: Math.max(0, Math.min(9, v)) } })
-  const saveCustom = () => { if (!f.name.trim()) return; upHouse((h) => { h.custom = [...(h.custom ?? []), { id: Math.random().toString(36).slice(2, 8), name: f.name.trim(), qty: f.qty.trim(), price: Math.max(0, parseFloat(f.price.replace(',', '.')) || 0), note: f.note.trim() }] }, `+ ${f.name.trim()}`); award(2, f.name.trim()); setF({ name: '', qty: '', price: '', note: '' }); setAdding(false); setOpen((o) => ({ ...o, mine: true })) }
-  const allOpen = Object.values(open).some(Boolean)
+  const budget = me!.budget; const chk = house!.checked
+  const done = items.filter((x) => chk[x.key]).length
+  const pace = total; const left = budget - spent; const over = pace > budget
+  const buy = lines.filter((l) => l.buy > 0 || l.auto > 0)
+  const groups = (Object.keys(AISLE) as Aisle[]).map((a) => [a, buy.filter((l) => l.ing.aisle === a)] as const).filter(([, v]) => v.length)
+  const toggle = (key: string, name: string) => {
+    const on = !chk[key]; upHouse((h) => { h.checked[key] = on }, on ? `✔ ${name}` : `↩ ${name}`)
+    if (on) { if (done + 1 === items.length) { celebrate(); award(40, t('tripDone', lang)) } else award(2, name) }
+  }
+  const openEdit = (key: string, name: string, est: number, line?: Line) => { setEdit({ key, name, est, line }); setVal(house!.paid?.[key] !== undefined ? String(house!.paid![key]) : '') }
+  const savePaid = () => { if (!edit) return; const v = parseFloat(val.replace(',', '.')); upHouse((h) => { const p = { ...(h.paid ?? {}) }; if (isNaN(v)) delete p[edit.key]; else p[edit.key] = v; h.paid = p; if (!isNaN(v)) h.checked[edit.key] = true }); setEdit(null) }
+  const finish = () => { upHouse((h) => { for (const l of lines) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.checked = {}; h.qty = {}; h.home = {}; h.custom = []; h.paid = {} }, 'finished the trip'); toast(t('pantry', lang) + ' ✓') }
+  const saveCustom = () => { if (!f.name.trim()) return; upHouse((h) => { h.custom = [...(h.custom ?? []), { id: Math.random().toString(36).slice(2, 8), name: f.name.trim(), qty: f.qty.trim(), price: Math.max(0, parseFloat(f.price.replace(',', '.')) || 0), note: f.note.trim() }] }, `+ ${f.name.trim()}`); setF({ name: '', qty: '', price: '', note: '' }); setAdding(false) }
+  const Row = ({ k, name, sub, est, line }: { k: string; name: string; sub: string; est: number; line?: Line }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; return (
+    <div className="flex items-center gap-3 py-2">
+      <button className="check !h-8 !w-8" data-on={on} onClick={() => toggle(k, name)} aria-pressed={on} aria-label={name}>{on && '✓'}</button>
+      <button className="min-w-0 flex-1 text-start" onClick={() => openEdit(k, name, est, line)}><span className={`block truncate font-semibold ${on ? 'text-muted line-through' : ''}`}>{name}</span><span className="block truncate text-xs text-muted">{sub}</span></button>
+      <button className={`shrink-0 rounded-lg px-2 py-1 text-sm font-bold tabular-nums ${paid !== undefined ? 'bg-leaf/30 text-forest' : ''}`} onClick={() => openEdit(k, name, est, line)}>{price(k, est).toFixed(2)}</button>
+    </div>) }
   return (
     <div className="space-y-3">
-      <div className="receipt p-5">
-        <div className="flex items-center justify-between"><span className="text-xs font-bold uppercase tracking-wider text-muted">🧾 {t('receipt', lang)}</span><button className="text-xs font-bold text-forest underline" onClick={openBudget}>{t('adjustB', lang)}</button></div>
-        <div className="mt-2 flex items-end justify-between"><span className="font-display text-lg font-extrabold">{t('total', lang)}</span><span className="font-display text-4xl font-extrabold tabular-nums text-forest">{m2(total, lang)}</span></div>
-        <div className="mt-3 h-3 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : total / budget > 0.88 ? 'rgb(var(--apricot))' : 'rgb(var(--forest))' }} /></div>
-        <div className="mt-2 flex justify-between text-sm"><span className="text-muted">{t('budgetW', lang)} {money(budget, lang)}</span><span className="font-bold" style={{ color: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}>{over ? t('overBy', lang) : t('left', lang)} {money(Math.abs(budget - total), lang)}</span></div>
-        <div className="dash my-3" />
-        <div className="grid grid-cols-3 gap-2 text-center text-xs"><div><p className="text-muted">🥬 {t('list', lang)}</p><b className="tabular-nums">{money(foodCost, lang)}</b></div><div><p className="text-muted">🏠 {t('maison', lang)}</p><b className="tabular-nums">{money(homeCost, lang)}</b></div><div><p className="text-muted">✍️ {t('mine', lang)}</p><b className="tabular-nums">{money(customCost, lang)}</b></div></div>
-        {over && <button className="btn btn-warm mt-4 w-full" onClick={adapt}>{t('adaptBtn', lang)}</button>}
-      </div>
-      <div className="flex items-center justify-between px-1"><p className="text-xs text-muted">{t('avgPrice', lang)}</p><button className="text-xs font-bold text-forest" onClick={() => setOpen(allOpen ? {} : Object.fromEntries([...groups.map(([a]) => [a, true]), ['home', true], ['mine', true]]))}>{allOpen ? '⌃' : '⌄'}</button></div>
-
-      {groups.map(([a, rows]) => (
-        <Group key={a} icon={AISLE[a][3]} title={AISLE[a][li(lang)]} count={rows.length} sub={rows.reduce((s, l) => s + l.cost, 0)} open={!!open[a]} toggle={() => tog(a)}>
-          {rows.map((l) => { const custom = l.buy !== l.auto; return (
-            <div key={l.id} className="flex items-center gap-2 border-b border-line/50 py-2 last:border-0">
-              <div className="min-w-0 flex-1"><p className={`truncate text-sm font-semibold ${l.buy === 0 ? 'line-through opacity-40' : ''}`}>{l.ing.n[li(lang)]}</p>
-                <p className="truncate text-[11px] text-muted">{custom ? <button className="font-bold text-forest underline" onClick={() => resetQty(l.id)}>{t('reset', lang)}</button> : l.uses.map((u) => (u === 'basics' ? t('basics', lang) : rname(REC[u].n, lang))).join(' · ')}{l.buy < l.auto && ' ⚠'}</p></div>
-              <Mini v={fmtQty(l.buy, l.ing.base)} dec={() => setQty(l, l.buy - stepOf(l))} inc={() => setQty(l, l.buy + stepOf(l))} />
-              <span className="w-[4.2rem] text-end text-sm font-bold tabular-nums">{l.cost.toFixed(2)}</span>
-            </div>) })}
-        </Group>
-      ))}
-
-      <Group icon="🏠" title={t('maison', lang)} count={homeRows.length} sub={homeCost} open={!!open.home} toggle={() => tog('home')}>
-        <p className="py-2 text-xs text-muted">{t('maisonHint', lang)}</p>
-        <div className="grid grid-cols-3 gap-2 pb-3">
-          {HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return (
-            <div key={x.id} className={`rounded-2xl border-2 p-2 text-center transition-all ${q ? 'border-forest bg-leaf/20' : 'border-line bg-surface'}`}>
-              <button className="block w-full active:scale-95" onClick={() => setHome(x.id, q ? 0 : 1)} aria-pressed={q > 0}><div className={`text-2xl ${q ? 'pop' : ''}`}>{x.e}</div><div className="mt-0.5 line-clamp-2 min-h-[2rem] text-[11px] font-semibold leading-tight">{x.n[li(lang)]}</div><div className="text-[11px] text-muted">{x.p} MAD</div></button>
-              {q > 0 && <div className="mt-1 flex items-center justify-center gap-1 text-xs font-bold"><button className="h-6 w-6 rounded-full bg-surface shadow-soft" onClick={() => setHome(x.id, q - 1)} aria-label="−">−</button>{q}<button className="h-6 w-6 rounded-full bg-surface shadow-soft" onClick={() => setHome(x.id, q + 1)} aria-label="+">+</button></div>}
-            </div>) })}
+      <div className="card p-4">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div><p className="text-[11px] font-semibold uppercase text-muted">{t('budgetW', lang)}</p><p className="font-display text-lg font-extrabold tabular-nums">{money(budget, lang)}</p></div>
+          <div><p className="text-[11px] font-semibold uppercase text-muted">{t('spent', lang)}</p><p className="font-display text-lg font-extrabold tabular-nums text-forest">{money(spent, lang)}</p></div>
+          <div><p className="text-[11px] font-semibold uppercase text-muted">{t('left', lang)}</p><p className="font-display text-lg font-extrabold tabular-nums" style={{ color: left < 0 ? 'rgb(var(--danger))' : 'rgb(var(--ink))' }}>{money(left, lang)}</p></div>
         </div>
-      </Group>
+        <div className="relative mt-3 h-3 overflow-hidden rounded-full bg-cream">
+          <div className="absolute inset-y-0 start-0 rounded-full bg-leaf/50 transition-all duration-500" style={{ width: `${Math.min(100, (pace / budget) * 100)}%` }} />
+          <div className="absolute inset-y-0 start-0 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (spent / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} />
+        </div>
+        <p className="mt-2 text-xs" style={{ color: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}><b>{t('pace', lang)}: {money(pace, lang)}</b> · {over ? `${t('overBy', lang)} ${money(pace - budget, lang)}` : `${money(budget - pace, lang)} ${t('saving', lang)}`}</p>
+        <button className="mt-2 text-xs font-semibold text-muted underline" onClick={goStores}>{t('pricesAt', lang)}: {store ? store.name : t('avgPrice', lang)} ›</button>
+      </div>
+      <p className="px-1 text-xs text-muted">{done}/{items.length} · {t('paid', lang).replace(' (MAD)', '')} → {t('ok', lang)}</p>
+      {groups.map(([a, rows]) => (
+        <div key={a} className="card px-4 py-2"><h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>
+          <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} sub={`${fmtQty(l.buy, l.ing.base)} · ${l.uses.map((u) => useName(u, lang)).join(', ')}`} est={l.cost * mul(a)} line={l} />)}</div></div>
+      ))}
+      <div className="card px-4 py-2">
+        <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted">🏠 {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>
+        {homeOpen && <div className="grid grid-cols-4 gap-1.5 pb-2">{HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return <button key={x.id} className={`rounded-xl border p-1.5 text-center active:scale-95 ${q ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => upHouse((h) => { h.home = { ...(h.home ?? {}), [x.id]: q ? 0 : 1 } })} aria-pressed={q > 0}><div className="text-xl">{x.e}</div><div className="line-clamp-2 text-[10px] font-semibold leading-tight">{x.n[li(lang)]}</div></button> })}</div>}
+        <div className="divide-y divide-line/60">{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} name={`${x.e} ${HOME_BY[x.id].n[li(lang)]}`} sub={`×${x.q}`} est={x.q * x.p * mul('grocery')} />)}</div>
+      </div>
+      <div className="card px-4 py-2">
+        <h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">✍️ {t('mine', lang)}</h3>
+        <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} name={c.name} sub={[c.qty, c.note].filter(Boolean).join(' · ')} est={c.price} />)}</div>
+        <button className="w-full py-2.5 text-start text-sm font-bold text-forest" onClick={() => setAdding(true)}>＋ {t('addProd', lang)}</button>
+      </div>
+      {done > 0 && <button className="btn btn-primary w-full !min-h-14" onClick={finish}>✓ {t('finish', lang)}</button>}
 
-      <Group icon="✍️" title={t('mine', lang)} count={custom.length} sub={customCost} open={!!open.mine} toggle={() => tog('mine')}>
-        {custom.map((c) => (
-          <div key={c.id} className="flex items-center gap-2 border-b border-line/50 py-2 last:border-0"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{c.name}{c.qty && <span className="text-muted"> · {c.qty}</span>}</p>{c.note && <p className="truncate text-[11px] italic text-muted">“{c.note}”</p>}</div><span className="text-sm font-bold tabular-nums">{c.price ? c.price.toFixed(2) : '—'}</span><button className="px-2 text-muted" onClick={() => upHouse((h) => { h.custom = (h.custom ?? []).filter((x) => x.id !== c.id) })} aria-label={t('remove', lang)}>✕</button></div>
-        ))}
-        <button className="btn btn-soft my-3 w-full" onClick={() => setAdding(true)}>＋ {t('addProd', lang)}</button>
-      </Group>
-
-      <div className="card p-4"><h3 className="text-sm font-bold uppercase tracking-wide text-muted">{t('addBasics', lang)}</h3>
-        <div className="mt-3 flex flex-wrap gap-2">{Object.keys(BQ).map((id) => { const on = id in ex; const nm = HOME_NAME(id, lang); return (
-          <button key={id} className="chip" aria-pressed={on} onClick={() => { upHouse((h) => { const e = { ...(h.extras ?? {}) }; if (on) delete e[id]; else e[id] = BQ[id]; h.extras = e }, `${on ? '−' : '+'} ${id}`); if (!on) award(2, nm) }}>{BEMOJI[id]} {nm}</button>) })}</div></div>
-
+      <Sheet open={!!edit} onClose={() => setEdit(null)} title={edit?.name ?? ''}>
+        {edit && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); savePaid() }}>
+          {edit.line && <div className="flex items-center justify-between rounded-2xl bg-cream px-4 py-2"><span className="font-semibold">{fmtQty(edit.line.buy, edit.line.ing.base)}</span><span className="flex gap-2"><button type="button" className="btn btn-soft !min-h-9 !w-9 !px-0" onClick={() => { const l = edit.line!; upHouse((h) => { h.qty = { ...(h.qty ?? {}), [l.id]: Math.max(0, l.buy - stepOf(l)) } }); setEdit(null) }}>−</button><button type="button" className="btn btn-soft !min-h-9 !w-9 !px-0" onClick={() => { const l = edit.line!; upHouse((h) => { h.qty = { ...(h.qty ?? {}), [l.id]: l.buy + stepOf(l) } }); setEdit(null) }}>+</button></span></div>}
+          <div><label htmlFor="paid" className="mb-1 block text-sm font-semibold">{t('paid', lang)}</label><input id="paid" inputMode="decimal" className="input text-lg" placeholder={edit.est.toFixed(2)} value={val} onChange={(e) => setVal(e.target.value)} autoFocus /><p className="mt-1 text-xs text-muted">{t('estimated', lang)}: {m2(edit.est, lang)}</p></div>
+          <button className="btn btn-primary w-full">{t('save', lang)}</button>
+        </form>}
+      </Sheet>
       <Sheet open={adding} onClose={() => setAdding(false)} title={t('addProd', lang)}>
         <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); saveCustom() }}>
-          <div><label htmlFor="pn" className="mb-1 block text-sm font-semibold">{t('pName', lang)}</label><input id="pn" className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus /></div>
-          <div className="grid grid-cols-2 gap-3"><div><label htmlFor="pq" className="mb-1 block text-sm font-semibold">{t('pQty', lang)}</label><input id="pq" className="input" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} /></div><div><label htmlFor="pp" className="mb-1 block text-sm font-semibold">{t('pPrice', lang)}</label><input id="pp" inputMode="decimal" className="input" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} /></div></div>
-          <div><label htmlFor="pt" className="mb-1 block text-sm font-semibold">{t('pNote', lang)}</label><input id="pt" className="input" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} /></div>
+          <input aria-label={t('pName', lang)} placeholder={t('pName', lang)} className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} autoFocus />
+          <div className="grid grid-cols-2 gap-3"><input aria-label={t('pQty', lang)} placeholder={t('pQty', lang)} className="input" value={f.qty} onChange={(e) => setF({ ...f, qty: e.target.value })} /><input aria-label={t('pPrice', lang)} placeholder={t('pPrice', lang)} inputMode="decimal" className="input" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} /></div>
+          <input aria-label={t('pNote', lang)} placeholder={t('pNote', lang)} className="input" value={f.note} onChange={(e) => setF({ ...f, note: e.target.value })} />
           <button className="btn btn-primary w-full" disabled={!f.name.trim()} style={{ opacity: f.name.trim() ? 1 : 0.5 }}>{t('save', lang)}</button>
         </form>
       </Sheet>
     </div>
   )
 }
-import { CATALOG } from './data/catalog'
-function HOME_NAME(id: string, lang: Lang) { return CATALOG.find((c) => c.id === id)!.n[li(lang)] }
 
 /** Styled wordmark tiles (demo). Official logos are not bundled. */
 const BRAND: Record<string, { bg: string; fg: string; font: string; txt: string }> = {
@@ -195,37 +181,6 @@ export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
           )
         })()}
       </Sheet>
-    </div>
-  )
-}
-
-/** In-store mode: big rows, tick off together. */
-export function ShopMode({ onExit, celebrate }: { onExit: () => void; celebrate: () => void }) {
-  const { lang, house, upHouse, award, toast } = useApp()
-  const { lines, homeRows, custom } = useBasket()
-  const buy = lines.filter((l) => l.buy > 0)
-  const store = STORES.find((s) => s.id === house!.store) ?? STORES[0]
-  const chk = house!.checked
-  const total = buy.length + homeRows.length + custom.length
-  const done = buy.filter((l) => chk[l.id]).length + homeRows.filter((x) => chk['h:' + x.id]).length + custom.filter((c) => chk['c:' + c.id]).length
-  const groups = (Object.keys(AISLE) as Aisle[]).map((a) => [a, buy.filter((l) => l.ing.aisle === a)] as const).filter(([, v]) => v.length)
-  const toggle = (key: string, name: string) => {
-    const on = !chk[key]; upHouse((h) => { h.checked[key] = on }, on ? `✔ ${name}` : `↩ ${name}`)
-    if (on) { if (done + 1 === total) { celebrate(); award(40, t('tripDone', lang)) } else award(2, name) }
-  }
-  const finish = () => { upHouse((h) => { for (const l of buy) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.checked = {}; h.qty = {}; h.home = {}; h.custom = [] }, 'finished the trip'); toast(t('pantry', lang) + ' ✓'); onExit() }
-  const Row = ({ k, name, right }: { k: string; name: string; right: string }) => { const on = !!chk[k]; return (
-    <button className="flex min-h-16 w-full items-center gap-3 border-b border-line/60 text-start last:border-0" onClick={() => toggle(k, name)} aria-pressed={on}><span className="check" data-on={on}>{on && '✓'}</span><span className={`flex-1 font-semibold transition-opacity ${on ? 'line-through opacity-40' : ''}`}>{name}</span><span className="tabular-nums text-muted">{right}</span></button>) }
-  return (
-    <div className="calm fixed inset-0 z-50 overflow-auto" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      <div className="mx-auto max-w-2xl space-y-4 px-4 pb-32 pt-5 text-lg">
-        <div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-muted">{t('shopMode', lang)}</p><div className="mt-1"><StoreLogo id={store.id} /></div></div><button className="btn btn-soft !min-h-11" onClick={onExit}>{t('exit', lang)}</button></div>
-        <div className="card p-4"><div className="mb-2 flex justify-between font-bold"><span>{done}/{total}</span><span className="text-sm font-semibold text-forest">● {t('live', lang)}</span></div><div className="h-4 rounded-full bg-cream"><div className="h-full rounded-full bg-forest transition-all duration-500" style={{ width: `${total ? (done / total) * 100 : 0}%` }} /></div>{total > 0 && done === total && <p className="pop mt-3 text-center font-display text-xl font-extrabold text-forest">🎉 {t('tripDone', lang)}</p>}</div>
-        {groups.map(([a, rows]) => (<div key={a} className="card p-4"><h3 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} right={fmtQty(l.buy, l.ing.base)} />)}</div>))}
-        {homeRows.length > 0 && <div className="card p-4"><h3 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted">🏠 {t('maison', lang)}</h3>{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} name={`${x.e} ${HOME_BY[x.id].n[li(lang)]}`} right={`×${x.q}`} />)}</div>}
-        {custom.length > 0 && <div className="card p-4"><h3 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted">✍️ {t('mine', lang)}</h3>{custom.map((c) => <Row key={c.id} k={'c:' + c.id} name={c.name + (c.note ? ` — ${c.note}` : '')} right={c.qty} />)}</div>}
-        {done > 0 && <div className="fixed inset-x-0 bottom-0 z-10 p-4" style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}><button className="btn btn-primary mx-auto flex w-full max-w-2xl !min-h-14 shadow-lift" onClick={finish}>✓ {t('finish', lang)}</button></div>}
-      </div>
     </div>
   )
 }

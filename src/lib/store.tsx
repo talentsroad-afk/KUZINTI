@@ -3,8 +3,8 @@ import type { Lang } from './i18n'
 import { STAPLES } from '../data/catalog'
 import type { PlanEntry } from './engine'
 
-export interface User { id: string; name: string; email: string; onboarded: boolean; country: string; city: string; size: number; budget: number; diet: string[]; favs: string[]; xp: number; streak: number; lastDay: string; houseCode?: string; mode?: 'light' | 'balanced' | 'gourmet' }
-export interface House { code: string; name: string; members: { id: string; name: string; role: 'owner' | 'member' }[]; plan: Record<string, PlanEntry>; pantry: Record<string, number>; checked: Record<string, boolean>; extras?: Record<string, number>; qty?: Record<string, number>; store?: string; home?: Record<string, number>; custom?: { id: string; name: string; qty: string; price: number; note: string }[]; log: { who: string; msg: string; t: number }[] }
+export interface User { id: string; name: string; email: string; onboarded: boolean; country: string; city: string; size: number; budget: number; diet: string[]; favs: string[]; xp: number; streak: number; lastDay: string; houseCode?: string; mode?: 'light' | 'balanced' | 'gourmet'; cuisine?: string; region?: string; goals?: string[]; meals?: ('b' | 'l' | 'd' | 'g')[] }
+export interface House { code: string; name: string; members: { id: string; name: string; role: 'owner' | 'member' }[]; plan: Record<string, PlanEntry>; pantry: Record<string, number>; checked: Record<string, boolean>; extras?: Record<string, number>; qty?: Record<string, number>; store?: string; paid?: Record<string, number>; home?: Record<string, number>; custom?: { id: string; name: string; qty: string; price: number; note: string }[]; log: { who: string; msg: string; t: number }[] }
 interface DB { users: User[]; houses: Record<string, House> }
 export interface Toast { id: number; msg: string; kind: 'xp' | 'info' }
 

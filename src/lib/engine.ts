@@ -1,7 +1,8 @@
 import { ING, type Base, type Ing, type Unit } from '../data/catalog'
 import { REC } from '../data/recipes'
+import { SIDE } from '../data/sides'
 
-export interface PlanEntry { r: string; n: number }
+export interface PlanEntry { r: string; n: number; x?: string[] } // x = accompaniments (sides, drink)
 export interface Line { id: string; ing: Ing; need: number; have: number; buy: number; cost: number; uses: string[]; auto: number }
 
 /** Convert "qty unit" to the ingredient's base unit. Throws if the conversion is not defined (no guessing). */
@@ -41,6 +42,7 @@ export function buildList(plan: Record<string, PlanEntry>, pantry: Record<string
   const uses: Record<string, Set<string>> = {}
   for (const e of Object.values(plan)) {
     for (const [id, q] of Object.entries(scaleRecipe(e.r, e.n))) { need[id] = (need[id] ?? 0) + q; (uses[id] ??= new Set()).add(e.r) }
+    for (const [sid, part] of sideParts(e)) for (const [id, q] of Object.entries(part)) { need[id] = (need[id] ?? 0) + q; (uses[id] ??= new Set()).add(sid) }
   }
   for (const [id, q] of Object.entries(extras)) { need[id] = (need[id] ?? 0) + q; (uses[id] ??= new Set()).add('basics') }
   return Object.entries(need)
@@ -65,11 +67,22 @@ export function recipeKcal(rid: string, servings = REC[rid].s): number {
 /** kcal for one person for one serving of the recipe. */
 export const kcalPerServing = (rid: string) => recipeKcal(rid, REC[rid].s) / REC[rid].s
 /** Rough daily kcal per person = average planned meal x 3 meals. */
-export function dailyKcal(plan: Record<string, PlanEntry>): number {
-  const main = Object.entries(plan).filter(([k]) => !k.endsWith('-g')); const tea = Object.entries(plan).filter(([k]) => k.endsWith('-g'))
-  if (!main.length && !tea.length) return 0
-  const avg = main.length ? main.reduce((a, [, e]) => a + kcalPerServing(e.r), 0) / main.length : 0
-  // 3 meals a day + bread, tea, fruit and oil eaten alongside + tea-time treats spread over the week
-  return avg * 3 + 400 + tea.reduce((a, [, e]) => a + kcalPerServing(e.r), 0) / 7
+/** Ingredients of each accompaniment of a meal, scaled to its servings. */
+export function sideParts(e: PlanEntry): [string, Record<string, number>][] {
+  return (e.x ?? []).filter((sid) => SIDE[sid]).map((sid) => [sid, Object.fromEntries(SIDE[sid].ing.map((s) => { const p = parseIng(s); return [p.id, p.qty * e.n] }))])
 }
-export const healthLevel = (kcal: number): 'fit' | 'balanced' | 'belly' => (kcal <= 1500 ? 'fit' : kcal <= 2200 ? 'balanced' : 'belly')
+export function scaleEntry(e: PlanEntry): Record<string, number> {
+  const out = scaleRecipe(e.r, e.n)
+  for (const [, part] of sideParts(e)) for (const [id, q] of Object.entries(part)) out[id] = (out[id] ?? 0) + q
+  return out
+}
+export const entryCost = (e: PlanEntry) => Object.entries(scaleEntry(e)).reduce((a, [id, q]) => a + q * ING[id].p, 0)
+export const entryKcal = (e: PlanEntry) => Object.entries(scaleEntry(e)).reduce((a, [id, q]) => a + q * ING[id].k, 0) / e.n
+/** Daily kcal per person: average complete meal for each meal type planned, plus tea-time spread over the week. */
+export function dailyKcal(plan: Record<string, PlanEntry>): number {
+  const by: Record<string, number[]> = {}
+  for (const [k, e] of Object.entries(plan)) (by[k.split('-')[1]] ??= []).push(entryKcal(e))
+  const avg = (a?: number[]) => (a && a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0)
+  return avg(by.b) + avg(by.l) + avg(by.d) + (by.g ? by.g.reduce((x, y) => x + y, 0) / 7 : 0)
+}
+export const healthLevel = (kcal: number): 'fit' | 'balanced' | 'belly' => (kcal <= 1850 ? 'fit' : kcal <= 2250 ? 'balanced' : 'belly')

@@ -14,7 +14,7 @@ export interface Recipe {
   st: string // steps (EN for the POC), separated by |
 }
 const R = (id: string, e: string, h: number, n: Recipe['n'], t: number, d: 1 | 2 | 3, m: string, tags: string, s: number, ing: string, st: string): Recipe =>
-  ({ id, e, h, n, t, d, m: m.split('') as Meal[], tags: tags.split(' '), s, ing: ing.split(' '), st })
+  ({ id, e, h, n, t, d, m: (m ? m.split('') : []) as Meal[], tags: tags.split(' '), s, ing: ing.split(' '), st })
 
 const BASE: Recipe[] = [
   R('tajine-poulet', '🍗', 38, ['Chicken tagine with preserved lemon', 'Tajine de poulet au citron confit', 'طاجين الدجاج بالليمون المخلل'], 75, 2, 'l', 'moroccan family protein', 4,
@@ -32,10 +32,10 @@ const BASE: Recipe[] = [
   R('bissara', '🥣', 85, ['Bissara', 'Bissara', 'بصارة'], 60, 1, 'bd', 'moroccan vegetarian budget healthy ftour', 4,
     'fava:300 garlic:3:clove oil:3:tbsp cumin:1:tsp paprika:1:tsp salt:1:tsp lemon:1',
     'Soak the beans overnight, then boil with garlic until soft.|Blend smooth with salt.|Serve with oil, cumin, paprika and lemon.'),
-  R('zaalouk', '🍆', 280, ['Zaalouk', 'Zaalouk', 'زعلوك'], 40, 1, 'ld', 'moroccan vegetarian healthy budget', 4,
+  R('zaalouk', '🍆', 280, ['Zaalouk', 'Zaalouk', 'زعلوك'], 40, 1, '', 'moroccan vegetarian healthy budget', 4,
     'eggplant:800 tomato:500 garlic:3:clove coriander:1:bunch parsley:1:bunch paprika:1:tsp cumin:1:tsp oil:3:tbsp lemon:0.5',
     'Roast or steam the eggplant, then mash.|Cook tomatoes with garlic and spices.|Fold in the eggplant and herbs, finish with lemon.'),
-  R('taktouka', '🫑', 8, ['Taktouka', 'Taktouka', 'طكطوكة'], 35, 1, 'ld', 'moroccan vegetarian healthy', 4,
+  R('taktouka', '🫑', 8, ['Taktouka', 'Taktouka', 'طكطوكة'], 35, 1, '', 'moroccan vegetarian healthy', 4,
     'pepper:600 tomato:600 garlic:3:clove oil:3:tbsp paprika:1:tsp cumin:1:tsp parsley:1:bunch',
     'Grill and peel the peppers.|Cook tomatoes down with garlic and spices.|Add peppers and parsley, simmer until jammy.'),
   R('sardines', '🐟', 200, ['Sardines chermoula', 'Sardines à la chermoula', 'سردين بالشرمولة'], 35, 2, 'ld', 'moroccan protein healthy budget', 4,
@@ -68,7 +68,7 @@ const BASE: Recipe[] = [
   R('tajine-legumes', '🥦', 110, ['Vegetable tagine', 'Tajine de légumes', 'طاجين الخضار'], 60, 1, 'ld', 'moroccan vegetarian healthy', 4,
     'potato:400 carrot:300 zucchini:300 pepper:150 tomato:300 onion:1:pc olives:80 coriander:1:bunch turmeric:1:tsp oil:3:tbsp',
     'Layer onion, tomato and the vegetables in the pot.|Add oil, turmeric and half a glass of water.|Cover and simmer 40 min, top with olives and coriander.'),
-  R('yaourt-dattes', '🍯', 34, ['Yogurt, dates and almonds', 'Yaourt, dattes et amandes', 'زبادي بالتمر واللوز'], 5, 1, 'bg', 'vegetarian quick healthy ftour', 2,
+  R('yaourt-dattes', '🍯', 34, ['Yogurt, dates and almonds', 'Yaourt, dattes et amandes', 'زبادي بالتمر واللوز'], 5, 1, 'g', 'vegetarian quick healthy ftour', 2,
     'yogurt:2 dates:60 almonds:30 honey:1:tbsp',
     'Chop dates and almonds.|Spoon over the yogurt and drizzle with honey.'),
   R('brochettes', '🍢', 22, ['Chicken skewers', 'Brochettes de poulet', 'شواء الدجاج'], 40, 1, 'ld', 'family protein', 4,
@@ -89,7 +89,7 @@ const BASE: Recipe[] = [
   R('poulet-citron', '🍋', 55, ['Lemon chicken and potatoes', 'Poulet citron et pommes de terre', 'دجاج بالليمون والبطاطس'], 65, 1, 'ld', 'family protein', 4,
     'chicken:900 potato:700 lemon:2 garlic:4:clove oil:3:tbsp paprika:1:tsp',
     'Coat chicken and potato wedges with oil, lemon, garlic and paprika.|Roast at 200°C for 50 min, turning once.'),
-  R('mechouia', '🌶️', 14, ['Mechouia salad', 'Salade mechouia', 'سلطة مشوية'], 30, 1, 'ld', 'moroccan vegetarian healthy', 4,
+  R('mechouia', '🌶️', 14, ['Mechouia salad', 'Salade mechouia', 'سلطة مشوية'], 30, 1, '', 'moroccan vegetarian healthy', 4,
     'pepper:400 tomato:400 garlic:2:clove oil:2:tbsp lemon:0.5',
     'Grill peppers and tomatoes, peel them.|Chop and mix with garlic, oil and lemon.'),
   R('salade-lentilles', '🥬', 100, ['Lentil salad', 'Salade de lentilles', 'سلطة العدس'], 30, 1, 'ld', 'vegetarian healthy budget', 4,
@@ -151,13 +151,13 @@ const MORE: Recipe[] = [
   R('the-dattes', '🍵', 120, ['Mint tea and dates', 'Thé à la menthe et dattes', 'أتاي بالنعناع والتمر'], 10, 1, 'g', 'moroccan vegetarian quick ftour', 4,
     'tea:2:tbsp mint:1:bunch sugar:4:tbsp dates:100',
     'Rinse the tea with a little boiling water.|Add mint, sugar and boiling water; brew 4 min.|Serve with dates.'),
-  R('banane-amandes', '🍌', 52, ['Banana, almonds and honey', 'Banane, amandes et miel', 'موز باللوز والعسل'], 5, 1, 'bg', 'vegetarian quick healthy', 2,
+  R('banane-amandes', '🍌', 52, ['Banana, almonds and honey', 'Banane, amandes et miel', 'موز باللوز والعسل'], 5, 1, 'g', 'vegetarian quick healthy', 2,
     'banana:2 almonds:30 honey:1:tbsp',
     'Slice the bananas.|Top with chopped almonds and honey.'),
-  R('amlou', '🥜', 30, ['Amlou with bread', 'Amlou et pain', 'أملو بالخبز'], 10, 1, 'bg', 'moroccan vegetarian quick', 4,
+  R('amlou', '🥜', 30, ['Amlou with bread', 'Amlou et pain', 'أملو بالخبز'], 10, 1, 'g', 'moroccan vegetarian quick', 4,
     'almonds:100 honey:3:tbsp oil:3:tbsp bread:4',
     'Grind the toasted almonds into a paste.|Mix in honey and oil.|Serve with warm bread.'),
-  R('salade-marocaine', '🥗', 9, ['Moroccan tomato salad', 'Salade marocaine', 'سلطة مغربية'], 15, 1, 'ld', 'moroccan vegetarian healthy budget quick ftour', 4,
+  R('salade-marocaine', '🥗', 9, ['Moroccan tomato salad', 'Salade marocaine', 'سلطة مغربية'], 15, 1, '', 'moroccan vegetarian healthy budget quick ftour', 4,
     'tomato:500 onion:1:pc pepper:100 parsley:0.5:bunch oil:2:tbsp lemon:0.5',
     'Dice the tomato, onion and pepper.|Add chopped parsley, oil, lemon and salt.'),
   R('soupe-legumes', '🥕', 26, ['Vegetable soup', 'Soupe de légumes', 'شوربة الخضار'], 35, 1, 'd', 'moroccan vegetarian healthy budget', 4,
@@ -169,15 +169,33 @@ const MORE: Recipe[] = [
   R('rghaif', '🫓', 44, ['Rghaif', 'Rghaif', 'رغايف'], 45, 2, 'bg', 'moroccan vegetarian tea', 4,
     'flour:400 semolina:100 butter:60 oil:3:tbsp salt:1:tsp tea:1:tbsp mint:0.5:bunch sugar:2:tbsp',
     'Knead a soft dough with warm water and salt.|Stretch thin, fold into squares.|Cook in a pan with butter and serve with mint tea.'),
-  R('orange-cannelle', '🍊', 28, ['Orange and cinnamon bowl', 'Oranges à la cannelle', 'برتقال بالقرفة'], 5, 1, 'bg', 'vegetarian quick healthy sweet', 2,
+  R('orange-cannelle', '🍊', 28, ['Orange and cinnamon bowl', 'Oranges à la cannelle', 'برتقال بالقرفة'], 5, 1, 'g', 'vegetarian quick healthy sweet', 2,
     'orange:4 cinnamon:1:tsp honey:1:tbsp mint:0.5:bunch',
     'Slice the oranges.|Dust with cinnamon, drizzle honey, top with mint.'),
   R('poisson-grille', '🐟', 205, ['Grilled fish and lemon', 'Poisson grillé au citron', 'سمك مشوي'], 25, 1, 'ld', 'healthy protein quick', 4,
     'fish:800 lemon:2 garlic:2:clove oil:2:tbsp paprika:1:tsp parsley:1:bunch',
     'Rub the fish with garlic, paprika, oil and lemon.|Grill 5 min per side.|Serve with parsley.'),
-  R('carottes-cumin', '🥕', 24, ['Cumin carrot salad', 'Salade de carottes au cumin', 'سلطة الجزر بالكمون'], 20, 1, 'l', 'moroccan vegetarian healthy budget quick', 4,
+  R('carottes-cumin', '🥕', 24, ['Cumin carrot salad', 'Salade de carottes au cumin', 'سلطة الجزر بالكمون'], 20, 1, '', 'moroccan vegetarian healthy budget quick', 4,
     'carrot:600 garlic:2:clove cumin:1:tsp oil:2:tbsp lemon:1 parsley:0.5:bunch',
     'Steam the carrots until just tender.|Toss with garlic, cumin, oil, lemon and parsley.'),
 ]
-export const RECIPES: Recipe[] = [...BASE, ...MORE]
+// Other cuisines (tag = country code). A small starter set for the POC.
+const WORLD: Recipe[] = [
+  R('pates-tomate', '🍝', 10, ['Tomato pasta', 'Pâtes à la tomate', 'معكرونة بالطماطم'], 20, 1, 'ld', 'it vegetarian quick budget', 4, 'pasta:400 tomato:600 garlic:2:clove oil:3:tbsp cheese:50', 'Simmer tomatoes with garlic and oil 12 min.|Boil the pasta.|Toss together and top with cheese.'),
+  R('pates-thon', '🍜', 195, ['Tuna pasta', 'Pâtes au thon', 'معكرونة بالتونة'], 20, 1, 'ld', 'it quick budget protein', 4, 'pasta:400 tuna:2 tomato:400 onion:1:pc garlic:1:clove oil:2:tbsp', 'Soften onion and garlic.|Add tomato and tuna, simmer 8 min.|Toss with the cooked pasta.'),
+  R('risotto', '🍚', 48, ['Vegetable risotto', 'Risotto aux légumes', 'ريزوتو بالخضار'], 35, 2, 'ld', 'it vegetarian', 4, 'rice:320 zucchini:250 onion:1:pc butter:30 cheese:60 oil:2:tbsp', 'Soften onion in oil, add rice.|Add hot water ladle by ladle for 18 min with the zucchini.|Finish with butter and cheese.'),
+  R('ratatouille', '🫑', 20, ['Ratatouille', 'Ratatouille', 'راتاتوي'], 50, 1, 'ld', 'fr vegetarian healthy budget', 4, 'zucchini:300 eggplant:300 pepper:200 tomato:400 onion:1:pc garlic:2:clove oil:4:tbsp', 'Dice the vegetables.|Cook each in oil, then combine with tomato and garlic.|Simmer 25 min.'),
+  R('quiche', '🥧', 45, ['Vegetable quiche', 'Quiche aux légumes', 'كيش بالخضار'], 50, 2, 'ld', 'fr vegetarian', 4, 'flour:200 butter:100 egg:3 milk:250 cheese:80 zucchini:200', 'Make a dough with flour and butter, line the tin.|Beat eggs, milk and cheese.|Add zucchini, pour and bake 35 min at 180°C.'),
+  R('tortilla', '🥔', 52, ['Spanish omelette', 'Tortilla espagnole', 'تورتيا إسبانية'], 35, 1, 'bld', 'es vegetarian budget', 4, 'potato:500 egg:6 onion:1:pc oil:4:tbsp', 'Fry sliced potato and onion in oil until tender.|Mix with beaten eggs.|Cook, flip once, serve warm.'),
+  R('paella', '🥘', 30, ['Chicken paella', 'Paella au poulet', 'باييلا بالدجاج'], 50, 2, 'l', 'es protein family', 4, 'rice:320 chicken:500 pepper:150 tomato:200 garlic:2:clove turmeric:1:tsp paprika:1:tsp oil:3:tbsp lemon:1', 'Brown chicken with garlic and pepper.|Add tomato, spices, rice and twice the water.|Cook uncovered 20 min, serve with lemon.'),
+  R('menemen', '🍳', 12, ['Menemen', 'Menemen', 'منمن'], 15, 1, 'b', 'tr vegetarian quick', 2, 'egg:4 tomato:250 pepper:100 oil:1:tbsp', 'Soften pepper in oil, add tomato.|Stir in the eggs gently until just set.'),
+  R('kofte', '🍢', 18, ['Turkish köfte', 'Köfte turques', 'كفتة تركية'], 30, 1, 'ld', 'tr protein', 4, 'beef:500 onion:1:pc parsley:1:bunch cumin:1:tsp paprika:1:tsp oil:1:tbsp', 'Mix beef with grated onion, parsley and spices.|Shape and grill 8 min.'),
+  R('dal', '🍛', 40, ['Lentil dal', 'Dal de lentilles', 'دال العدس'], 35, 1, 'ld', 'in vegetarian healthy budget', 4, 'lentils:300 onion:1:pc tomato:200 garlic:2:clove ginger:1:tsp turmeric:1:tsp cumin:1:tsp oil:2:tbsp rice:240', 'Simmer lentils with turmeric.|Fry onion, garlic, ginger, cumin and tomato.|Combine and serve with rice.'),
+  R('curry-poulet', '🍛', 35, ['Chicken curry', 'Curry de poulet', 'كاري الدجاج'], 40, 2, 'ld', 'in protein', 4, 'chicken:700 onion:2:pc tomato:300 yogurt:2 garlic:3:clove ginger:1:tsp turmeric:1:tsp cumin:1:tsp paprika:1:tsp oil:3:tbsp rice:280', 'Fry onion, garlic and spices.|Add chicken and tomato, simmer 20 min.|Stir in yogurt and serve with rice.'),
+  R('teriyaki', '🍱', 20, ['Chicken teriyaki and rice', 'Poulet teriyaki et riz', 'دجاج ترياكي بالأرز'], 30, 1, 'ld', 'jp protein quick', 4, 'chicken:600 soy:60 honey:2:tbsp garlic:2:clove ginger:1:tsp rice:280 oil:1:tbsp', 'Cook the rice.|Sear chicken, add soy, honey, garlic and ginger, reduce to a glaze.|Serve on rice.'),
+  R('riz-saute', '🍳', 40, ['Vegetable fried rice', 'Riz sauté aux légumes', 'أرز مقلي بالخضار'], 20, 1, 'ld', 'jp vegetarian quick budget', 4, 'rice:300 egg:3 carrot:150 pepper:150 soy:40 oil:2:tbsp', 'Cook the rice the day before if possible.|Stir-fry vegetables, add rice and soy.|Push aside, scramble the eggs, mix.'),
+  R('porridge', '🥣', 60, ['Oat porridge with fruit', 'Porridge aux fruits', 'عصيدة الشوفان بالفاكهة'], 10, 1, 'b', 'int healthy quick vegetarian', 2, 'oats:80 milk:300 banana:1 honey:1:tbsp almonds:20', 'Simmer oats in milk 5 min.|Top with banana, almonds and honey.'),
+  R('tartines', '🍞', 38, ['Toast with butter and honey', 'Tartines beurre-miel', 'خبز محمص بالزبدة والعسل'], 5, 1, 'b', 'fr int vegetarian quick', 2, 'bread:1 butter:20 honey:2:tbsp', 'Toast the bread.|Spread butter and honey.'),
+]
+export const RECIPES: Recipe[] = [...BASE, ...MORE, ...WORLD]
 export const REC: Record<string, Recipe> = Object.fromEntries(RECIPES.map((r) => [r.id, r]))

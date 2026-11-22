@@ -27,16 +27,23 @@ describe('engine', () => {
   })
 })
 
-import { randomPlan, adaptToBudget, listCost } from './plan'
+import { composeWeek, adaptToBudget, listCost, composeSides, type Prefs } from './plan'
 import { dailyKcal } from './engine'
-describe('modes and budget', () => {
-  const avg = (m: 'light' | 'balanced' | 'gourmet') => { let s = 0; for (let i = 0; i < 12; i++) s += dailyKcal(randomPlan(2, [], m, 99999, STAPLES, {})); return s / 12 }
-  it('light < balanced < gourmet in calories', () => { const [a, b, c] = [avg('light'), avg('balanced'), avg('gourmet')]; expect(a).toBeLessThan(b); expect(b).toBeLessThan(c) })
-  it('fits a tight budget by swapping then shrinking portions', () => {
-    const big = randomPlan(4, [], 'gourmet', 99999, STAPLES, {})
-    const target = listCost(big, STAPLES, {}) * 0.6
-    const fit = adaptToBudget(big, target, STAPLES, {}, [])
+const P = (goals: string[], budget = 99999): Prefs => ({ size: 2, diet: [], cuisine: 'ma', region: 'all', goals, meals: ['b', 'l', 'd'], budget })
+describe('composer', () => {
+  const avg = (g: string[]) => { let s = 0; for (let i = 0; i < 12; i++) s += dailyKcal(composeWeek(P(g), STAPLES, {})); return s / 12 }
+  it('healthy < balanced < hearty in calories', () => { const [a, b, c] = [avg(['healthy']), avg([]), avg(['gourmand'])]; expect(a).toBeLessThan(b); expect(b).toBeLessThan(c) })
+  it('every breakfast has a drink and is never a lone item', () => {
+    const w = composeWeek(P([]), STAPLES, {})
+    for (let d = 0; d < 7; d++) { const x = w[`${d}-b`].x!; expect(x.some((s) => s === 'x-the' || s === 'x-cafe')).toBe(true) }
+  })
+  it('a tajine lunch comes with bread; couscous does not', () => {
+    expect(composeSides('tajine-poulet', 'l', () => 0.1)).toContain('x-khobz')
+    expect(composeSides('couscous-7', 'l', () => 0.1)).not.toContain('x-khobz')
+  })
+  it('fits a tight budget', () => {
+    const big = composeWeek(P(['gourmand']), STAPLES, {}); const target = listCost(big, STAPLES, {}) * 0.6
+    const fit = adaptToBudget(big, target, STAPLES, {}, P([]))
     expect(fit.after).toBeLessThanOrEqual(target)
-    expect(fit.swapped + fit.scaled).toBeGreaterThan(0)
   })
 })
