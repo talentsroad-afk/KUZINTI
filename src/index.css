@@ -337,14 +337,7 @@ button:hover > .ico3d, a:hover > .ico3d { transform: scale(1.15) rotate(-6deg); 
 @keyframes tjCook { 0%,60%,100% { transform: none; } 66% { transform: translateY(-7px) rotate(-4deg); } 74% { transform: translateY(-2px) rotate(3deg); } 82% { transform: none; } }
 .coals { animation: coals .5s ease-in-out infinite alternate; } @keyframes coals { from { opacity: .6; } to { opacity: 1; } }
 .oven-glow { animation: ovenGlow 1.4s ease-in-out infinite alternate; } @keyframes ovenGlow { from { opacity: .75; } to { opacity: 1; } }
-.hot, .ear-steam { opacity: 0; }
-.tasting .arm-r { animation: tasteArm 4.2s ease-in-out infinite; }
 @keyframes tasteArm { 0%,15%,75%,100% { transform: none; } 28%,60% { transform: rotate(-128deg) translate(6px,-4px); } }
-.tasting .hot { animation: hot 4.2s ease-in-out infinite; } @keyframes hot { 0%,38%,85%,100% { opacity: 0; } 48%,70% { opacity: .45; } }
-.tasting .ear-steam { animation: earSteam 4.2s ease-out infinite; } @keyframes earSteam { 0%,42% { opacity: 0; transform: translateY(6px); } 52% { opacity: 1; } 78% { opacity: 0; transform: translateY(-14px); } 100% { opacity: 0; } }
-.tasting .eyes-open { animation: eyesPop 4.2s ease-in-out infinite; } @keyframes eyesPop { 0%,40%,80%,100% { transform: none; } 48%,72% { transform: scale(1.5); } }
-.tasting .mouth-o { animation: mouthHot 4.2s ease-in-out infinite; } @keyframes mouthHot { 0%,40%,80%,100% { opacity: 0; } 46%,74% { opacity: 1; } }
-.tasting .chef-head { transform-box: view-box; transform-origin: 160px 118px; animation: headHot 4.2s ease-in-out infinite; } @keyframes headHot { 0%,42%,80%,100% { transform: none; } 50% { transform: translateY(-6px) rotate(-5deg); } 58% { transform: translateY(-2px) rotate(5deg); } 66% { transform: translateY(-5px) rotate(-4deg); } }
 .rope-spin { transform-box: fill-box; transform-origin: 50% 50%; animation: ropeSpin .45s linear infinite; } @keyframes ropeSpin { from { transform: rotateX(0); } to { transform: rotateX(360deg); } }
 .coach-lines { animation: coachLines 1.6s ease-in-out infinite alternate; } @keyframes coachLines { from { transform: translateX(-6px); opacity: .5; } to { transform: translateX(6px); opacity: 1; } }
 .story-paused .coach-lines { animation-play-state: paused; }
@@ -357,3 +350,48 @@ html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; ove
 .navbar button, [role=tab] { transition: transform .18s cubic-bezier(.2,.9,.25,1), background-color .25s, color .25s; }
 .navbar button:active, [role=tab]:active { transform: scale(.94); }
 @media (prefers-reduced-motion: reduce) { .swipe-nudge-l, .swipe-nudge-r { animation: none; } }
+
+/* chef gags (rotate while he waits): taste, wink, juggle, dance, sneeze, hat hop */
+.sparkle, .puff, .juggle { opacity: 0; } .sparkle { transform-box: fill-box; transform-origin: center; }
+.gag-taste .arm-r { animation: tasteArm 4.4s ease-in-out both; }
+@keyframes tasteArm { 0%,15%,75%,100% { transform: none; } 28%,60% { transform: rotate(-128deg) translate(6px,-4px); } }
+.gag-taste .eyes-open { animation: yumA 4.4s both; } .gag-taste .eyes-shut { animation: yumB 4.4s both; }
+@keyframes yumA { 0%,30%,62%,100% { opacity: 1; } 36%,56% { opacity: 0; } } @keyframes yumB { 0%,30%,62%,100% { opacity: 0; } 36%,56% { opacity: 1; } }
+.gag-taste .chef-head { transform-box: view-box; transform-origin: 160px 118px; animation: yumHead 4.4s ease-in-out both; }
+@keyframes yumHead { 0%,28%,64%,100% { transform: none; } 40%,52% { transform: rotate(-7deg) translateY(-2px); } }
+.gag-taste .sparkle, .gag-wink .sparkle { animation: sparkle 3.2s ease-out both; }
+@keyframes sparkle { 0%,38% { opacity: 0; transform: scale(.2) rotate(0); } 50% { opacity: 1; transform: scale(1.15) rotate(25deg); } 72%,100% { opacity: 0; transform: scale(.3) rotate(60deg); } }
+.gag-wink .eye-r { transform-box: fill-box; transform-origin: 50% 50%; animation: wink 3.2s ease-in-out both; }
+@keyframes wink { 0%,28%,70%,100% { transform: none; } 36%,62% { transform: scaleY(.08); } }
+.gag-wink .mouth-happy { transform-box: fill-box; transform-origin: 50% 50%; animation: grin 3.2s ease-in-out both; }
+@keyframes grin { 0%,28%,70%,100% { transform: none; } 36%,62% { transform: scale(1.4,1.6) translateY(1px); } }
+.gag-wink .chef-head { transform-box: view-box; transform-origin: 160px 118px; animation: winkHead 3.2s ease-in-out both; } @keyframes winkHead { 0%,28%,70%,100% { transform: none; } 38%,60% { transform: rotate(6deg) translateX(3px); } }
+.gag-juggle .juggle { opacity: 1; }
+.jball { transform-box: view-box; animation: orbit 1.5s linear infinite; }
+@keyframes orbit { 0% { transform: translate(60px,0); } 12.5% { transform: translate(42px,13px); } 25% { transform: translate(0,18px); } 37.5% { transform: translate(-42px,13px); } 50% { transform: translate(-60px,0); } 62.5% { transform: translate(-42px,-13px); } 75% { transform: translate(0,-18px); } 87.5% { transform: translate(42px,-13px); } 100% { transform: translate(60px,0); } }
+.gag-juggle .arm-r { animation: jugR .75s ease-in-out infinite alternate; } @keyframes jugR { from { transform: rotate(-150deg); } to { transform: rotate(-122deg); } }
+.gag-juggle .arm-l { animation: jugL .75s ease-in-out infinite alternate-reverse; } @keyframes jugL { from { transform: rotate(100deg); } to { transform: rotate(128deg); } }
+.gag-juggle .chef-head { transform-box: view-box; transform-origin: 160px 118px; animation: jugHead 1.5s ease-in-out infinite; } @keyframes jugHead { 0%,100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+.gag-juggle .eyes-open { transform: translateY(-2px); }
+.gag-dance .chef-sway { animation: dance .9s ease-in-out infinite; }
+@keyframes dance { 0%,100% { transform: translateX(-10px) rotate(-5deg); } 50% { transform: translateX(10px) rotate(5deg) translateY(-5px); } }
+.gag-dance .chef-head { transform-box: view-box; transform-origin: 160px 118px; animation: headBop .45s ease-in-out infinite alternate; } @keyframes headBop { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+.gag-dance .arm-r { animation: pumpR .45s ease-in-out infinite alternate; } @keyframes pumpR { from { transform: rotate(-70deg); } to { transform: rotate(-135deg); } }
+.gag-dance .arm-l { animation: pumpL .45s ease-in-out infinite alternate-reverse; } @keyframes pumpL { from { transform: rotate(55deg); } to { transform: rotate(115deg); } }
+.gag-dance .eyes-open { opacity: 0; } .gag-dance .eyes-shut { opacity: 1; } .gag-dance .toque { animation-duration: .45s; }
+.gag-sneeze .chef-head { transform-box: view-box; transform-origin: 160px 118px; animation: sneezeHead 4.4s ease-in-out both; }
+@keyframes sneezeHead { 0%,38%,86%,100% { transform: none; } 54% { transform: rotate(-9deg) translateY(-3px); } 61% { transform: rotate(12deg) translate(2px,6px); } 72% { transform: rotate(2deg) translateY(2px); } }
+.gag-sneeze .eyes-open { animation: sneA 4.4s both; } .gag-sneeze .eyes-shut { animation: sneB 4.4s both; }
+@keyframes sneA { 0%,54%,76%,100% { opacity: 1; } 58%,72% { opacity: 0; } } @keyframes sneB { 0%,54%,76%,100% { opacity: 0; } 58%,72% { opacity: 1; } }
+.gag-sneeze .mouth-happy { animation: sneC 4.4s both; } .gag-sneeze .mouth-o { animation: sneD 4.4s both; }
+@keyframes sneC { 0%,58%,72%,100% { opacity: 1; } 60%,70% { opacity: 0; } } @keyframes sneD { 0%,58%,72%,100% { opacity: 0; } 60%,70% { opacity: 1; } }
+.gag-sneeze .puff { animation: puff 4.4s ease-out both; }
+@keyframes puff { 0%,60% { opacity: 0; transform: translate(0,0) scale(.4); } 64% { opacity: .95; } 100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(1.4); } }
+.puff { transform-box: fill-box; transform-origin: center; }
+.gag-hat .toque { transform-box: fill-box; transform-origin: 50% 100%; animation: hatHop 3.4s cubic-bezier(.3,.7,.4,1) both; }
+@keyframes hatHop { 0%,12%,100% { transform: none; } 22% { transform: translateY(4px) scaleY(.92); } 40% { transform: translateY(-36px) rotate(18deg); } 55% { transform: translateY(-32px) rotate(-14deg); } 76% { transform: translateY(2px) rotate(2deg); } 84% { transform: translateY(-4px); } }
+.gag-hat .eyes-open { animation: lookUp 3.4s both; } @keyframes lookUp { 0%,15%,85%,100% { transform: none; } 30%,70% { transform: translateY(-2.5px) scale(1.25); } }
+.gag-hat .brows { animation: browUp 3.4s both; } @keyframes browUp { 0%,15%,85%,100% { transform: none; } 30%,70% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .chef * { animation: none !important; } }
+/* pivots are authored in view-box px: beat the generic fill-box rule above */
+.scene-svg .arm-l, .scene-svg .arm-r, .scene-svg .chef-head, .scene-svg .chef-sway { transform-box: view-box; }

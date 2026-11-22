@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 
+const GAGS = ['taste', 'wink', 'juggle', 'dance', 'sneeze', 'hat'] as const
+type Gag = (typeof GAGS)[number]
 type Act = 'chop' | 'mix' | 'fry' | 'boil' | 'oven' | 'serve' | 'rest' | 'add' | 'prep'
 const RX: [Act, RegExp][] = [
   ['serve', /serv|dress|présent|garni|plate|décor|قدم/i],
@@ -76,10 +78,30 @@ function Slices({ k, x, y }: { k: string; x: number; y: number }) {
   return <g>{[-14, 0, 14].map((dx, i) => <g key={i} className="slice-pop" style={{ animationDelay: `${i * 50}ms` }}><g transform={`translate(${x + dx} ${y + (i % 2) * 3}) rotate(${(i - 1) * 18})`}>{piece(i)}</g></g>)}</g>
 }
 
-/** The chef, drawn in SVG: he chops, cries over onions, pours, stirs, sweats at the pan and blows a kiss at the end. */
-function Chef({ mood, arm, hand, taste }: { taste?: boolean; mood: 'happy' | 'cry' | 'sweat' | 'proud' | 'focus' | 'surprise'; arm: 'chop' | 'idle'; hand: 'pour' | 'stir' | 'shake' | 'kiss' | 'idle' }) {
+const SK = '#f3c49b', SKD = '#e0a77c', SKL = '#d99a70'
+/** A hand drawn in SVG: wrist cuff, palm, four curled fingers over the utensil, thumb on top (or an open relaxed hand when it holds nothing). */
+function Hand({ x, y, rot = 0, grip = true, s = 1 }: { x: number; y: number; rot?: number; grip?: boolean; s?: number }) {
   return (
-    <g className={`chef mood-${mood} ${taste ? 'tasting' : ''}`}>
+    <g transform={`translate(${x} ${y}) rotate(${rot}) scale(${s})`}>
+      {grip ? <>
+        <rect x="-9" y="-9" width="18" height="18" rx="7" fill={SK} stroke={SKL} strokeWidth=".8" />
+        {[0, 1, 2, 3].map((i) => <rect key={i} x="-10.5" y={-8.4 + i * 4.3} width="15" height="4" rx="2" fill={i % 2 ? SK : '#f6cfa9'} stroke={SKL} strokeWidth=".8" />)}
+        <ellipse cx="5.4" cy="-6.5" rx="3.3" ry="5.4" transform="rotate(18 5.4 -6.5)" fill={SK} stroke={SKL} strokeWidth=".8" />
+        <path d="M4 -9.5 q2 -1 3 .4" stroke="#fff" strokeOpacity=".7" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+        <path d="M-4 8.5 q4 2 8 0" stroke={SKD} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      </> : <>
+        <rect x="-7.5" y="-8" width="15" height="12" rx="5" fill={SK} stroke={SKL} strokeWidth=".8" />
+        {[-5.6, -1.9, 1.9, 5.6].map((dx, i) => <rect key={i} x={dx - 1.9} y="1" width="3.8" height={9 - Math.abs(dx) * 0.25} rx="1.9" transform={`rotate(${dx * 2.2} ${dx} 1)`} fill={SK} stroke={SKL} strokeWidth=".7" />)}
+        <ellipse cx="-8.4" cy="-1.5" rx="3" ry="5" transform="rotate(32 -8.4 -1.5)" fill={SK} stroke={SKL} strokeWidth=".7" />
+      </>}
+    </g>)
+}
+const Sparkle = ({ x, y, d = 0, r = 1 }: { x: number; y: number; d?: number; r?: number }) => <g transform={`translate(${x} ${y}) scale(${r})`}><path className="sparkle" style={{ animationDelay: `${d}s` }} d="M0 -8 L2.2 -2.2 L8 0 L2.2 2.2 L0 8 L-2.2 2.2 L-8 0 L-2.2 -2.2Z" fill="#ffd27a" stroke="#fff" strokeWidth=".8" /></g>
+
+/** The chef, drawn in SVG: he chops, cries over onions, pours, stirs, sweats at the pan and blows a kiss at the end. */
+function Chef({ mood, arm, hand, gag }: { gag?: Gag; mood: 'happy' | 'cry' | 'sweat' | 'proud' | 'focus' | 'surprise'; arm: 'chop' | 'idle'; hand: 'pour' | 'stir' | 'shake' | 'kiss' | 'idle' }) {
+  return (
+    <g className={`chef mood-${mood} ${gag ? 'gag-' + gag : ''}`}>
       <g className="chef-sway">
         {/* body */}
         <path d="M118 182 C116 140 128 118 160 116 C192 118 204 140 202 182Z" fill="#fff" stroke="#e5e0d4" strokeWidth="2" />
@@ -92,11 +114,11 @@ function Chef({ mood, arm, hand, taste }: { taste?: boolean; mood: 'happy' | 'cr
           {/* toque */}
           <g className="toque"><rect x="140" y="56" width="40" height="14" rx="3" fill="#fff" stroke="#e5e0d4" strokeWidth="2" /><circle cx="146" cy="50" r="12" fill="#fff" /><circle cx="160" cy="42" r="15" fill="#fff" /><circle cx="174" cy="50" r="12" fill="#fff" /></g>
           {/* eyes */}
-          <g className="eyes-open"><ellipse cx="150" cy="90" rx="3.4" ry="4.4" fill="#2b1d14" /><ellipse cx="170" cy="90" rx="3.4" ry="4.4" fill="#2b1d14" /><circle cx="151" cy="88.5" r="1.1" fill="#fff" /><circle cx="171" cy="88.5" r="1.1" fill="#fff" /></g>
+          <g className="eyes-open"><ellipse cx="150" cy="90" rx="3.4" ry="4.4" fill="#2b1d14" /><circle cx="151" cy="88.5" r="1.1" fill="#fff" /><g className="eye-r"><ellipse cx="170" cy="90" rx="3.4" ry="4.4" fill="#2b1d14" /><circle cx="171" cy="88.5" r="1.1" fill="#fff" /></g></g>
           <g className="eyes-shut"><path d="M145 91 q5 -4 10 0 M165 91 q5 -4 10 0" stroke="#2b1d14" strokeWidth="2.6" fill="none" strokeLinecap="round" /></g>
           <path className="brows" d="M144 81 l11 -2 M165 79 l11 2" stroke="#6b4428" strokeWidth="2.6" strokeLinecap="round" />
           <ellipse cx="143" cy="100" rx="5" ry="3" fill="#ef9a8a" opacity=".6" /><ellipse cx="177" cy="100" rx="5" ry="3" fill="#ef9a8a" opacity=".6" />
-          <ellipse cx="160" cy="98" rx="4.4" ry="3.8" fill="#e8a37c" /><circle className="hot" cx="160" cy="92" r="26" fill="#ff3b2f" /><g className="ear-steam"><path d="M131 88 q-8 -6 -4 -14 q4 -8 -2 -14" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" /><path d="M189 88 q8 -6 4 -14 q-4 -8 2 -14" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" /></g>
+          <ellipse cx="160" cy="98" rx="4.4" ry="3.8" fill="#e8a37c" />
           {/* mustache */}
           <path className="stache" d="M160 103 C152 99 142 101 138 108 C146 106 152 108 160 106 C168 108 174 106 182 108 C178 101 168 99 160 103Z" fill="#5a3620" />
           <path className="mouth-happy" d="M153 110 q7 6 14 0" stroke="#7a2e2a" strokeWidth="2.6" fill="none" strokeLinecap="round" />
@@ -104,19 +126,25 @@ function Chef({ mood, arm, hand, taste }: { taste?: boolean; mood: 'happy' | 'cr
           {/* tears & sweat */}
           <g className="tears">{[0, 1, 2].map((k) => <path key={k} className="tear" style={{ animationDelay: `${k * 0.28}s` }} d="M148 94 q-6 10 0 14 q6 -4 0 -14Z" fill="#6fc3ff" stroke="#fff" strokeWidth=".8" />)}{[0, 1, 2].map((k) => <path key={'r' + k} className="tear" style={{ animationDelay: `${k * 0.28 + 0.14}s` }} d="M172 94 q-6 10 0 14 q6 -4 0 -14Z" fill="#6fc3ff" stroke="#fff" strokeWidth=".8" />)}</g>
           <g className="fountain"><path className="jet" d="M146 92 C132 84 120 96 112 116" stroke="#8fd3ff" strokeWidth="4" fill="none" strokeLinecap="round" /><path className="jet" style={{ animationDelay: '.2s' }} d="M174 92 C188 84 200 96 208 116" stroke="#8fd3ff" strokeWidth="4" fill="none" strokeLinecap="round" /></g>
-          <path className="sweat" d="M188 74 q-5 8 0 11 q5 -3 0 -11Z" fill="#9ad8ff" />
+          <path className="sweat" d="M188 74 q-5 8 0 11 q5 -3 0 -11Z" fill="#9ad8ff" />{[[16, 6], [24, -4], [20, 14], [30, 4], [12, 18]].map(([dx, dy], i) => <circle key={i} className="puff" style={{ ['--dx' as string]: `${dx * 1.6}px`, ['--dy' as string]: `${dy * 1.4}px`, animationDelay: `${i * 0.05}s` }} cx="166" cy="102" r={2.6 + (i % 2)} fill="#fff" stroke="#d8d1c2" strokeWidth=".6" />)}
         </g>
-        {/* left arm (screen left): knife over the board */}
-        <g className={`arm-l arm-${arm}`}><path d="M128 130 L104 160" stroke="#fff" strokeWidth="15" strokeLinecap="round" /><circle cx="102" cy="162" r="8" fill="#f3c49b" />
-          <g transform="translate(102 162) rotate(-8)"><rect x="-3" y="-4" width="12" height="8" rx="2" fill="#3b2a20" /><path d="M-3 -4 L-40 -2 C-42 2 -40 6 -36 6 L-3 4Z" fill="#dfe6ea" stroke="#aab4ba" /></g></g>
-        {/* right arm (screen right): pours, stirs, shakes, kisses */}
-        <g className={`arm-r hand-${hand}`}><path d="M192 130 L216 152" stroke="#fff" strokeWidth="15" strokeLinecap="round" /><circle cx="218" cy="154" r="8" fill="#f3c49b" />
-          {hand === 'stir' && <rect x="216" y="132" width="5" height="44" rx="2.5" fill="#b98652" transform="rotate(20 218 154)" />}
-          {hand === 'shake' && <g transform="translate(218 140)"><rect x="-8" y="-14" width="16" height="22" rx="4" fill="#f5f5f5" stroke="#cfcfcf" /><rect x="-8" y="-18" width="16" height="6" rx="2" fill="#9aa5ad" /></g>}
-          {hand === 'pour' && <g transform="translate(222 140)"><rect x="-8" y="-20" width="16" height="28" rx="5" fill="#cfe9d4" stroke="#8fbf9a" /><rect x="-3" y="-30" width="6" height="12" rx="2" fill="#8fbf9a" /></g>}
+        {/* left arm (screen left): knife held in a real grip over the board */}
+        <g className={`arm-l arm-${arm}`}><path d="M128 130 L104 160" stroke="#fff" strokeWidth="15" strokeLinecap="round" /><circle cx="105" cy="159" r="8.6" fill="#fff" stroke="#e5e0d4" strokeWidth="1.2" />
+          <g transform="translate(102 162) rotate(-8)"><path d="M-3 -5 L-42 -3 C-44 2 -42 7 -37 7 L-3 5Z" fill="#dfe6ea" stroke="#aab4ba" /><path d="M-6 -3 L-38 -1.5" stroke="#fff" strokeWidth="1.6" opacity=".8" strokeLinecap="round" /><rect x="-3" y="-5" width="14" height="10" rx="3" fill="#3b2a20" /><circle cx="0.5" cy="0" r="1.2" fill="#c9b79e" /><circle cx="7" cy="0" r="1.2" fill="#c9b79e" /><Hand x={4} y={0} rot={90} s={0.9} /></g></g>
+        {/* right arm (screen right): pours, stirs, shakes, tastes */}
+        <g className={`arm-r hand-${hand}`}><path d="M192 130 L216 152" stroke="#fff" strokeWidth="15" strokeLinecap="round" /><circle cx="216" cy="150" r="8.6" fill="#fff" stroke="#e5e0d4" strokeWidth="1.2" />
+          {hand === 'stir' && <><rect x="216" y="130" width="5" height="46" rx="2.5" fill="#b98652" transform="rotate(20 218 154)" /><ellipse cx="226" cy="178" rx="7" ry="3.4" fill="#b98652" transform="rotate(20 218 154)" /><Hand x={218} y={154} rot={20} /></>}
+          {hand === 'shake' && <><g transform="translate(218 140)"><rect x="-8" y="-14" width="16" height="22" rx="4" fill="#f5f5f5" stroke="#cfcfcf" /><rect x="-8" y="-18" width="16" height="6" rx="2" fill="#9aa5ad" />{[-3, 0, 3].map((d) => <circle key={d} cx={d} cy="-15" r=".7" fill="#4d565e" />)}</g><Hand x={218} y={148} /></>}
+          {hand === 'pour' && <><g transform="translate(222 140)"><rect x="-8" y="-20" width="16" height="28" rx="5" fill="#cfe9d4" stroke="#8fbf9a" /><rect x="-3" y="-30" width="6" height="12" rx="2" fill="#8fbf9a" /><path d="M-5 -10 q-2 8 0 14" stroke="#fff" strokeWidth="2" opacity=".6" fill="none" strokeLinecap="round" /></g><Hand x={222} y={147} /></>}
+          {hand === 'idle' && gag === 'taste' && <><g transform="translate(218 152)"><rect x="-1.8" y="-26" width="3.6" height="30" rx="1.8" fill="#b98652" /><ellipse cx="0" cy="-30" rx="6.5" ry="8" fill="#b98652" /><ellipse cx="0" cy="-30" rx="4.6" ry="6" fill="#e8823c" /></g><Hand x={218} y={152} /></>}
+          {hand === 'idle' && gag !== 'taste' && <Hand x={219} y={158} grip={false} />}
+          {hand === 'kiss' && <Hand x={219} y={156} grip={false} />}
         </g>
         {hand === 'kiss' && <path className="heart" d="M226 98 c-6 -8 -18 -2 -12 8 l12 10 l12 -10 c6 -10 -6 -16 -12 -8z" fill="#ff5a6e" />}
       </g>
+      {/* gags: juggling balls, sparkles */}
+      <g className="juggle">{[['#e5483b', 0], ['#f4d23c', -0.5], ['#c58ac9', -1]].map(([c, d], i) => <g key={i} className="jball" style={{ animationDelay: `${d}s` }}><circle cx="160" cy="20" r="7" fill={c as string} stroke="#fff" strokeWidth="1" /><circle cx="158" cy="18" r="2" fill="#fff" opacity=".6" /></g>)}</g>
+      <Sparkle x={196} y={72} /><Sparkle x={124} y={64} d={0.15} r={0.7} />
     </g>)
 }
 
@@ -139,15 +167,18 @@ export function StepScene({ text, ings, dish = '' }: { text: string; ings: Scene
   const order = its.map((_, i) => cut.slice(0, i + 1).filter(Boolean).length)
   const chopping = n > 0 && t < n; const cur = its.findIndex((_, i) => cut[i] && order[i] === t + 1)
   const onion = chopping && cur >= 0 && kindOf(its[cur].id, its[cur].e) === 'onion'; const fishy = !fly && its.some((x) => kindOf(x.id, x.e) === 'fish')
-  const X = [34, 74, 114]; const knifeX = cur >= 0 ? X[cur] : 74
+  const X = [34, 74, 114]
   const mood = onion ? 'cry' : fishy && !chopping ? 'surprise' : a === 'fry' && cook ? 'sweat' : cook && a === 'serve' ? 'proud' : chopping ? 'focus' : 'happy'
   // The right utensil for the recipe: tajine, couscoussier, oven, pan or pot (a bowl for mixing, a plate to serve).
   const D = dish.toLowerCase()
   const main = /tajine|tagine|طاجين/.test(D) ? 'tajine' : /couscous|seffa|كسكس/.test(D) ? 'couscous' : /gratin|four|rôti|roti|pastilla|pizza|lasagn|parmentier|quiche|gâteau|gateau|cake|tarte|moussaka|al forno|bake|roast|oven|فرن/.test(D) || a === 'oven' ? 'oven' : /poêl|omelette|crêpe|msemen|baghrir|fried|frit|sauté|wok|kefta|burger|steak/.test(D) ? 'pan' : 'pot'
   const V = a === 'serve' ? 'plate' : a === 'mix' || (a === 'chop' && main !== 'tajine') ? 'bowl' : a === 'fry' && main === 'pot' ? 'pan' : main
   const pan = V === 'pan'; const bowl = V === 'bowl'; const plate = V === 'plate'; const tajine = V === 'tajine'; const oven = V === 'oven'; const kesk = V === 'couscous'
-  const tasting = cook && (V === 'pot' || tajine || kesk || pan)
   const hand = pourK >= 0 ? 'pour' : shaking ? 'shake' : cook && (a === 'mix' || (bowl && cook)) ? 'stir' : cook && a === 'serve' ? 'kiss' : 'idle'
+  const tasting = cook && !chopping && hand === 'idle'
+  const [gi, setGi] = useState(() => Math.floor(Math.random() * GAGS.length))
+  useEffect(() => { if (!tasting) return; const id = window.setInterval(() => setGi((g) => (g + 1) % GAGS.length), 4600); return () => clearInterval(id) }, [tasting])
+  const gag: Gag | undefined = tasting ? GAGS[gi] : undefined
   const liquid = pourK >= 0 ? pours[pourK][2] : null
   const soup = pours.find(([, e]) => e === '🍵' || e === '🥛')?.[2] ?? (pours.some(([, e]) => e === '💧') ? '#e39a4e' : '#e8823c')
   const mins = text.match(/(\d+)\s*(?:min|mn|دقيق)/i)?.[1]
@@ -166,7 +197,7 @@ export function StepScene({ text, ings, dish = '' }: { text: string; ings: Scene
           <radialGradient id="gMeat" cx=".4" cy=".4"><stop offset="0" stopColor="#e0656b" /><stop offset="1" stopColor="#a3333b" /></radialGradient>
           <linearGradient id="gFish" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#6f90ad" /><stop offset=".55" stopColor="#c6d8e6" /><stop offset="1" stopColor="#eef4f8" /></linearGradient>
           <radialGradient id="fire" cx=".5" cy="1" r="1"><stop offset="0" stopColor="#ffe08a" /><stop offset=".5" stopColor="#ff8a2a" /><stop offset="1" stopColor="#ff5a1f" stopOpacity="0" /></radialGradient></defs>
-        <Chef mood={mood} arm={chopping ? 'chop' : 'idle'} hand={hand} taste={tasting && hand === 'idle'} />
+        <Chef mood={mood} arm={chopping ? 'chop' : 'idle'} hand={hand} gag={gag} />
         {/* counter */}
         <rect x="0" y="182" width="320" height="58" fill="#3a2a20" /><rect x="0" y="178" width="320" height="10" rx="3" fill="#8a5a33" />
         {/* board */}
@@ -195,9 +226,6 @@ export function StepScene({ text, ings, dish = '' }: { text: string; ings: Scene
           return <g key={i} className={fly ? 'to-pot' : 'drop-board'} style={{ ['--dx' as string]: `${dx}px`, ['--dy' as string]: `${(plate ? 0 : pan ? -8 : tajine ? -2 : kesk ? -50 : oven ? -14 : -40)}px`, animationDelay: fly ? `${i * 110}ms` : `${i * 120}ms` }}>
             <g className={!chopped && !fly && k === 'fish' ? 'flop' : ''}>{chopped ? <Slices k={k} x={X[i]} y={164} /> : <Food id={x.id} k={k} x={X[i]} y={154} />}</g>
             {!fly && <text x={X[i]} y={198} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#f4f1e8" opacity=".9">{(x.n ?? '').split(/[ (,]/)[0].slice(0, 10)}</text>}</g> })}
-        {/* knife chop sound */}
-        {chopping && <text key={'tk' + t} x={knifeX - 6} y={140} className="onoma" fontSize="13" fontWeight="800" fill="#fff">tac!</text>}
-        {onion && <text key={'sn' + t} x={186} y={70} className="onoma" fontSize="14" fontWeight="800" fill="#9ad8ff">snif…</text>}
         {/* pouring stream */}
         {liquid && <path key={'p' + pourK} className="stream" d="M232 112 C238 118 244 122 250 128" stroke={liquid} strokeWidth="6" strokeLinecap="round" fill="none" />}
         {shaking && Array.from({ length: 12 }, (_, k) => <circle key={k} className="grain-fall" style={{ animationDelay: `${(k * 0.08).toFixed(2)}s` }} cx={212 + (k % 6) * 4} cy={150} r="1.8" fill={DOT[k % DOT.length]} />)}
