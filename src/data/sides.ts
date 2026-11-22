@@ -20,6 +20,6 @@ export const SIDES: Side[] = [
 ]
 export const SIDE: Record<string, Side> = Object.fromEntries(SIDES.map((s) => [s.id, s]))
 // Dishes that are already a full meal: no bread or salad added.
-export const COMPLETE = new Set(['couscous-7', 'couscous-tfaya', 'couscous-grille', 'seffa', 'rfissa', 'pastilla', 'riz-poulet', 'paella', 'risotto', 'pates-tomate', 'pates-thon', 'curry-poulet', 'dal', 'teriyaki', 'riz-saute', 'sandwich-kefta', 'quiche'])
+export const COMPLETE = new Set(['couscous-7', 'couscous-tfaya', 'couscous-grille', 'seffa', 'rfissa', 'pastilla', 'riz-poulet', 'paella', 'risotto', 'pates-tomate', 'pates-thon', 'curry-poulet', 'dal', 'teriyaki', 'riz-saute', 'sandwich-kefta', 'quiche', 'biryani', 'khichdi', 'oyakodon', 'gyudon', 'curry-japonais', 'shioyaki', 'onigiri', 'tamago-gohan', 'tamagoyaki', 'teishoku', 'minestrone', 'pasta-ceci', 'frittata', 'gozleme', 'aloo-paratha', 'kahvalti', 'cilbir', 'hachis', 'poulet-roti', 'pisto'])
 export const SOUPS = new Set(['harira', 'soupe-lentilles', 'chorba', 'soupe-legumes', 'veloute-potiron', 'bissara'])
 export const PASTRY_BF = new Set(['msemen', 'baghrir', 'harcha', 'rghaif', 'sfenj'])
