@@ -17,7 +17,7 @@ const SPORTS: [string, string, string, string, string][] = [
 // goal: kcal delta, protein g/kg, label, short explanation
 const GOALS: [string, string, number, number, [string, string, string], [string, string, string]][] = [
   ['bulk', '💪', 300, 1.9, ['Build muscle', 'Prendre du muscle', 'بناء العضلات'], ['A small surplus and lots of protein', 'Un léger surplus et beaucoup de protéines', 'فائض بسيط وبروتين كثير']],
-  ['cut', '🔥', -400, 2.1, ['Lose fat', 'Perdre du gras', 'خسارة الدهون'], ['A deficit that keeps the muscle', 'Un déficit qui garde le muscle', 'عجز يحافظ على العضلات']],
+  ['cut', '🔥', -550, 2.1, ['Lose fat', 'Perdre du gras', 'خسارة الدهون'], ['A deficit that keeps the muscle', 'Un déficit qui garde le muscle', 'عجز يحافظ على العضلات']],
   ['fit', '⚖️', 0, 1.5, ['Stay in shape', 'Garder la forme', 'الحفاظ على اللياقة'], ['Balanced, steady energy', 'Équilibré, énergie stable', 'متوازن']],
   ['perf', '⚡', 150, 1.6, ['Endurance', 'Endurance', 'التحمل'], ['More carbs for long efforts', 'Plus de glucides pour les longs efforts', 'نشويات أكثر']],
 ]
@@ -27,7 +27,8 @@ export function needs(p: SportProfile) {
   const bmr = 10 * p.w + 6.25 * p.h - 5 * p.age + (p.sex === 'm' ? 5 : -161)
   const act = [1.2, 1.3, 1.375, 1.45, 1.55, 1.6, 1.7, 1.8][Math.min(7, p.days)]
   const g = GOALS.find((x) => x[0] === p.goal) ?? GOALS[2]
-  const kcal = Math.round((bmr * act + g[2]) / 10) * 10
+  const floor = p.sex === 'm' ? 1500 : 1200
+  const kcal = Math.max(floor, Math.round((bmr * act + g[2]) / 10) * 10)
   const prot = Math.round(p.w * g[3]); const fat = Math.round(p.w * (p.goal === 'cut' ? 0.8 : 0.9))
   const carbs = Math.max(0, Math.round((kcal - prot * 4 - fat * 9) / 4))
   const water = Math.round((p.w * 0.035 + p.days * 0.07) * 10) / 10
@@ -58,6 +59,7 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
   const pct = Math.min(100, Math.max(0, ((p.w - (n.lo - 10)) / (n.hi + 10 - (n.lo - 10))) * 100))
   return (
     <div className="stagger space-y-4 pb-4">
+      {p.age < 18 && p.goal === 'cut' && <p className="rounded-2xl bg-apricot/25 px-3 py-2 text-xs font-semibold">{L(lang, 'Under 18: no calorie deficit. Aim for fitness and good habits, and talk to a doctor before changing your weight.', 'Moins de 18 ans : pas de déficit calorique. Visez la forme et les bonnes habitudes, et parlez-en à un médecin avant de changer de poids.', 'أقل من 18 سنة: لا عجز في السعرات.')}</p>}
       <GoalJourney p={p as GoalP} set={set as never} lang={lang} lo={n.lo} hi={n.hi} />
       <section className="relative overflow-hidden rounded-[28px] p-4 text-white" style={{ background: 'linear-gradient(140deg,#2f6fa8,#1d3f6e)' }}>
         <span className="zellige pointer-events-none absolute inset-0 opacity-[.07]" aria-hidden />
