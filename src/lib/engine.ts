@@ -66,7 +66,10 @@ export function recipeKcal(rid: string, servings = REC[rid].s): number {
 export const kcalPerServing = (rid: string) => recipeKcal(rid, REC[rid].s) / REC[rid].s
 /** Rough daily kcal per person = average planned meal x 3 meals. */
 export function dailyKcal(plan: Record<string, PlanEntry>): number {
-  const v = Object.values(plan); if (!v.length) return 0
-  return (v.reduce((a, e) => a + kcalPerServing(e.r), 0) / v.length) * 3 + 400 // + bread, tea, fruit and oil eaten alongside
+  const main = Object.entries(plan).filter(([k]) => !k.endsWith('-g')); const tea = Object.entries(plan).filter(([k]) => k.endsWith('-g'))
+  if (!main.length && !tea.length) return 0
+  const avg = main.length ? main.reduce((a, [, e]) => a + kcalPerServing(e.r), 0) / main.length : 0
+  // 3 meals a day + bread, tea, fruit and oil eaten alongside + tea-time treats spread over the week
+  return avg * 3 + 400 + tea.reduce((a, [, e]) => a + kcalPerServing(e.r), 0) / 7
 }
 export const healthLevel = (kcal: number): 'fit' | 'balanced' | 'belly' => (kcal <= 1500 ? 'fit' : kcal <= 2200 ? 'balanced' : 'belly')

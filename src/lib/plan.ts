@@ -3,7 +3,7 @@ import { buildList, kcalPerServing, recipeCost, type PlanEntry } from './engine'
 
 export type Mode = 'light' | 'balanced' | 'gourmet'
 type Plan = Record<string, PlanEntry>
-const SLOTS: Meal[] = ['b', 'l', 'd']
+const SLOTS: Meal[] = ['b', 'l', 'd'] // goûter is added by hand, never auto-filled
 export const listCost = (plan: Plan, pantry: Record<string, number>, extras: Record<string, number>, qty: Record<string, number> = {}) => buildList(plan, pantry, extras, qty).reduce((a, l) => a + l.cost, 0)
 const pool = (slot: Meal, diet: string[]): Recipe[] => RECIPES.filter((r) => r.m.includes(slot) && (!diet.includes('vegetarian') || r.tags.includes('vegetarian')))
 /** How much a dish fits a mode, from its calories per serving. */
@@ -52,3 +52,21 @@ export function adaptToBudget(plan: Plan, budget: number, pantry: Record<string,
   const keys = Object.keys(plan)
   return { plan: cur, swapped: keys.filter((k) => cur[k].r !== plan[k].r).length, scaled: keys.filter((k) => cur[k].r === plan[k].r && cur[k].n < plan[k].n).length, before, after: cost }
 }
+
+/** Re-shape the user's OWN choices for a mode: keep dishes that already fit, swap the others for the closest dish that does. */
+export function adaptToMode(plan: Plan, mode: Mode, diet: string[]): { plan: Plan; changed: number } {
+  const cur: Plan = JSON.parse(JSON.stringify(plan)); const used: Record<string, number> = {}
+  Object.values(cur).forEach((e) => { used[e.r] = (used[e.r] ?? 0) + 1 })
+  let changed = 0
+  for (const k of Object.keys(cur)) {
+    const slot = k.split('-')[1] as Meal; const now = RECIPES.find((r) => r.id === cur[k].r)!
+    if (modeWeight(mode, kcalPerServing(now.id)) >= 1) continue
+    const best = pool(slot, diet).filter((r) => r.id !== now.id && modeWeight(mode, kcalPerServing(r.id)) >= 1)
+      .map((r) => ({ r, s: r.tags.filter((x) => now.tags.includes(x)).length * 2 - (used[r.id] ?? 0) * 3 + modeWeight(mode, kcalPerServing(r.id)) - Math.abs(r.s - now.s) * 0.1 }))
+      .sort((a, b) => b.s - a.s)[0]
+    if (!best) continue
+    used[now.id]--; used[best.r.id] = (used[best.r.id] ?? 0) + 1; cur[k] = { r: best.r.id, n: cur[k].n }; changed++
+  }
+  return { plan: cur, changed }
+}
+export const offMode = (plan: Plan, mode: Mode) => Object.values(plan).filter((e) => modeWeight(mode, kcalPerServing(e.r)) < 1).length

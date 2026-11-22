@@ -1,13 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
-import { RECIPES, REC, type Meal, type Recipe } from './data/recipes'
+import { REC, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { dailyKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
-import type { Mode } from './lib/plan'
+import { offMode, type Mode } from './lib/plan'
 import { FoodTile, Sheet, Stepper } from './ui'
 
-const SLOTS: Meal[] = ['b', 'l', 'd']
+import { SLOTS, SLOT_E } from './Catalog'
 const UNIT: Record<string, [string, string, string]> = { bunch: ['bunch', 'botte', 'botte'], glass: ['glass', 'verre', 'كأس'], pinch: ['pinch', 'pincée', 'رشة'], tbsp: ['tbsp', 'c. à s.', 'م.ك'], tsp: ['tsp', 'c. à c.', 'م.ص'], clove: ['clove', 'gousse', 'فص'], pc: ['', '', ''], g: ['g', 'g', 'غ'], ml: ['ml', 'ml', 'مل'] }
 const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
 const r1 = (n: number) => Math.round(n * 10) / 10
@@ -44,7 +44,6 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
 }
 
 
-const FILTERS = ['all', 'moroccan', 'healthy', 'budget', 'quick', 'vegetarian']
 const MODES: { id: Mode; e: string; k: string }[] = [{ id: 'light', e: '🥗', k: 'modeLight' }, { id: 'balanced', e: '⚖️', k: 'modeBal' }, { id: 'gourmet', e: '😋', k: 'modeGourmet' }]
 
 export function ModePicker({ value, onPick, compact = false }: { value: Mode; onPick: (m: Mode) => void; compact?: boolean }) {
@@ -86,13 +85,14 @@ export function Controls({ setBudget, setMode }: { setBudget: (b: number) => voi
   )
 }
 
-export function BudgetStep({ setBudget, setMode, compose, hasPlan, go }: { setBudget: (b: number) => void; setMode: (m: Mode) => void; compose: () => void; hasPlan: boolean; go: (s: number) => void }) {
+export function BudgetStep({ setBudget, setMode, compose, hasPlan, go, pickOwn }: { setBudget: (b: number) => void; setMode: (m: Mode) => void; compose: () => void; hasPlan: boolean; go: (s: number) => void; pickOwn: () => void }) {
   const { lang } = useApp()
   return (
     <div className="space-y-5">
       <h1 className="rise text-center text-2xl font-extrabold leading-tight text-forest">{t('bTitle', lang)}</h1>
       <Controls setBudget={setBudget} setMode={setMode} />
-      <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {t('compose', lang)}</button>
+      <button className="btn btn-primary w-full !min-h-14 text-base" onClick={pickOwn}>📖 {t('chooseMine', lang)}</button>
+      <button className="btn btn-soft w-full !min-h-12" onClick={compose}>✨ {t('compose', lang)}</button>
       {hasPlan && <button className="btn btn-soft w-full" onClick={() => go(2)}>{t('keepWeek', lang)} →</button>}
     </div>
   )
@@ -103,77 +103,78 @@ export function Mascot({ plan }: { plan: Record<string, { r: string; n: number }
   const { lang } = useApp()
   const kc = Math.round(dailyKcal(plan)); const hl = healthLevel(kc)
   const pos = Math.min(100, Math.max(0, (kc / 3000) * 100))
-  const hue = { fit: 'linear-gradient(135deg, rgb(var(--leaf) / .55), rgb(var(--cream)))', balanced: 'linear-gradient(135deg, rgb(var(--apricot) / .35), rgb(var(--cream)))', belly: 'linear-gradient(135deg, rgb(var(--apricot) / .7), rgb(255 226 200))' }[hl]
   return (
-    <div className="card overflow-hidden p-4" style={{ background: hue, transition: 'background .6s' }}>
-      <div className="flex items-center gap-4">
-        <div key={hl} className={`mascot mascot-${hl} text-6xl`} aria-hidden>{HEALTH[hl]}</div>
-        <div className="min-w-0 flex-1"><p className="font-display text-lg font-extrabold leading-tight">{t({ fit: 'capFit', balanced: 'capBal', belly: 'capBelly' }[hl], lang)}</p><p className="text-sm text-muted tabular-nums">≈ {kc.toLocaleString(lang === 'ar' ? 'en' : lang)} {t('kcal', lang)}</p></div>
+    <div className="card p-3">
+      <div className="flex items-center gap-3">
+        <div key={hl} className={`mascot mascot-${hl} text-4xl`} aria-hidden>{HEALTH[hl]}</div>
+        <div className="min-w-0 flex-1"><p className="text-[15px] font-bold leading-tight">{t({ fit: 'capFit', balanced: 'capBal', belly: 'capBelly' }[hl], lang)}</p><p className="text-xs text-muted tabular-nums">≈ {kc.toLocaleString(lang === 'ar' ? 'en' : lang)} {t('kcal', lang)}</p></div>
       </div>
-      <div className="relative mt-4 h-3 rounded-full" style={{ background: 'linear-gradient(90deg, rgb(var(--leaf)) 0 50%, rgb(var(--apricot)) 50% 73%, rgb(var(--danger) / .75) 73%)' }}>
-        <div className="absolute top-1/2 h-6 w-6 -translate-y-1/2 rounded-full border-4 border-white bg-forest shadow-soft transition-all duration-700" style={{ insetInlineStart: `calc(${pos}% - 12px)` }} />
+      <div className="relative mt-2.5 h-1.5 rounded-full" style={{ background: 'linear-gradient(90deg, rgb(var(--leaf)) 0 50%, rgb(var(--apricot)) 50% 73%, rgb(var(--danger) / .7) 73%)' }}>
+        <div className="absolute top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border-[3px] border-white bg-forest shadow-soft transition-all duration-700" style={{ insetInlineStart: `calc(${pos}% - 8px)` }} />
       </div>
     </div>
   )
 }
 
-/** Step 2: a day at a time, so it fits a phone screen. */
-export function WeekStep({ compose, setMode }: { compose: () => void; setMode: (m: Mode) => void }) {
-  const { lang, me, house, upHouse, award } = useApp()
-  const [day, setDay] = useState((new Date().getDay() + 6) % 7)
-  const [pick, setPick] = useState<{ d: number; s: Meal } | null>(null)
-  const [view, setView] = useState<string | null>(null)
-  const [q, setQ] = useState(''); const [f, setF] = useState('all')
-  const plan = house!.plan; const hh = Math.max(1, me!.size)
-  const setEntry = (k: string, r: string, n: number, log: string) => upHouse((h) => { h.plan[k] = { r, n } }, log)
-  const cands = useMemo(() => RECIPES.filter((r) => pick && r.m.includes(pick.s) && (f === 'all' || r.tags.includes(f)) && (rname(r.n, lang) + ' ' + r.n[0]).toLowerCase().includes(q.toLowerCase())), [pick, q, f, lang])
-  const dayEntries = SLOTS.map((s) => plan[`${day}-${s}`]).filter(Boolean)
-  const dayK = Math.round(dayEntries.reduce((a, e) => a + kcalPerServing(e.r), 0)); const dayC = dayEntries.reduce((a, e) => a + recipeCost(e.r, e.n), 0)
-  const cur = view ? plan[view] : null
-  const open = (s: Meal) => { setPick({ d: day, s }); setQ(''); setF('all') }
+function Segmented({ value, onPick }: { value: Mode; onPick: (m: Mode) => void }) {
+  const { lang } = useApp()
   return (
-    <div className="space-y-4">
+    <div className="flex flex-1 rounded-xl bg-[rgb(var(--ink)/.07)] p-0.5" role="radiogroup">
+      {MODES.map((m) => <button key={m.id} role="radio" aria-checked={value === m.id} onClick={() => onPick(m.id)} className={`flex-1 rounded-[10px] px-1 py-1.5 text-[13px] font-semibold transition-all ${value === m.id ? 'bg-surface text-forest shadow-soft' : 'text-muted'}`}>{m.e} {t(m.k, lang)}</button>)}
+    </div>
+  )
+}
+
+/** Step 2: the whole week at a glance (days x slots). Tap a cell for details. */
+export function WeekStep({ compose, setMode, adaptMode, openCatalog }: { compose: () => void; setMode: (m: Mode) => void; adaptMode: () => void; openCatalog: (d: number, s: Meal) => void }) {
+  const { lang, me, house, upHouse } = useApp()
+  const [sel, setSel] = useState<{ d: number; s: Meal } | null>(null)
+  const [recipe, setRecipe] = useState<Recipe | null>(null)
+  const plan = house!.plan; const mode = me!.mode ?? 'balanced'; const off = offMode(plan, mode)
+  const today = (new Date().getDay() + 6) % 7
+  const setEntry = (k: string, r: string, n: number, log: string) => upHouse((h) => { h.plan[k] = { r, n } }, log)
+  const e = sel ? plan[`${sel.d}-${sel.s}`] : undefined; const r = e ? REC[e.r] : null; const kb = e ? kcalBadge(e.r) : null
+  return (
+    <div className="space-y-3">
       <Mascot plan={plan} />
-      <div className="flex items-center gap-2"><div className="min-w-0 flex-1"><ModePicker compact value={me!.mode ?? 'balanced'} onPick={setMode} /></div><button className="btn btn-soft !h-full !min-h-[4.25rem] flex-col !px-4 text-xs" onClick={compose}><span className="text-2xl">🎲</span>{t('reshuffle', lang)}</button></div>
-      <div data-noswipe className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-        {Array.from({ length: 7 }, (_, d) => (
-          <button key={d} aria-pressed={day === d} onClick={() => setDay(d)} className={`flex min-w-[3.6rem] flex-1 flex-col items-center rounded-2xl py-2 transition-all active:scale-95 ${day === d ? 'bg-forest text-white shadow-lift' : 'bg-surface text-ink shadow-soft'}`}>
-            <span className="text-xs font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span>
-            <span className="mt-1 flex gap-0.5">{SLOTS.map((s) => <i key={s} className={`h-1.5 w-1.5 rounded-full ${plan[`${d}-${s}`] ? (day === d ? 'bg-apricot' : 'bg-forest') : day === d ? 'bg-white/30' : 'bg-line'}`} />)}</span>
-          </button>
-        ))}
-      </div>
-      <div key={day} className="rise space-y-3">
-        <div className="flex items-end justify-between"><h2 className="text-xl font-extrabold capitalize">{dayName(day, lang)}</h2><span className="text-xs text-muted tabular-nums">≈ {dayK} kcal · {money(dayC, lang)}</span></div>
-        {SLOTS.map((s) => {
-          const e = plan[`${day}-${s}`]
-          if (!e) return <button key={s} className="flex min-h-[5.5rem] w-full items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-line bg-surface/50 font-semibold text-muted active:scale-[.98]" onClick={() => open(s)}><span className="text-3xl">{{ b: '🌅', l: '☀️', d: '🌙' }[s]}</span>+ {t(s, lang)}</button>
-          const r = REC[e.r]; const kb = kcalBadge(e.r)
+      <div className="flex items-center gap-2"><Segmented value={mode} onPick={setMode} /><button className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface text-xl shadow-soft active:scale-90" onClick={compose} aria-label={t('reshuffle', lang)}>🎲</button></div>
+      {off > 0 && <div className="flex items-center gap-3 rounded-xl bg-apricot/25 px-3 py-2"><p className="min-w-0 flex-1 text-[13px]"><b>{off}</b> {t('offMode', lang)}</p><button className="shrink-0 rounded-full bg-apricot px-3 py-1.5 text-xs font-bold text-[#3c280a] active:scale-95" onClick={adaptMode}>{t('adaptMode', lang)}</button></div>}
+
+      <div className="card overflow-hidden">
+        <div className="grid grid-cols-[3.1rem_repeat(4,1fr)] bg-[rgb(var(--ink)/.03)] py-1.5 text-center text-base">
+          <span />{SLOTS.map((s) => <span key={s} title={t(s, lang)}>{SLOT_E[s]}</span>)}
+        </div>
+        {Array.from({ length: 7 }, (_, d) => {
+          const k = Math.round(SLOTS.reduce((a, s) => a + (plan[`${d}-${s}`] ? kcalPerServing(plan[`${d}-${s}`].r) : 0), 0))
           return (
-            <div key={s} className="card pop p-3">
-              <div className="flex gap-3">
-                <button onClick={() => setView(`${day}-${s}`)} aria-label={rname(r.n, lang)}><FoodTile r={r} className="h-20 w-20 shrink-0 rounded-2xl" /></button>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted">{{ b: '🌅', l: '☀️', d: '🌙' }[s]} {t(s, lang)}</p>
-                  <button className="block text-start font-display text-base font-extrabold leading-tight" onClick={() => setView(`${day}-${s}`)}>{rname(r.n, lang)}</button>
-                  <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted"><span className={`rounded-full px-2 py-0.5 font-bold ${kb.c}`}>{kb.k} kcal</span><span>≈ {money(recipeCost(e.r) / r.s, lang)} / 👤</span></p>
-                </div>
-              </div>
-              <div className="mt-3 flex items-center justify-between"><Stepper v={e.n} set={(n) => setEntry(`${day}-${s}`, e.r, n, `set ${r.n[0]} to ${n}`)} max={12} />
-                <span className="flex gap-2"><button className="btn btn-soft !min-h-10 !px-4" onClick={() => open(s)} aria-label="swap">↻</button><button className="btn btn-soft !min-h-10 !px-4 !text-danger" onClick={() => upHouse((h) => { delete h.plan[`${day}-${s}`] }, `removed ${r.n[0]}`)} aria-label={t('remove', lang)}>✕</button></span></div>
+            <div key={d} className="grid grid-cols-[3.1rem_repeat(4,1fr)] border-t border-line/70">
+              <div className={`flex flex-col items-center justify-center py-1 ${d === today ? 'text-forest' : ''}`}><span className="text-[11px] font-extrabold uppercase">{dayName(d, lang).slice(0, 3)}</span><span className="text-[9px] tabular-nums text-muted">{k ? `${(k / 1000).toFixed(1)}k` : ''}</span></div>
+              {SLOTS.map((s) => {
+                const en = plan[`${d}-${s}`]
+                return (
+                  <button key={s} className="flex min-h-[3.9rem] flex-col items-center justify-center gap-0.5 border-s border-line/50 px-1 py-1 text-center active:bg-leaf/20" onClick={() => (en ? setSel({ d, s }) : openCatalog(d, s))} aria-label={`${dayName(d, lang)} ${t(s, lang)}`}>
+                    {en ? <><span className="text-xl leading-none">{REC[en.r].e}</span><span className="line-clamp-2 text-[10px] font-medium leading-[1.15]">{rname(REC[en.r].n, lang)}</span></> : <span className="grid h-6 w-6 place-items-center rounded-full text-sm text-[rgb(var(--ink)/.25)]">＋</span>}
+                  </button>
+                )
+              })}
             </div>
           )
         })}
       </div>
-      <Sheet open={!!pick} onClose={() => setPick(null)} title={pick ? `${dayName(pick.d, lang)} · ${t(pick.s, lang)}` : ''}>
-        <input className="input mb-2" placeholder={t('search', lang)} value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{FILTERS.map((k) => <button key={k} className="chip" aria-pressed={f === k} onClick={() => setF(k)}>{k === 'budget' ? t('budgetT', lang) : t(k, lang)}</button>)}</div>
-        <div className="space-y-1">{cands.map((r) => { const kb = kcalBadge(r.id); return (
-          <button key={r.id} className="flex w-full items-center gap-3 rounded-2xl p-2 text-start hover:bg-cream" onClick={() => { setEntry(`${pick!.d}-${pick!.s}`, r.id, hh, `added ${r.n[0]}`); award(10, rname(r.n, lang)); setPick(null) }}>
-            <FoodTile r={r} className="h-14 w-14 shrink-0 rounded-xl !text-3xl" /><span className="min-w-0 flex-1"><b className="block truncate text-sm">{rname(r.n, lang)}</b><span className="text-xs text-muted">{r.t} {t('min', lang)} · {money(recipeCost(r.id) / r.s, lang)}</span></span><span className={`rounded-full px-2 py-0.5 text-xs font-bold ${kb.c}`}>{kb.k} kcal</span>
-          </button>) })}</div>
+      <button className="btn btn-soft w-full !min-h-12" onClick={() => openCatalog(today, 'l')}>📖 {t('browse', lang)}</button>
+
+      <Sheet open={!!sel && !!e && !!r} onClose={() => setSel(null)} title={r ? rname(r.n, lang) : ''}>
+        {sel && e && r && kb && <div className="space-y-4">
+          <div className="flex items-center gap-3"><FoodTile r={r} className="h-20 w-20 shrink-0 rounded-2xl" /><div className="text-sm text-muted"><p className="font-semibold text-ink">{dayName(sel.d, lang)} · {SLOT_E[sel.s]} {t(sel.s, lang)}</p><p className="mt-1 flex flex-wrap items-center gap-2"><span className={`rounded-full px-2 py-0.5 text-xs font-bold ${kb.c}`}>{kb.k} kcal</span><span>⏱ {r.t} {t('min', lang)}</span><span>≈ {money(recipeCost(e.r, e.n), lang)}</span></p></div></div>
+          <div className="flex items-center justify-between rounded-2xl bg-cream px-4 py-2"><span className="font-semibold">{t('servings', lang)}</span><Stepper v={e.n} set={(n) => setEntry(`${sel.d}-${sel.s}`, e.r, n, `set ${r.n[0]} to ${n}`)} max={12} /></div>
+          <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
+            <button className="flex w-full items-center gap-3 px-4 py-3.5 text-start font-medium active:bg-cream" onClick={() => { setRecipe(r); setSel(null) }}>📖 {t('steps', lang)} · {t('ingredients', lang)}<span className="ms-auto text-muted">›</span></button>
+            <button className="flex w-full items-center gap-3 px-4 py-3.5 text-start font-medium active:bg-cream" onClick={() => { const c = sel; setSel(null); openCatalog(c.d, c.s) }}>↻ {t('pick', lang)}<span className="ms-auto text-muted">›</span></button>
+            <button className="flex w-full items-center gap-3 px-4 py-3.5 text-start font-medium text-danger active:bg-cream" onClick={() => { upHouse((h) => { delete h.plan[`${sel.d}-${sel.s}`] }, `removed ${r.n[0]}`); setSel(null) }}>🗑 {t('remove', lang)}</button>
+          </div>
+        </div>}
       </Sheet>
-      {cur && view && <RecipeSheet r={REC[cur.r]} servings={cur.n} onServings={(n) => setEntry(view, cur.r, n, `set ${REC[cur.r].n[0]} to ${n}`)} onClose={() => setView(null)} />}
+      {recipe && <RecipeSheet r={recipe} onClose={() => setRecipe(null)} />}
     </div>
   )
 }

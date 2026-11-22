@@ -4,10 +4,12 @@ import { money, t, type Lang } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
 import { BudgetStep, Controls, ModePicker, WeekStep } from './Screens'
+import { DishCatalog } from './Catalog'
+import type { Meal } from './data/recipes'
 import { ProfileScreen } from './ListScreen'
 import { BasketStep, ShopMode, StoresStep, useBasket } from './Flow'
 import { STORES, storeTotal } from './lib/stores'
-import { adaptToBudget, listCost, randomPlan, type Mode } from './lib/plan'
+import { adaptToBudget, adaptToMode, listCost, randomPlan, type Mode } from './lib/plan'
 import { Logo, Sheet } from './ui'
 import { FoodTile } from './ui'
 
@@ -112,11 +114,12 @@ function Onboarding() {
 const STEPS = [{ e: '🎯', k: 'st1' }, { e: '🗓️', k: 'st2' }, { e: '🧾', k: 'st3' }, { e: '🏬', k: 'st4' }]
 
 function Shell() {
-  const { lang, me, house, patchMe, upHouse, award, toast } = useApp()
+  const { lang, me, house, patchMe, upHouse, award } = useApp()
   const [step, setStepRaw] = useState(Object.keys(house!.plan).length ? 2 : 1)
   const [dir, setDir] = useState<'l' | 'r'>('l')
   const [view, setView] = useState<'flow' | 'profile' | 'shop'>('flow')
   const [sheet, setSheet] = useState(false)
+  const [cat, setCat] = useState<{ d: number; s: Meal } | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const [boom, setBoom] = useState(0)
   const touch = useRef<{ x: number; y: number } | null>(null)
@@ -141,7 +144,12 @@ function Shell() {
     say(fit.after + extraCost <= b ? `✅ ${bits || t('fitted', lang)} · −${money(fit.before - fit.after, lang)}` : `${t('tight', lang)} ${bits}`)
   }
   const setBudget = (b: number) => { patchMe({ budget: b }); if (hasPlan && total > b) adapt(b) }
-  const setMode = (m: Mode) => { patchMe({ mode: m }); if (hasPlan) compose(m); else toast(t({ light: 'modeLight', balanced: 'modeBal', gourmet: 'modeGourmet' }[m], lang)) }
+  const setMode = (m: Mode) => { patchMe({ mode: m }) }
+  const adaptMode = () => {
+    const r = adaptToMode(h.plan, mode, me!.diet); upHouse((x) => { x.plan = r.plan }, 'adapted the week to ' + mode)
+    say(`${{ light: '🥗', balanced: '⚖️', gourmet: '😋' }[mode]} ${r.changed} ${t('adapted', lang)}`); award(10, '✨'); celebrate()
+  }
+  const pickOwn = () => { setStep(2); setCat({ d: (new Date().getDay() + 6) % 7, s: 'b' }) }
   const goNext = () => {
     if (step === 1 && !hasPlan) return compose()
     if (step < 4) return setStep(step + 1)
@@ -174,10 +182,10 @@ function Shell() {
       <main className="mx-auto w-full max-w-2xl px-4 pb-36 pt-2" onTouchStart={(e) => { touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }} onTouchEnd={onTouchEnd}>
         <div key={view + step + lang} className={dir === 'l' ? 'slide-l' : 'slide-r'}>
           {view === 'profile' ? <ProfileScreen celebrate={celebrate} /> : <>
-            {step === 1 && <BudgetStep setBudget={setBudget} setMode={setMode} compose={() => compose()} hasPlan={hasPlan} go={setStep} />}
-            {step === 2 && (hasPlan ? <WeekStep compose={() => compose()} setMode={setMode} /> : <div className="card p-8 text-center"><p className="mb-4 text-muted">{t('nothing', lang)}</p><button className="btn btn-primary" onClick={() => compose()}>✨ {t('compose', lang)}</button></div>)}
+            {step === 1 && <BudgetStep setBudget={setBudget} setMode={setMode} compose={() => compose()} hasPlan={hasPlan} go={setStep} pickOwn={pickOwn} />}
+            {step === 2 && (hasPlan ? <WeekStep compose={() => compose()} setMode={setMode} adaptMode={adaptMode} openCatalog={(d, sl) => setCat({ d, s: sl })} /> : <div className="card space-y-3 p-8 text-center"><p className="text-muted">{t('nothing', lang)}</p><button className="btn btn-primary w-full" onClick={pickOwn}>📖 {t('chooseMine', lang)}</button><button className="btn btn-soft w-full" onClick={() => compose()}>✨ {t('compose', lang)}</button></div>)}
             {step === 3 && <BasketStep adapt={() => adapt()} openBudget={() => setSheet(true)} />}
-            {step === 4 && <StoresStep />}
+            {step === 4 && <StoresStep onShop={() => setView('shop')} />}
           </>}
         </div>
       </main>
@@ -187,12 +195,13 @@ function Shell() {
         <div className="flex min-w-0 flex-1 items-center justify-center overflow-hidden">
           {STEPS.map((x, i) => { const n = i + 1; const on = n === step && view === 'flow'; return (
             <div key={x.k} className="flex items-center">
-              <button onClick={() => setStep(n)} aria-current={on ? 'step' : undefined} className={`dock-node ${on ? 'dock-node-on' : ''}`}><span className="text-lg">{x.e}</span>{on && step < 4 && <span className="text-xs font-bold">{t(x.k, lang)}</span>}</button>
+              <button onClick={() => setStep(n)} aria-label={t(x.k, lang)} aria-current={on ? "step" : undefined} className={`dock-node ${on ? 'dock-node-on' : ''}`}><span className="text-lg">{x.e}</span>{on && step < 4 && <span className="text-xs font-bold">{t(x.k, lang)}</span>}</button>
             </div>) })}
         </div>
         <button className={`dock-arrow dock-next ${step === 4 ? '!w-auto px-4' : ''}`} onClick={goNext} aria-label={t('next', lang)}>{step === 4 ? <span className="text-sm font-bold">🏬 {t('shopShort', lang)}</span> : '›'}</button>
       </nav>
 
+      {cat && <DishCatalog day0={cat.d} slot0={cat.s} onClose={() => setCat(null)} />}
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>
         <Controls setBudget={setBudget} setMode={setMode} />
         <p className="mt-3 text-center text-sm text-muted tabular-nums">{money(total, lang)} / {money(budget, lang)} · {over ? t('overBy', lang) : t('left', lang)} {money(Math.abs(budget - total), lang)}</p>

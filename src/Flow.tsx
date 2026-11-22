@@ -130,28 +130,71 @@ export function BasketStep({ adapt, openBudget }: { adapt: () => void; openBudge
 import { CATALOG } from './data/catalog'
 function HOME_NAME(id: string, lang: Lang) { return CATALOG.find((c) => c.id === id)!.n[li(lang)] }
 
+/** Styled wordmark tiles (demo). Official logos are not bundled. */
+const BRAND: Record<string, { bg: string; fg: string; font: string; txt: string }> = {
+  bim: { bg: '#d33a2c', fg: '#fff', font: '900 1.35rem Manrope', txt: 'BIM' },
+  marjane: { bg: '#fff', fg: '#c8102e', font: '800 1.1rem Manrope', txt: 'Marjane' },
+  carrefour: { bg: '#fff', fg: '#1d5fa8', font: '800 1rem Manrope', txt: 'Carrefour' },
+  aswak: { bg: '#e08a1e', fg: '#fff', font: '800 .85rem Manrope', txt: 'Aswak Assalam' },
+  atacadao: { bg: '#f2c200', fg: '#1d3f8f', font: '800 .95rem Manrope', txt: 'Atacadão' },
+}
+export function StoreLogo({ id, w = 92 }: { id: string; w?: number }) {
+  const b = BRAND[id]
+  return <span className="grid shrink-0 place-items-center rounded-xl px-2 text-center leading-none shadow-soft" style={{ width: w, height: 44, background: b.bg, color: b.fg, font: b.font, boxShadow: '0 0 0 1px rgb(0 0 0 / .08)' }} aria-label={STORES.find((s) => s.id === id)?.name}>{b.txt}</span>
+}
+
 /** Step 4: store comparison with a clear recommendation. Prices per store are a labelled demo index. */
-export function StoresStep() {
-  const { lang, house, upHouse } = useApp()
-  const { lines, homeCost, customCost } = useBasket()
+export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
+  const { lang, house, upHouse, me } = useApp()
+  const { lines, homeRows, custom, homeCost, customCost } = useBasket()
+  const [open, setOpen] = useState<string | null>(null)
   const buy = lines.filter((l) => l.buy > 0)
   const tot = (s: (typeof STORES)[number]) => storeTotal(buy, s) + homeCost * s.m.grocery + customCost
   const rows = STORES.map((s) => ({ s, tot: tot(s) })).sort((a, b) => a.tot - b.tot)
   const best = rows[0], worst = rows[rows.length - 1]; const split = splitTotal(buy) + homeCost * Math.min(...STORES.map((s) => s.m.grocery)) + customCost
   const chosen = house!.store ?? best.s.id
-  const col: Record<string, string> = { bim: '#d33a2c', marjane: '#1b6b3a', carrefour: '#1d5fa8', aswak: '#e08a1e', atacadao: '#6a3fa0' }
+  const st = STORES.find((s) => s.id === open)
+  const r2 = (n: number) => Math.round(n * 100) / 100
   return (
     <div className="space-y-3">
       <h1 className="text-2xl font-extrabold text-forest">{t('storesTitle', lang)}</h1>
       {rows.map(({ s, tot }, i) => (
-        <button key={s.id} className={`card rise flex w-full items-center gap-3 p-4 text-start transition-all active:scale-[.98] ${chosen === s.id ? 'ring-2 ring-forest' : ''}`} style={{ animationDelay: `${i * 60}ms` }} onClick={() => upHouse((h) => { h.store = s.id })}>
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl font-display text-xl font-extrabold text-white" style={{ background: col[s.id] }}>{s.name[0]}</span>
-          <span className="min-w-0 flex-1"><span className="block font-display text-lg font-extrabold">{s.name}</span>{i === 0 && <span className="inline-block rounded-full bg-apricot px-2.5 py-0.5 text-[11px] font-bold text-[#3c280a]">👑 {t('best', lang)}</span>}</span>
+        <button key={s.id} className={`card rise flex w-full items-center gap-3 p-3 text-start transition-all active:scale-[.98] ${chosen === s.id ? '!shadow-[0_0_0_2px_rgb(var(--forest))]' : ''}`} style={{ animationDelay: `${i * 60}ms` }} onClick={() => setOpen(s.id)}>
+          <StoreLogo id={s.id} />
+          <span className="min-w-0 flex-1">{i === 0 && <span className="inline-block rounded-full bg-apricot px-2.5 py-0.5 text-[11px] font-bold text-[#3c280a]">👑 {t('best', lang)}</span>}<span className="block text-xs text-muted">🧾 {t('viewTicket', lang)} ›</span></span>
           <span className="text-end"><span className="block font-display text-xl font-extrabold tabular-nums text-forest">{money(tot, lang)}</span>{i === 0 ? <span className="text-[11px] font-semibold text-forest">−{money(worst.tot - tot, lang)}</span> : <span className="text-[11px] text-muted">+{money(tot - best.tot, lang)}</span>}</span>
         </button>
       ))}
       <div className="card flex items-center justify-between gap-3 p-4"><span className="text-sm font-semibold">🔀 {t('split', lang)}</span><b className="tabular-nums">{money(split, lang)}</b></div>
-      <p className="text-xs text-muted">{t('storesNote', lang)}</p>
+      <p className="text-xs text-muted">{t('storesNote', lang)} {t('logoNote', lang)}</p>
+
+      <Sheet open={!!st} onClose={() => setOpen(null)} title={st ? `${t('ticket', lang)} · ${st.name}` : ''}>
+        {st && (() => {
+          const food = buy.map((l) => ({ k: l.id, name: l.ing.n[li(lang)], q: fmtQty(l.buy, l.ing.base), unit: l.ing.p * st.m[l.ing.aisle] * (l.ing.base === 'pc' ? 1 : 1000), ub: l.ing.base === 'g' ? 'kg' : l.ing.base === 'ml' ? 'L' : 'pc', total: r2(l.cost * st.m[l.ing.aisle]) }))
+          const home = homeRows.map((x) => ({ k: 'h' + x.id, name: `${x.e} ${x.n[li(lang)]}`, q: `×${x.q}`, unit: x.p * st.m.grocery, ub: 'pc', total: r2(x.q * x.p * st.m.grocery) }))
+          const mine = custom.map((c) => ({ k: 'c' + c.id, name: c.name, q: c.qty, unit: 0, ub: '', total: c.price }))
+          const all = [...food, ...home, ...mine]; const total = r2(all.reduce((a, x) => a + x.total, 0)); const budget = me!.budget
+          return (
+            <div>
+              <div className="receipt p-4 text-[13px]">
+                <div className="flex items-center justify-between"><StoreLogo id={st.id} w={104} /><span className="text-end text-[11px] text-muted">{new Date().toLocaleDateString(lang === 'ar' ? 'ar-MA-u-nu-latn' : lang)}<br />{t('ticket', lang)} · demo</span></div>
+                <div className="dash my-3" />
+                <div className="space-y-1.5">
+                  {all.map((x) => (
+                    <div key={x.k} className="flex items-baseline gap-2"><span className="min-w-0 flex-1 truncate">{x.name}<span className="text-muted"> · {x.q}</span></span>{x.unit > 0 && <span className="shrink-0 text-[11px] text-muted tabular-nums">{x.unit.toFixed(1)}/{x.ub}</span>}<span className="w-14 shrink-0 text-end font-semibold tabular-nums">{x.total.toFixed(2)}</span></div>
+                  ))}
+                </div>
+                <div className="dash my-3" />
+                <div className="flex items-end justify-between"><span className="font-display text-base font-extrabold">{t('total', lang)}</span><span className="font-display text-2xl font-extrabold tabular-nums text-forest">{m2(total, lang)}</span></div>
+                <div className="mt-1 flex justify-between text-xs" style={{ color: total > budget ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}><span>{t('budgetW', lang)} {money(budget, lang)}</span><b>{total > budget ? t('overBy', lang) : t('left', lang)} {money(Math.abs(budget - total), lang)}</b></div>
+                <div className="mt-3 h-8 opacity-70" style={{ background: 'repeating-linear-gradient(90deg, rgb(var(--ink)) 0 2px, transparent 2px 4px, rgb(var(--ink)) 4px 5px, transparent 5px 9px)' }} aria-hidden />
+              </div>
+              <p className="mb-3 text-[11px] text-muted">{t('storesNote', lang)}</p>
+              <div className="grid gap-2"><button className="btn btn-primary" onClick={() => { upHouse((h) => { h.store = st.id }); setOpen(null); onShop(st.id) }}>🏬 {t('shopHere', lang)}</button><button className="btn btn-soft" onClick={() => { upHouse((h) => { h.store = st.id }); setOpen(null) }}>{chosen === st.id ? '✓ ' : ''}{t('chooseStore', lang)}</button></div>
+            </div>
+          )
+        })()}
+      </Sheet>
     </div>
   )
 }
@@ -176,7 +219,7 @@ export function ShopMode({ onExit, celebrate }: { onExit: () => void; celebrate:
   return (
     <div className="calm fixed inset-0 z-50 overflow-auto" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="mx-auto max-w-2xl space-y-4 px-4 pb-32 pt-5 text-lg">
-        <div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-muted">{t('shopMode', lang)}</p><h1 className="text-2xl font-extrabold text-forest">{store.name}</h1></div><button className="btn btn-soft !min-h-11" onClick={onExit}>{t('exit', lang)}</button></div>
+        <div className="flex items-center justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-muted">{t('shopMode', lang)}</p><div className="mt-1"><StoreLogo id={store.id} /></div></div><button className="btn btn-soft !min-h-11" onClick={onExit}>{t('exit', lang)}</button></div>
         <div className="card p-4"><div className="mb-2 flex justify-between font-bold"><span>{done}/{total}</span><span className="text-sm font-semibold text-forest">● {t('live', lang)}</span></div><div className="h-4 rounded-full bg-cream"><div className="h-full rounded-full bg-forest transition-all duration-500" style={{ width: `${total ? (done / total) * 100 : 0}%` }} /></div>{total > 0 && done === total && <p className="pop mt-3 text-center font-display text-xl font-extrabold text-forest">🎉 {t('tripDone', lang)}</p>}</div>
         {groups.map(([a, rows]) => (<div key={a} className="card p-4"><h3 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} right={fmtQty(l.buy, l.ing.base)} />)}</div>))}
         {homeRows.length > 0 && <div className="card p-4"><h3 className="mb-1 text-sm font-bold uppercase tracking-wide text-muted">🏠 {t('maison', lang)}</h3>{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} name={`${x.e} ${HOME_BY[x.id].n[li(lang)]}`} right={`×${x.q}`} />)}</div>}

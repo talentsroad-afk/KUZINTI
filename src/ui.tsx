@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useApp } from './lib/store'
 import type { Recipe } from './data/recipes'
 
@@ -44,13 +45,14 @@ export function Confetti({ run }: { run: number }) {
 }
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   if (!open) return null
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#10201a]/45 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()} className="rise card max-h-[88vh] w-full max-w-xl overflow-auto rounded-b-none p-5 sm:rounded-3xl" style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}>
         <div className="mb-3 flex items-center justify-between"><h2 className="text-xl font-bold">{title}</h2><button className="btn btn-soft !min-h-10 !px-4" onClick={onClose} aria-label="Close">✕</button></div>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 export const Stepper = ({ v, set, min = 1, max = 20 }: { v: number; set: (n: number) => void; min?: number; max?: number }) => (
