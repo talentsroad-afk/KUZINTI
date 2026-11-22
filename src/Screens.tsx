@@ -76,13 +76,13 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
                 <span className="qty-pop mt-1 rounded-full bg-white px-2 py-0.5 font-display text-[13px] font-extrabold text-ink tabular-nums" style={{ animationDelay: `${k * 260 + 420}ms` }}>{x.q}</span>
               </div>))}</div></>}
           {i > 0 && i <= steps.length && (() => { const si = ings.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5))); const act = actOf(steps[i - 1]); return <>
-            <StepScene text={steps[i - 1]} ings={sceneIngs.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5)))} />
+            <StepScene dish={r.n.join(' ')} text={steps[i - 1]} ings={sceneIngs.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5)))} />
             <div className="-mt-2 rounded-[28px] border border-white/15 bg-white/[.07] p-5 shadow-[0_30px_60px_-20px_rgba(0,0,0,.7)] backdrop-blur-md" style={{ transform: 'translateZ(40px)' }}>
             <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.2em] text-apricot"><span className="grid h-6 w-6 place-items-center rounded-full bg-apricot font-display text-[12px] text-ink">{i}</span>{ACT_LABEL[act][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p>
             <p className="mt-2 font-display text-[21px] font-bold leading-snug">{steps[i - 1]}</p>
             <div className="mt-4 flex flex-wrap gap-1.5">{si.slice(0, 4).map((x, k) => <span key={k} className="qty-pop inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-bold text-ink" style={{ animationDelay: `${300 + k * 120}ms` }}><E3 e={x.e} /> {x.q}</span>)}</div>
             <p className="mt-4 text-xs text-white/55">{lang === 'en' ? 'Step' : 'Étape'} {i}/{steps.length} · {lang === 'en' ? 'tap to continue' : 'touchez pour continuer'}</p></div></> })()}
-          {i === N - 1 && <div className="text-center"><StepScene text="servir serve" ings={[]} />
+          {i === N - 1 && <div className="text-center"><StepScene dish={r.n.join(' ')} text="servir serve" ings={[]} />
             <p className="story-pop mt-2 font-display text-3xl font-extrabold">{lang === 'en' ? 'Enjoy your meal!' : lang === 'ar' ? 'بالصحة والعافية' : 'Bon appétit !'}</p><p className="mt-1 text-white/70">{rname(r.n, lang)}</p></div>}
         </div></div>
       </div>

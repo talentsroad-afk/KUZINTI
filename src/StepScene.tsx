@@ -77,14 +77,14 @@ function Slices({ k, x, y }: { k: string; x: number; y: number }) {
 }
 
 /** The chef, drawn in SVG: he chops, cries over onions, pours, stirs, sweats at the pan and blows a kiss at the end. */
-function Chef({ mood, arm, hand }: { mood: 'happy' | 'cry' | 'sweat' | 'proud' | 'focus' | 'surprise'; arm: 'chop' | 'idle'; hand: 'pour' | 'stir' | 'shake' | 'kiss' | 'idle' }) {
+function Chef({ mood, arm, hand, taste }: { taste?: boolean; mood: 'happy' | 'cry' | 'sweat' | 'proud' | 'focus' | 'surprise'; arm: 'chop' | 'idle'; hand: 'pour' | 'stir' | 'shake' | 'kiss' | 'idle' }) {
   return (
-    <g className={`chef mood-${mood}`}>
+    <g className={`chef mood-${mood} ${taste ? 'tasting' : ''}`}>
       <g className="chef-sway">
         {/* body */}
         <path d="M118 182 C116 140 128 118 160 116 C192 118 204 140 202 182Z" fill="#fff" stroke="#e5e0d4" strokeWidth="2" />
-        <path d="M148 120 L160 140 L172 120" fill="#e5483b" />
-        <circle cx="160" cy="152" r="2.6" fill="#d8d1c2" /><circle cx="160" cy="166" r="2.6" fill="#d8d1c2" />
+        <path d="M118 182 C117 150 122 132 134 124 C128 140 128 160 130 182Z" fill="#e9e4d8" /><path d="M186 124 C198 132 203 150 202 182 H190 C192 160 192 140 186 124Z" fill="#e9e4d8" /><rect x="138" y="150" width="44" height="32" rx="4" fill="#2f5d48" /><path d="M138 152 L128 136 M182 152 L192 136" stroke="#2f5d48" strokeWidth="3" /><path d="M144 118 C150 126 170 126 176 118 L172 128 C166 132 154 132 148 128Z" fill="#e5483b" /><path d="M156 128 l4 12 l4 -12Z" fill="#c9302a" />
+        <circle cx="150" cy="140" r="2.2" fill="#d8d1c2" /><circle cx="170" cy="140" r="2.2" fill="#d8d1c2" />
         {/* head */}
         <g className="chef-head">
           <circle cx="160" cy="92" r="26" fill="#f3c49b" />
@@ -96,7 +96,7 @@ function Chef({ mood, arm, hand }: { mood: 'happy' | 'cry' | 'sweat' | 'proud' |
           <g className="eyes-shut"><path d="M145 91 q5 -4 10 0 M165 91 q5 -4 10 0" stroke="#2b1d14" strokeWidth="2.6" fill="none" strokeLinecap="round" /></g>
           <path className="brows" d="M144 81 l11 -2 M165 79 l11 2" stroke="#6b4428" strokeWidth="2.6" strokeLinecap="round" />
           <ellipse cx="143" cy="100" rx="5" ry="3" fill="#ef9a8a" opacity=".6" /><ellipse cx="177" cy="100" rx="5" ry="3" fill="#ef9a8a" opacity=".6" />
-          <ellipse cx="160" cy="98" rx="4" ry="3.4" fill="#e8a37c" />
+          <ellipse cx="160" cy="98" rx="4.4" ry="3.8" fill="#e8a37c" /><circle className="hot" cx="160" cy="92" r="26" fill="#ff3b2f" /><g className="ear-steam"><path d="M131 88 q-8 -6 -4 -14 q4 -8 -2 -14" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" /><path d="M189 88 q8 -6 4 -14 q-4 -8 2 -14" stroke="#fff" strokeWidth="3" fill="none" strokeLinecap="round" /></g>
           {/* mustache */}
           <path className="stache" d="M160 103 C152 99 142 101 138 108 C146 106 152 108 160 106 C168 108 174 106 182 108 C178 101 168 99 160 103Z" fill="#5a3620" />
           <path className="mouth-happy" d="M153 110 q7 6 14 0" stroke="#7a2e2a" strokeWidth="2.6" fill="none" strokeLinecap="round" />
@@ -121,7 +121,7 @@ function Chef({ mood, arm, hand }: { mood: 'happy' | 'cry' | 'sweat' | 'proud' |
 }
 
 /** The step acted out by the chef: the real ingredients get chopped on the board, jump into the pot, oil and water are poured, spices shaken, then it cooks. */
-export function StepScene({ text, ings }: { text: string; ings: SceneIng[] }) {
+export function StepScene({ text, ings, dish = '' }: { text: string; ings: SceneIng[]; dish?: string }) {
   const a = actOf(text); const solid = ings.filter((x) => !x.l && !x.s); const its = solid.slice(0, 3); const cut = its.map((x) => !!x.c && a !== 'serve')
   const n = cut.filter(Boolean).length
   const pours = LIQ.filter(([rx]) => rx.test(text) || ings.some((x) => x.l && rx.test(x.n ?? ''))).slice(0, 2)
@@ -141,8 +141,13 @@ export function StepScene({ text, ings }: { text: string; ings: SceneIng[] }) {
   const onion = chopping && cur >= 0 && kindOf(its[cur].id, its[cur].e) === 'onion'; const fishy = !fly && its.some((x) => kindOf(x.id, x.e) === 'fish')
   const X = [34, 74, 114]; const knifeX = cur >= 0 ? X[cur] : 74
   const mood = onion ? 'cry' : fishy && !chopping ? 'surprise' : a === 'fry' && cook ? 'sweat' : cook && a === 'serve' ? 'proud' : chopping ? 'focus' : 'happy'
-  const hand = pourK >= 0 ? 'pour' : shaking ? 'shake' : cook && a === 'mix' ? 'stir' : cook && a === 'serve' ? 'kiss' : 'idle'
-  const pan = a === 'fry'; const bowl = a === 'mix' || a === 'chop'; const plate = a === 'serve'
+  // The right utensil for the recipe: tajine, couscoussier, oven, pan or pot (a bowl for mixing, a plate to serve).
+  const D = dish.toLowerCase()
+  const main = /tajine|tagine|طاجين/.test(D) ? 'tajine' : /couscous|seffa|كسكس/.test(D) ? 'couscous' : /gratin|four|rôti|roti|pastilla|pizza|lasagn|parmentier|quiche|gâteau|gateau|cake|tarte|moussaka|al forno|bake|roast|oven|فرن/.test(D) || a === 'oven' ? 'oven' : /poêl|omelette|crêpe|msemen|baghrir|fried|frit|sauté|wok|kefta|burger|steak/.test(D) ? 'pan' : 'pot'
+  const V = a === 'serve' ? 'plate' : a === 'mix' || (a === 'chop' && main !== 'tajine') ? 'bowl' : a === 'fry' && main === 'pot' ? 'pan' : main
+  const pan = V === 'pan'; const bowl = V === 'bowl'; const plate = V === 'plate'; const tajine = V === 'tajine'; const oven = V === 'oven'; const kesk = V === 'couscous'
+  const tasting = cook && (V === 'pot' || tajine || kesk || pan)
+  const hand = pourK >= 0 ? 'pour' : shaking ? 'shake' : cook && (a === 'mix' || (bowl && cook)) ? 'stir' : cook && a === 'serve' ? 'kiss' : 'idle'
   const liquid = pourK >= 0 ? pours[pourK][2] : null
   const soup = pours.find(([, e]) => e === '🍵' || e === '🥛')?.[2] ?? (pours.some(([, e]) => e === '💧') ? '#e39a4e' : '#e8823c')
   const mins = text.match(/(\d+)\s*(?:min|mn|دقيق)/i)?.[1]
@@ -151,6 +156,7 @@ export function StepScene({ text, ings }: { text: string; ings: SceneIng[] }) {
       <svg viewBox="0 0 320 240" className="scene-svg block w-full">
         <defs><linearGradient id="wood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#d9a46d" /><stop offset="1" stopColor="#9b6634" /></linearGradient>
           <linearGradient id="steel" x1="0" x2="1"><stop offset="0" stopColor="#5d6770" /><stop offset=".5" stopColor="#9aa6b0" /><stop offset="1" stopColor="#4d565e" /></linearGradient>
+          <linearGradient id="clay" x1="0" x2="1"><stop offset="0" stopColor="#a4471f" /><stop offset=".45" stopColor="#d9743f" /><stop offset="1" stopColor="#8f3c1a" /></linearGradient>
           <radialGradient id="gTom" cx=".35" cy=".3"><stop offset="0" stopColor="#ff7a5c" /><stop offset="1" stopColor="#c62d22" /></radialGradient>
           <radialGradient id="gOnion" cx=".35" cy=".35"><stop offset="0" stopColor="#f0c27a" /><stop offset="1" stopColor="#b5772c" /></radialGradient>
           <linearGradient id="gCar" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#ffa94a" /><stop offset="1" stopColor="#e0700f" /></linearGradient>
@@ -160,24 +166,33 @@ export function StepScene({ text, ings }: { text: string; ings: SceneIng[] }) {
           <radialGradient id="gMeat" cx=".4" cy=".4"><stop offset="0" stopColor="#e0656b" /><stop offset="1" stopColor="#a3333b" /></radialGradient>
           <linearGradient id="gFish" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#6f90ad" /><stop offset=".55" stopColor="#c6d8e6" /><stop offset="1" stopColor="#eef4f8" /></linearGradient>
           <radialGradient id="fire" cx=".5" cy="1" r="1"><stop offset="0" stopColor="#ffe08a" /><stop offset=".5" stopColor="#ff8a2a" /><stop offset="1" stopColor="#ff5a1f" stopOpacity="0" /></radialGradient></defs>
-        <Chef mood={mood} arm={chopping ? 'chop' : 'idle'} hand={hand} />
+        <Chef mood={mood} arm={chopping ? 'chop' : 'idle'} hand={hand} taste={tasting && hand === 'idle'} />
         {/* counter */}
         <rect x="0" y="182" width="320" height="58" fill="#3a2a20" /><rect x="0" y="178" width="320" height="10" rx="3" fill="#8a5a33" />
         {/* board */}
         <rect x="10" y="168" width="140" height="14" rx="6" fill="url(#wood)" /><ellipse cx="80" cy="186" rx="70" ry="4" fill="#000" opacity=".25" />
         {/* stove fire */}
-        {(cook || pourK >= 0 || shaking) && !plate && !bowl && <g className="flames">{[0, 1, 2, 3].map((k) => <ellipse key={k} className="flame" style={{ animationDelay: `${k * 0.12}s` }} cx={236 + k * 14} cy="176" rx="7" ry="12" fill="url(#fire)" />)}</g>}
+        {(cook || pourK >= 0 || shaking) && (V === 'pot' || pan || kesk) && <g className="flames">{[0, 1, 2, 3].map((k) => <ellipse key={k} className="flame" style={{ animationDelay: `${k * 0.12}s` }} cx={236 + k * 14} cy="176" rx="7" ry="12" fill="url(#fire)" />)}</g>}
         {/* vessel */}
-        <g className={cook ? (pan ? 'v-shake' : plate ? '' : 'v-simmer') : fly ? 'v-catch' : ''}>
+        <g className={cook ? (pan ? 'v-shake' : plate || oven ? '' : 'v-simmer') : fly ? 'v-catch' : ''}>
           {pan ? <><ellipse cx="258" cy="164" rx="42" ry="12" fill="#2b2f33" /><ellipse cx="258" cy="161" rx="36" ry="9" fill={fly ? '#c98d3a' : '#3a4046'} /><rect x="296" y="158" width="26" height="7" rx="3.5" fill="#2b2f33" /></>
             : bowl ? <><path d="M216 150 h84 c0 24 -18 32 -42 32 s-42 -8 -42 -32z" fill="#5aa9e6" /><ellipse cx="258" cy="150" rx="42" ry="8" fill={fly ? '#f2d6a2' : '#cfe8fb'} /><path d="M222 156 c8 14 30 18 46 14" stroke="#fff" strokeWidth="3" opacity=".35" fill="none" /></>
             : plate ? <><ellipse cx="258" cy="172" rx="48" ry="10" fill="#e9eef2" /><ellipse cx="258" cy="170" rx="34" ry="6" fill="#fff" />{cook && <path d="M236 168 q22 -18 44 0z" fill="#e8823c" />}</>
+            : tajine ? <><path d="M226 178 L232 160 H284 L290 178Z" fill="#8a4b2a" /><path d="M234 172 h48" stroke="#ff8a2a" strokeWidth="3" opacity={cook || fly ? .9 : .3} className={cook ? 'coals' : ''} />
+                <ellipse cx="258" cy="158" rx="44" ry="8" fill="#b8562c" /><ellipse cx="258" cy="156" rx="38" ry="5" fill={fly || cook ? soup : '#7a3a1c'} />
+                <g className={cook ? 'tj-lid tj-cook' : fly || pourK >= 0 || shaking ? 'tj-lid tj-open' : 'tj-lid'}><path d="M220 156 C234 150 246 116 252 100 L264 100 C270 116 282 150 296 156Z" fill="url(#clay)" /><path d="M228 146 C246 144 270 144 288 146 M240 126 C252 124 264 124 276 126" stroke="#f2d6a2" strokeWidth="2.4" fill="none" /><circle cx="258" cy="96" r="7" fill="#c9683a" /><circle cx="258" cy="96" r="3" fill="#f2d6a2" /></g></>
+            : kesk ? <><rect x="222" y="138" width="72" height="38" rx="10" fill="url(#steel)" /><rect x="210" y="146" width="14" height="6" rx="3" fill="#4d565e" /><rect x="292" y="146" width="14" height="6" rx="3" fill="#4d565e" />
+                <path d="M226 138 L230 112 H286 L290 138Z" fill="#aab4bc" />{[0, 1, 2, 3, 4].map((k) => <circle key={k} cx={238 + k * 10} cy={126} r="1.8" fill="#4d565e" />)}<ellipse cx="258" cy="112" rx="28" ry="5" fill={fly || cook ? '#f0d27a' : '#7d8890'} /></>
+            : oven ? <><rect x="210" y="104" width="100" height="76" rx="8" fill="#2f3439" /><rect x="218" y="122" width="84" height="48" rx="6" fill={cook ? '#ff9a3c' : '#1b1f23'} className={cook ? 'oven-glow' : ''} /><rect x="222" y="126" width="76" height="40" rx="4" fill="#000" opacity=".25" />
+                {(fly || cook) && <path d="M232 160 h56 l-4 -8 h-48z" fill="#c9783a" />}{cook && <path d="M236 152 q22 -14 48 0z" fill="#e8a24c" />}<rect x="226" y="112" width="68" height="4" rx="2" fill="#9aa6b0" />{[0, 1, 2].map((k) => <circle key={k} cx={290 - k * 12} cy={110} r="2.8" fill="#9aa6b0" />)}</>
             : <><rect x="220" y="128" width="76" height="46" rx="12" fill="url(#steel)" /><ellipse cx="258" cy="128" rx="40" ry="8" fill="#3c444b" /><ellipse cx="258" cy="128" rx="34" ry="5.5" fill={fly || cook ? soup : '#2a3036'} /><rect x="208" y="136" width="14" height="6" rx="3" fill="#4d565e" /><rect x="294" y="136" width="14" height="6" rx="3" fill="#4d565e" />
-              {cook && (a === 'boil' || a === 'add' || a === 'rest' || a === 'prep' || a === 'oven') && <g className="lid"><ellipse cx="258" cy="122" rx="38" ry="7" fill="#7c8891" /><rect x="252" y="110" width="12" height="7" rx="3" fill="#3c444b" /></g>}</>}
+              {cook && <g className="lid"><ellipse cx="258" cy="122" rx="38" ry="7" fill="#7c8891" /><rect x="252" y="110" width="12" height="7" rx="3" fill="#3c444b" /></g>}</>}
         </g>
+        {cook && oven && [0, 1, 2].map((k) => <path key={k} className="steam-s" style={{ animationDelay: `${k * 0.5}s` }} d={`M${240 + k * 18} 100 q-5 -8 0 -16 q5 -8 0 -16`} stroke="#ffb36b" strokeWidth="3" strokeLinecap="round" fill="none" opacity=".6" />)}
+        {cook && (tajine || kesk) && [0, 1, 2].map((k) => <path key={k} className="steam-s" style={{ animationDelay: `${k * 0.55}s` }} d={`M${(tajine ? 252 : 244) + k * (tajine ? 6 : 12)} ${tajine ? 88 : 104} q-6 -10 0 -20 q6 -10 0 -20`} stroke="#fff" strokeWidth="4" strokeLinecap="round" fill="none" opacity=".7" />)}
         {/* ingredients */}
         {its.map((x, i) => { const k = kindOf(x.id, x.e); const chopped = cut[i] && t >= order[i]; const dx = 258 - X[i]
-          return <g key={i} className={fly ? 'to-pot' : 'drop-board'} style={{ ['--dx' as string]: `${dx}px`, ['--dy' as string]: `${(plate ? 0 : pan ? -8 : -40)}px`, animationDelay: fly ? `${i * 110}ms` : `${i * 120}ms` }}>
+          return <g key={i} className={fly ? 'to-pot' : 'drop-board'} style={{ ['--dx' as string]: `${dx}px`, ['--dy' as string]: `${(plate ? 0 : pan ? -8 : tajine ? -2 : kesk ? -50 : oven ? -14 : -40)}px`, animationDelay: fly ? `${i * 110}ms` : `${i * 120}ms` }}>
             <g className={!chopped && !fly && k === 'fish' ? 'flop' : ''}>{chopped ? <Slices k={k} x={X[i]} y={164} /> : <Food id={x.id} k={k} x={X[i]} y={154} />}</g>
             {!fly && <text x={X[i]} y={198} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#f4f1e8" opacity=".9">{(x.n ?? '').split(/[ (,]/)[0].slice(0, 10)}</text>}</g> })}
         {/* knife chop sound */}
@@ -188,7 +203,7 @@ export function StepScene({ text, ings }: { text: string; ings: SceneIng[] }) {
         {shaking && Array.from({ length: 12 }, (_, k) => <circle key={k} className="grain-fall" style={{ animationDelay: `${(k * 0.08).toFixed(2)}s` }} cx={212 + (k % 6) * 4} cy={150} r="1.8" fill={DOT[k % DOT.length]} />)}
         {/* cooking life */}
         {cook && pan && [0, 1, 2, 3, 4].map((k) => <circle key={k} className="pop-oil" style={{ animationDelay: `${k * 0.18}s`, ['--dx' as string]: `${(k - 2) * 10}px` }} cx={258} cy={156} r="2" fill="#ffd27a" />)}
-        {cook && !pan && !plate && !bowl && [0, 1, 2].map((k) => <path key={k} className="steam-s" style={{ animationDelay: `${k * 0.6}s` }} d={`M${246 + k * 12} 112 q-6 -10 0 -20 q6 -10 0 -20`} stroke="#fff" strokeWidth="4" strokeLinecap="round" fill="none" opacity=".7" />)}
+        {cook && V === 'pot' && [0, 1, 2].map((k) => <path key={k} className="steam-s" style={{ animationDelay: `${k * 0.6}s` }} d={`M${246 + k * 12} 112 q-6 -10 0 -20 q6 -10 0 -20`} stroke="#fff" strokeWidth="4" strokeLinecap="round" fill="none" opacity=".7" />)}
         {cook && plate && [0, 1, 2].map((k) => <path key={k} className="spark-star" style={{ animationDelay: `${k * 0.4}s` }} transform={`translate(${226 + k * 30} ${140 - (k % 2) * 14})`} d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2Z" fill="#ffd27a" />)}
       </svg>
       {mins && <span className="absolute end-0 top-0 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 font-display text-sm font-extrabold text-ink shadow-lift">⏱ {mins} min</span>}
