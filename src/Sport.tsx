@@ -9,7 +9,7 @@ import { Dish } from './ui'
 import { RecipeSheet } from './Screens'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
-export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number }
+export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number; kcalO?: number; protO?: number }
 const DEF: SportProfile = { sex: 'm', age: 30, h: 175, w: 75, sport: 'gym', goal: 'fit', days: 3 }
 
 const SPORTS: [string, string, string, string, string][] = [
@@ -54,7 +54,9 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
   const { lang, me, patchMe } = useApp()
   const p: SportProfile = { ...DEF, ...((me as unknown as { sport?: SportProfile }).sport ?? {}) }
   const set = (o: Partial<SportProfile>) => patchMe({ sport: { ...p, ...o } } as never)
-  const n = needs(p)
+  const n0 = needs(p); const n = { ...n0, kcal: p.kcalO ?? n0.kcal, prot: p.protO ?? n0.prot }
+  n.carbs = Math.max(0, Math.round((n.kcal - n.prot * 4 - n.fat * 9) / 4))
+  const [add, setAdd] = useState<string[]>([])
   const [rv, setRv] = useState<Recipe | null>(null); const [shift, setShift] = useState(0)
   const cuisine = me!.cuisine ?? 'ma'
   // Meals of the day: for each slot, the dish closest to the slot's kcal share with the best protein density.
@@ -65,7 +67,15 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
     const x = pool[(shift + i) % Math.max(1, Math.min(4, pool.length))]
     return { s, e, lab, target, x }
   }), [n.kcal, cuisine, shift, p.goal])
-  const tk = day.reduce((a, d) => a + (d.x?.k ?? 0), 0); const tp = day.reduce((a, d) => a + (d.x?.pr ?? 0), 0)
+  const ADD: [string, string, string, number, number][] = [
+    ['eggs', '🥚', L(lang, '2 eggs', '2 œufs', 'بيضتان'), 150, 12], ['yog', '🥛', L(lang, 'Greek yogurt', 'Yaourt nature', 'ياغورت'), 100, 6], ['tuna', '🐟', L(lang, 'Can of tuna', 'Boîte de thon', 'علبة تونة'), 120, 25],
+    ['chick', '🍗', L(lang, 'Chicken breast 150 g', 'Blanc de poulet 150 g', 'صدر دجاج'), 165, 35], ['lent', '🫘', L(lang, 'Bowl of lentils', 'Bol de lentilles', 'عدس'), 230, 18], ['milk', '🥤', L(lang, 'Glass of milk', 'Verre de lait', 'كأس حليب'), 120, 8],
+    ['nuts', '🥜', L(lang, 'Handful of almonds', 'Poignée d’amandes', 'لوز'), 170, 6], ['dates', '🌴', L(lang, '3 dates + bread', '3 dattes + pain', 'تمر وخبز'), 260, 6],
+  ]
+  const tk = day.reduce((a, d) => a + (d.x?.k ?? 0), 0) + ADD.filter((x) => add.includes(x[0])).reduce((a, x) => a + x[3], 0)
+  const tp = day.reduce((a, d) => a + (d.x?.pr ?? 0), 0) + ADD.filter((x) => add.includes(x[0])).reduce((a, x) => a + x[4], 0)
+  const gapP = n.prot - tp; const gapK = n.kcal - tk
+  const ranked = [...ADD].filter((x) => !add.includes(x[0])).sort((a, b) => gapP > 10 ? b[4] / b[3] - a[4] / a[3] : gapK > 0 ? b[3] - a[3] : a[3] - b[3]).slice(0, 4)
   const g = GOALS.find((x) => x[0] === p.goal)!
   const BAR: [string, string, number, number, string, string][] = [
     ['🔥', L(lang, 'Calories', 'Calories', 'سعرات'), tk, n.kcal, 'kcal', '#ee9b45'], ['🥩', L(lang, 'Protein', 'Protéines', 'بروتين'), tp, n.prot, 'g', '#e2574c'],
@@ -107,12 +117,28 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
         <p className="mt-1 text-[11px] text-muted">IMC {n.bmi}. {L(lang, 'A muscular body can weigh a bit more: trust the mirror and your waist too.', 'Un corps musclé peut peser un peu plus : fiez-vous aussi au miroir et au tour de taille.', 'الجسم العضلي قد يزن أكثر.')}</p>
       </section>
 
+      <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">🎚️ {L(lang, 'Adjust my targets', 'Ajuster mes objectifs', 'ضبط أهدافي')}</p>
+        {([['🔥', L(lang, 'Calories', 'Calories', 'سعرات'), n.kcal, n0.kcal, 1200, 4500, 50, 'kcal', (v?: number) => set({ kcalO: v })], ['🥩', L(lang, 'Protein', 'Protéines', 'بروتين'), n.prot, n0.prot, 40, 260, 5, 'g', (v?: number) => set({ protO: v })]] as [string, string, number, number, number, number, number, string, (v?: number) => void][]).map(([e, l, v, rec, mn, mx, st, u, f]) => (
+          <div key={l} className="mb-3">
+            <div className="flex items-center gap-2"><span className="text-xl">{e}</span><span className="flex-1 text-sm font-bold">{l}</span>
+              <button className="grid h-8 w-8 place-items-center rounded-full bg-cream font-bold active:scale-90" onClick={() => f(Math.max(mn, v - st))} aria-label="−">−</button>
+              <b key={v} className="pop w-20 text-center font-display text-lg tabular-nums">{v} <span className="text-[11px] text-muted">{u}</span></b>
+              <button className="grid h-8 w-8 place-items-center rounded-full bg-cream font-bold active:scale-90" onClick={() => f(Math.min(mx, v + st))} aria-label="+">+</button></div>
+            <input type="range" min={mn} max={mx} step={st} value={v} onChange={(ev) => f(+ev.target.value)} className="mt-1 w-full accent-[#2f6fa8]" aria-label={l} />
+            <p className="text-[10.5px] text-muted">{L(lang, 'Advised for you', 'Conseillé pour vous', 'المنصوح')} : {rec} {u}{v !== rec && <button className="ms-2 font-bold text-forest" onClick={() => f(undefined)}>↺ {L(lang, 'reset', 'revenir', 'إرجاع')}</button>}</p>
+          </div>))}
+      </section>
+
       <section>
         <div className="mb-2 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'My meals today', 'Mes repas du jour', 'وجباتي اليوم')}</h2><button className="text-sm font-bold text-forest" onClick={() => setShift(shift + 1)}>🎲 {L(lang, 'Others', 'Autres', 'أخرى')}</button></div>
         <div className="mb-3 space-y-2 rounded-[20px] bg-surface p-3 shadow-soft">{BAR.map(([e, l, v, t, u, c]) => <div key={l}>
           <div className="flex items-baseline justify-between text-xs"><span className="font-bold">{e} {l}</span><span className="tabular-nums"><b>{Math.round(v)}</b> / {t} {u}</span></div>
           <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (v / t) * 100)}%`, background: c }} /></div></div>)}
-          {tp < n.prot * 0.85 && <p className="text-[11.5px] text-muted">💡 {L(lang, `Add ${Math.round(n.prot - tp)} g of protein: 2 eggs (12 g), a yogurt (4 g), a can of tuna (25 g) or a glass of milk (8 g).`, `Ajoutez ${Math.round(n.prot - tp)} g de protéines : 2 œufs (12 g), un yaourt (4 g), une boîte de thon (25 g) ou un verre de lait (8 g).`, `أضف ${Math.round(n.prot - tp)} غ بروتين`)}</p>}
+          <p className={`rounded-xl px-2.5 py-1.5 text-[11.5px] font-semibold ${Math.abs(gapK) < n.kcal * 0.08 && gapP < 10 ? 'bg-leaf/25 text-forest' : 'bg-apricot/20'}`}>{Math.abs(gapK) < n.kcal * 0.08 && gapP < 10 ? L(lang, '✅ Right on target today.', '✅ Pile dans l’objectif aujourd’hui.', '✅ في الهدف') : `${gapK > 0 ? L(lang, `🔥 ${Math.round(gapK)} kcal missing`, `🔥 Il manque ${Math.round(gapK)} kcal`, `ينقص ${Math.round(gapK)}`) : L(lang, `🔥 ${Math.round(-gapK)} kcal over`, `🔥 ${Math.round(-gapK)} kcal en trop`, `زيادة ${Math.round(-gapK)}`)}${gapP > 0 ? ' · ' + L(lang, `🥩 ${Math.round(gapP)} g protein missing`, `🥩 il manque ${Math.round(gapP)} g de protéines`, `ينقص ${Math.round(gapP)} غ`) : ''}`}</p>
+          {(gapK > 80 || gapP > 8) && <div><p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted">{L(lang, 'My suggestions to fill the gap', 'Mes propositions pour combler', 'اقتراحاتي')}</p>
+            <div className="grid grid-cols-2 gap-1.5">{ranked.map(([k, e, l, kc, pr]) => <button key={k} className="flex items-center gap-2 rounded-2xl bg-cream/80 p-2 text-start active:scale-95" onClick={() => setAdd([...add, k])}><span className="text-xl">{e}</span><span className="min-w-0"><b className="block truncate text-[12px]">{l}</b><span className="text-[10.5px] text-muted">+{kc} kcal · +{pr} g</span></span><span className="ms-auto text-forest">＋</span></button>)}</div></div>}
+          {add.length > 0 && <div className="flex flex-wrap gap-1.5">{ADD.filter((x) => add.includes(x[0])).map(([k, e, l]) => <button key={k} className="pop rounded-full bg-forest px-2.5 py-1 text-[11px] font-bold text-white" onClick={() => setAdd(add.filter((y) => y !== k))}>{e} {l} ✕</button>)}</div>}
         </div>
         <div className="space-y-2">{day.map(({ s, e, lab, target, x }) => x && (
           <button key={s} className="flex w-full items-center gap-3 rounded-[20px] bg-surface p-2.5 text-start shadow-soft active:scale-[.98]" onClick={() => setRv(x.r)}>

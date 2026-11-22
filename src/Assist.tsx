@@ -85,9 +85,8 @@ export function Assistant({ open, onClose, tab, next, more, undo, onTour, go }: 
 
 /** Short spotlight tour over real UI elements marked with data-tour. Skippable, replayable. */
 const TOUR: [string, string, string, string, string][] = [
-  ['steps', 'Ton parcours', 'Your journey', 'Trois étapes seulement : Semaine → Magasin → Courses. Touche une étape pour y aller.', 'Just three steps: Week → Store → Shopping. Tap a step to jump there.'],
-  ['budget', 'Ton budget', 'Your budget', 'Le total de ta liste face à ton budget. Touche-le pour changer le budget, le nombre de personnes ou les repas.', 'Your list total vs budget. Tap it to change budget, people or meals.'],
-  ['tabs', 'La barre du bas', 'The bottom bar', 'Accueil, Semaine, le Caddie au centre, Courses, et « Tout » pour Sorties, Budget, Recettes, Profil, pays et langue.', 'Home, Week, the Caddie in the middle, Shopping, and “All” for Outings, Budget, Recipes, Profile, country and language.'],
+  ['subtabs', 'Tes repas', 'Your meals', 'Dans Repas, tout est rangé en 4 onglets : Semaine, Recettes, Courses et Sport.', 'Meals has 4 tabs: Week, Recipes, Shopping and Sport.'],
+  ['tabs', 'La barre du bas', 'The bottom bar', 'Les 3 thèmes à un geste : Repas, Sorties, Budget. Le Caddie au centre pour faire les courses en magasin.', 'The 3 themes one tap away: Meals, Outings, Budget. The Caddie in the middle for in-store shopping.'],
   ['assist', 'Ton assistant', 'Your assistant', 'Il sait où tu es et te propose la prochaine action. Touche ✨ dès que tu hésites.', 'It knows where you are and suggests the next action. Tap ✨ whenever unsure.'],
 ]
 export const tourDone = () => ls.get('kz-tour') === '1'

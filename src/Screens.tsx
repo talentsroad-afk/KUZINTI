@@ -9,6 +9,7 @@ import { SIDE } from './data/sides'
 import { dailyKcal, entryCost, entryKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
 import { alternatives, FLAG, surpriseOne, composeSides, type Prefs } from './lib/plan'
 import { Dish, FoodTile, Sheet, Stepper } from './ui'
+import { iconOf } from './Cart'
 import { FormeCard } from './Forme'
 
 export const SLOTS: Meal[] = ['b', 'l', 'd', 'g']
@@ -31,6 +32,19 @@ function NutriBox({ r }: { r: Recipe }) {
   return <p className={`rounded-2xl p-3 text-sm ${ok ? 'bg-leaf/20' : 'bg-danger/10 text-danger'}`}>{HP[h][0]} <b>{HP[h][lang === 'en' ? 1 : lang === 'ar' ? 3 : 2]}</b> · {!ok ? (lang === 'en' ? 'Not advised (raw egg).' : 'Déconseillé (œuf cru).') : hit.length ? `${lang === 'en' ? 'Good source of' : 'Bonne source de'} ${hit.map((n) => nutName(n, lang).toLowerCase()).join(', ')}.` : (lang === 'en' ? 'Fine, pair it with a dish richer in what you need.' : 'Possible, à compléter avec un plat plus riche en ce dont vous avez besoin.')}</p>
 }
 
+/** The ingredients drop one by one into the pot, then it simmers. Replays on tap. */
+function Pot({ r }: { r: Recipe }) {
+  const [run, setRun] = useState(0)
+  const ems = [...new Set(r.ing.map((s) => { const p = parseIng(s); const ing = ING[p.id]; return ing && ing.aisle !== 'spices' ? iconOf(p.id, ing.aisle) : '' }).filter(Boolean))].slice(0, 7)
+  return (
+    <button key={run} className="pot relative mb-4 block h-36 w-full overflow-hidden rounded-[22px] bg-gradient-to-b from-cream to-leaf/25" onClick={() => setRun(run + 1)} aria-label="Animation">
+      {ems.map((e, i) => <span key={i} className="pot-ing absolute top-0 text-[26px]" style={{ left: `calc(50% + ${(i - (ems.length - 1) / 2) * 26}px - 13px)`, animationDelay: `${i * 0.22}s` }} aria-hidden>{e}</span>)}
+      <span className="pot-steam absolute left-1/2 top-[38px] -translate-x-1/2 text-xl opacity-0" style={{ animationDelay: `${ems.length * 0.22 + 0.5}s` }} aria-hidden>♨️</span>
+      <span className="pot-body absolute bottom-2 left-1/2 -translate-x-1/2 text-[64px] leading-none" style={{ animationDelay: `${ems.length * 0.22 + 0.4}s` }} aria-hidden>🍲</span>
+      <span className="absolute bottom-2 end-3 rounded-full bg-surface/80 px-2 py-0.5 text-[10px] font-bold text-muted">↻</span>
+    </button>)
+}
+
 export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | null; onClose: () => void; servings?: number; onServings?: (n: number) => void }) {
   const { lang, me, patchMe, award, upHouse, toast } = useApp()
   const [n, setN] = useState(servings ?? Math.max(2, me!.size))
@@ -48,6 +62,7 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
         <button className="ms-auto text-2xl" aria-pressed={fav} aria-label="favorite" onClick={() => { patchMe({ favs: fav ? me!.favs.filter((x) => x !== r.id) : [...me!.favs, r.id] }); if (!fav) award(2, '❤️') }}>{fav ? '❤️' : '🤍'}</button>
       </div>
       <NutriChips r={r} />
+      <Pot r={r} />
       <div className="mb-3 flex items-center justify-between"><h3 className="font-bold">{t('ingredients', lang)}</h3><span className="flex items-center gap-2 text-sm"><Stepper v={sv} set={setSv} /> {t('servings', lang)}</span></div>
       <ul className="mb-5 space-y-1.5 text-sm">
         {r.ing.map((s) => {
@@ -193,18 +208,20 @@ export function WeekTab({ compose, makeHealthy, say, clear }: { compose: () => v
           <div className="divide-y divide-line/70">{slots.map((s) => mealRow(`${day}-${s}`, s))}</div>
         </div>
       </>}
-      {view === 'week' && <div className="stagger space-y-2.5">{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => (
-        <div key={d} className={`overflow-hidden rounded-[22px] bg-surface shadow-soft ${d === today ? 'ring-2 ring-forest/70' : ''}`}>
-          <button className="flex w-full items-baseline justify-between px-3.5 pb-1 pt-2.5 text-start" onClick={() => { setDay(d); setView('day') }}>
-            <span className="font-display text-[15px] font-extrabold capitalize">{d === today ? (lang === 'en' ? 'Today' : lang === 'ar' ? 'اليوم' : 'Aujourd’hui') : dayName(d, lang)}</span>
-            <span className="text-[11px] text-muted tabular-nums">{Math.round(dayKc(d))} kcal · {money(dayCost(d), lang)} ›</span></button>
-          <div className="flex gap-2 overflow-x-auto px-3 pb-3" data-noswipe>{slots.map((s) => { const k = `${d}-${s}`; const e = plan[k]; const r = e ? REC[e.r] : null; return (
-            <button key={s} className="flex w-[46%] min-w-[140px] shrink-0 items-center gap-2 rounded-2xl bg-cream/70 p-1.5 text-start active:scale-[.97]" onClick={() => setRep(k)}>
-              {r ? <Dish r={r} w={160} className="h-11 w-11 shrink-0 rounded-xl" /> : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border-2 border-dashed border-line text-muted">＋</span>}
-              <span className="min-w-0"><span className="block text-[9.5px] font-bold uppercase tracking-wide text-muted">{SLOT_E[s]} {t(s, lang)}</span><span className="line-clamp-2 block text-[12.5px] font-semibold leading-tight">{r ? rname(r.n, lang) : '—'}</span></span>
-            </button>) })}</div>
-        </div>))}
-        <p className="text-center text-[11px] text-muted">{t('tapSwap', lang)}</p>
+      {view === 'week' && <div className="overflow-hidden rounded-[22px] bg-surface shadow-soft">
+        <div className="grid border-b border-line/60 bg-cream/60 text-center text-[10px] font-bold uppercase tracking-wide text-muted" style={{ gridTemplateColumns: `52px repeat(${slots.length}, minmax(0, 1fr))` }}>
+          <span />{slots.map((s) => <span key={s} className="py-1.5">{SLOT_E[s]} {t(s, lang)}</span>)}</div>
+        <div className="stagger divide-y divide-line/50">{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => (
+          <div key={d} className={`grid items-stretch ${d === today ? 'bg-leaf/15' : ''}`} style={{ gridTemplateColumns: `52px repeat(${slots.length}, minmax(0, 1fr))` }}>
+            <button className="flex flex-col items-center justify-center px-1 py-2 text-center" onClick={() => { setDay(d); setView('day') }} aria-label={dayName(d, lang)}>
+              <span className={`text-[12px] font-extrabold capitalize ${d === today ? 'text-forest' : ''}`}>{d === today ? (lang === 'en' ? 'Today' : lang === 'ar' ? 'اليوم' : 'Auj.') : dayName(d, lang).slice(0, 3)}</span>
+              <span className="text-[9.5px] tabular-nums text-muted">{money(dayCost(d), lang)}</span></button>
+            {slots.map((s) => { const k = `${d}-${s}`; const e = plan[k]; const r = e ? REC[e.r] : null; return (
+              <button key={s} className="flex min-w-0 flex-col items-center gap-1 p-1.5 text-center transition active:scale-95" onClick={() => setRep(k)} aria-label={r ? rname(r.n, lang) : t(s, lang)}>
+                {r ? <Dish r={r} w={160} className="h-11 w-11 rounded-xl" /> : <span className="grid h-11 w-11 place-items-center rounded-xl border-2 border-dashed border-line text-muted">＋</span>}
+                <span className="line-clamp-2 text-[10.5px] font-semibold leading-tight">{r ? rname(r.n, lang) : ''}</span></button>) })}
+          </div>))}</div>
+        <p className="py-2 text-center text-[11px] text-muted">{t('tapSwap', lang)}</p>
       </div>}
       {view === 'month' && <div className="card p-3">
         <p className="mb-2 font-display font-extrabold capitalize">{new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang === 'zgh' ? 'fr' : lang, { month: 'long', year: 'numeric' }).format(new Date())}</p>

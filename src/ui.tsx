@@ -93,7 +93,9 @@ export function Swipe({ onDelete, label, rtl, children }: { onDelete: () => void
       <button aria-label={label} onClick={() => { setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} className={`absolute inset-y-0 ${rtl ? 'start-0' : 'end-0'} flex w-full items-center justify-end gap-1.5 bg-[#e5484d] px-5 text-sm font-bold text-white`} style={{ justifyContent: rtl ? 'flex-start' : 'flex-end', opacity: dx ? 1 : 0 }} tabIndex={dx ? 0 : -1}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>{label}
       </button>
-      <div className="relative bg-surface" style={{ transform: `translateX(${dx}px)`, transition: drag ? 'none' : 'transform .32s cubic-bezier(.2,.9,.25,1)' }}>{children}</div>
+      <div className="relative bg-surface" style={{ transform: `translateX(${dx}px)`, transition: drag ? 'none' : 'transform .32s cubic-bezier(.2,.9,.25,1)' }}>{children}
+        <button className="del-h absolute end-0 top-1/2 h-10 -translate-y-1/2 place-items-center gap-1 rounded-xl bg-[#e5484d] px-3 text-xs font-bold text-white shadow-lift" onClick={(e) => { e.stopPropagation(); setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} aria-label={label} tabIndex={-1}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg></button></div>
     </div>)
 }
 

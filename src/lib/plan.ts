@@ -26,7 +26,7 @@ export const listCost = (plan: Plan, pantry: Record<string, number>, extras: Rec
 
 /** Dishes allowed for a slot. Falls back to every cuisine when the chosen one has too few (e.g. Japanese breakfast). */
 export function pool(slot: Meal, p: Pick<Prefs, 'cuisine' | 'diet'> & { health?: string }): Recipe[] {
-  const base = RECIPES.filter((r) => r.m.includes(slot) && healthOk(r, p.health) && (!p.diet.includes('vegetarian') || r.tags.includes('vegetarian')))
+  const base = RECIPES.filter((r) => r.m.includes(slot) && healthOk(r, p.health) && allergyOk(r, p.diet) && (!p.diet.includes('vegetarian') || r.tags.includes('vegetarian')))
   const c = base.filter((r) => inCuisine(r, p.cuisine))
   if (c.length >= 4 || p.cuisine === 'ma' || p.cuisine.split(',').includes('ma')) return c.length ? c : base
   // Small foreign catalogs: complete with other world dishes first, Moroccan only as a last resort.
@@ -43,7 +43,23 @@ function weight(r: Recipe, slot: Meal, p: Prefs, used: Record<string, number>) {
 const pickW = <T,>(items: T[], w: number[], rnd = Math.random) => { let x = rnd() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < items.length; i++) { x -= w[i]; if (x <= 0) return items[i] } return items[0] }
 
 /** Turn a dish into a complete, culturally coherent meal (bread, salad, drink, fruit…), without padding full meals. */
-export function composeSides(rid: string, slot: Meal, rnd = Math.random): string[] {
+/** Allergies and diets: each one excludes recipes containing any of these ingredients. */
+export const ALLERGY: [string, string, [string, string, string], string[]][] = [
+  ['no-gluten', '🌾', ['Gluten-free', 'Sans gluten', 'بدون غلوتين'], ['flour', 'semolina', 'couscous', 'pasta', 'bread', 'vermicelli', 'warqa', 'oats', 'soy']],
+  ['no-fish', '🦐', ['No fish or shellfish', 'Sans poisson ni crustacés', 'بدون سمك'], ['fish', 'sardine', 'tuna']],
+  ['no-lactose', '🥛', ['Lactose-free', 'Sans lactose', 'بدون لاكتوز'], ['milk', 'butter', 'yogurt', 'cheese']],
+  ['no-nuts', '🥜', ['No nuts or sesame', 'Sans fruits à coque', 'بدون مكسرات'], ['almonds', 'sesame']],
+  ['no-egg', '🥚', ['Egg-free', 'Sans œufs', 'بدون بيض'], ['egg']],
+]
+const ALL_BY = Object.fromEntries(ALLERGY.map((a) => [a[0], new Set(a[3])]))
+export const allergyOk = (r: Recipe, diet: string[] = []) => { const bad = diet.filter((d) => ALL_BY[d]); if (!bad.length) return true; const ids = new Set(r.ing.map((s) => parseIdLoose(s))); return !bad.some((d) => [...ALL_BY[d]].some((id) => ids.has(id))) }
+const parseIdLoose = (s: string) => s.split(':')[0]
+let DIET: string[] = []
+/** The household's allergies, so side dishes (bread, cheese…) also respect them. */
+export const setDietFilter = (d: string[]) => { DIET = d }
+const sideOk = (sid: string) => { const sd = SIDE[sid]; if (!sd) return true; const bad = DIET.filter((d) => ALL_BY[d]); return !bad.some((d) => sd.ing.some((s) => ALL_BY[d].has(parseIdLoose(s)))) }
+export function composeSides(rid: string, slot: Meal, rnd = Math.random): string[] { return composeSides0(rid, slot, rnd).filter(sideOk) }
+function composeSides0(rid: string, slot: Meal, rnd = Math.random): string[] {
   const r = REC[rid]; const c = cuisineOf(r)
   if (slot === 'g') return rid === 'the-dattes' ? [] : c === 'ma' ? ['x-the'] : ['x-cafe']
   if (slot === 'b') {
@@ -101,7 +117,7 @@ export function surpriseOne(key: string, plan: Plan, p: Prefs): PlanEntry {
 /** Alternatives for one meal, ranked by the chosen filter. */
 export function alternatives(key: string, plan: Plan, p: Prefs, f: string): Recipe[] {
   const slot = key.split('-')[1] as Meal; const cur = plan[key]; const curR = cur ? REC[cur.r] : null
-  let list = RECIPES.filter((r) => r.m.includes(slot) && r.id !== cur?.r && (!p.diet.includes('vegetarian') || r.tags.includes('vegetarian')))
+  let list = RECIPES.filter((r) => r.m.includes(slot) && r.id !== cur?.r && allergyOk(r, p.diet) && (!p.diet.includes('vegetarian') || r.tags.includes('vegetarian')))
   if (f !== 'all') list = list.filter((r) => inCuisine(r, p.cuisine === 'mix' && curR ? cuisineOf(curR) : p.cuisine))
   if (f === 'veg') list = list.filter((r) => r.tags.includes('vegetarian'))
   if (f === 'cheaper' && curR) list = list.filter((r) => recipeCost(r.id) / r.s < recipeCost(curR.id) / curR.s)

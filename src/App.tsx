@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, setCurrency, t, type Lang } from './lib/i18n'
 import { LANG_LABEL } from './lib/i18n'
-import { Brand, Confetti, TONES, Toasts } from './ui'
+import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
 import { Controls, usePrefs, WeekTab } from './Screens'
 import { HomeTab } from './Home'
@@ -13,11 +13,12 @@ import { CartMode } from './Cart'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
-import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Search, Sparkles, Ticket, UtensilsCrossed, Wallet, Dumbbell, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, Wallet, Dumbbell, type LucideIcon } from 'lucide-react'
 import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Nav } from './Nav'
 import { SportTab } from './Sport'
+import { setDietFilter } from './lib/plan'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore, setStoreCountry } from './lib/stores'
 import { CountrySheet } from './Country'
@@ -126,14 +127,13 @@ const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', Cal
 
 type World = 'food' | 'sorties' | 'budget'
 const SPACES: World[] = ['food', 'sorties', 'budget']
-const W_ICON = { food: UtensilsCrossed, sorties: Ticket, budget: Wallet }
-const W_TONE = { food: 'forest', sorties: 'grape', budget: 'teal' } as const
-const W_LABEL: Record<World, [string, string, string, string]> = { food: ['🍽️', 'Meals', 'Repas', 'الوجبات'], sorties: ['🎈', 'Outings', 'Sorties', 'نزهات'], budget: ['💰', 'Budget', 'Budget', 'الميزانية'] }
+const FOOD_TABS: Tab[] = ['week', 'recipes', 'list', 'stores', 'sport']
+const SUB: [Tab, LucideIcon, string, string, string][] = [['week', CalendarDays, 'Week', 'Semaine', 'الأسبوع'], ['recipes', BookOpen, 'Recipes', 'Recettes', 'وصفات'], ['list', ShoppingCart, 'Shopping', 'Courses', 'التسوق'], ['sport', Dumbbell, 'Sport', 'Sport', 'رياضة']]
 const L3 = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
-  setCurrency(me!.country); setStoreCountry(me!.country)
+  setCurrency(me!.country); setStoreCountry(me!.country); setDietFilter(me!.diet)
   useEffect(() => { document.documentElement.dataset.country = me!.country }, [me!.country]) // eslint-disable-line react-hooks/exhaustive-deps
   const h = house!; const hasPlan = Object.keys(h.plan).length > 0
   const [tab, setTab] = useState<Tab>(hasPlan ? 'week' : 'home')
@@ -141,7 +141,7 @@ function Shell() {
   const [note, setNote] = useState<string | null>(null)
   const [boom, setBoom] = useState(0)
   const p = usePrefs()
-  const { extraCost, total, items, lines, homeCost, customCost, store, spent } = useBasket()
+  const { extraCost, total, lines, homeCost, customCost, store } = useBasket()
   const budget = me!.budget; const over = total > budget
   const celebrate = () => setBoom((b) => b + 1)
   const [undo, setUndo] = useState<[string, () => void] | null>(null)
@@ -156,10 +156,11 @@ function Shell() {
     // otherwise the same dishes would show an empty list (pantry still holding last trip).
     const pantry = { ...h.pantry }
     if (!stay && hasPlan) for (const l of buildList(h.plan, {}, {}, {})) if (pantry[l.id]) pantry[l.id] = Math.max(0, pantry[l.id] - l.need)
+    setDietFilter(o.diet ?? p.diet ?? [])
     const next = composeWeek({ ...p, ...o, budget: Math.max(0, (o.budget ?? budget) - extraCost) }, pantry, h.extras ?? {})
     upHouse((x) => { x.plan = next; x.qty = {}; if (!stay) { x.pantry = Object.fromEntries(Object.entries(pantry).filter(([, v]) => v > 0)); x.checked = {} } }, 'composed the week'); award(15, '✨'); celebrate()
     const c = listCost(next, pantry, h.extras ?? {}) + extraCost; const B = o.budget ?? budget
-    say(c <= B ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(B - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); if (!stay) go('week')
+    say(`🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${t('estTotal', lang)} ${money(c, lang)}`, hasPlan ? u : undefined); void B; if (!stay) go('week')
   }
   const adapt = (b = budget) => {
     const u = snap(t('h_budget', lang))
@@ -207,9 +208,6 @@ function Shell() {
     const on = (e: PopStateEvent) => { const k = (e.state?.kz as Tab | undefined) ?? 'home'; setTab(k); scrollTo(0, 0) }
     addEventListener('popstate', on); return () => removeEventListener('popstate', on)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
-  const nChk = Object.values(h.checked).filter(Boolean).length
-  const steps: [string, Tab, boolean][] = [['st_week', hasPlan ? 'week' : 'home', hasPlan], ['st_store', 'stores', !!h.store], ['st_list', 'list', hasPlan && !!h.store && nChk >= items.length]]
-  const cur = steps.findIndex((x) => !x[2])
   const nextStep: [string, string, () => void] | null = !hasPlan || tab === 'home' ? null
     : tab === 'week' || tab === 'recipes' ? (h.store ? [t('ns_list', lang), t('ns_listD', lang), () => go('list')] : [t('ns_store', lang), t('ns_storeD', lang), () => go('stores')])
     : tab === 'list' ? (h.store ? [t('ns_done', lang), t('ns_doneD', lang), () => scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })] : [t('ns_store', lang), t('ns_storeD', lang), () => go('stores')])
@@ -237,32 +235,21 @@ function Shell() {
       <Confetti run={boom} />
       <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.88)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className={`mx-auto flex max-w-2xl items-center gap-2 px-4 py-2.5 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
-          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button>{tab !== 'home' && <span className="min-w-0 truncate font-display text-lg font-extrabold">{title}</span>}
-          <span className="flex-1" /><button className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xl shadow-soft active:scale-90 ${tab === 'home' ? 'hidden' : 'hidden sm:grid'}`} onClick={() => setCtry(true)} aria-label={cname(countryOf(me!.country), lang)}>{countryOf(me!.country).f}</button>
-          {space === 'food' && <button className={`${tab === 'home' ? 'grid' : 'hidden sm:grid'} h-10 w-10 shrink-0 place-items-center rounded-full bg-surface shadow-soft active:scale-90`} onClick={() => go('recipes')} aria-label={lang === 'en' ? 'Search recipes' : 'Chercher une recette'}><Search size={18} aria-hidden /></button>}
-          {space === 'food' && <button data-tour="budget" className="min-w-[8rem] shrink-0 rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
-            <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
-            <span className={`block text-[10px] font-semibold tabular-nums ${over ? 'text-danger' : 'text-muted'}`}>{t('solde', lang)} {over ? '−' : ''}{money(Math.abs(budget - total), lang)} · {t('taken', lang)} {money(spent, lang)}</span>
-            <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
-          </button>}
+          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}><Logo size={32} /></button>
+          <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold">{tab === 'home' ? 'KUZINTI' : FOOD_TABS.includes(tab) ? L3(lang, 'Meals', 'Repas', 'الوجبات') : title}</span>
+          <button className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-lg shadow-soft active:scale-90" onClick={() => setCtry(true)} aria-label={cname(countryOf(me!.country), lang)}>{countryOf(me!.country).f}</button>
+          <button className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-sm font-extrabold shadow-soft active:scale-90 ${tab === 'profile' ? 'bg-forest text-white' : 'bg-surface text-forest'}`} onClick={() => go('profile')} aria-label={t('profile', lang)}>{(me!.name || '?').slice(0, 1).toUpperCase()}</button>
         </div>
-        {space === 'food' && tab !== 'sport' && (tab !== 'home' || tour) && <><div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-2">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
-          <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${ok ? 'bg-forest text-white' : i === cur ? 'bg-apricot text-ink ring-2 ring-apricot/40' : 'bg-cream text-muted'}`}>{ok ? '✓' : i + 1}</span>
-          <span className={`truncate ${i === cur ? 'text-ink' : 'text-muted'}`}>{t(k, lang)}</span>{i < 2 && <span className={`h-0.5 min-w-1 flex-1 rounded ${ok ? 'bg-forest' : 'bg-line'}`} />}</button>)}</div>
-        </>}
+        {FOOD_TABS.includes(tab) && <div data-tour="subtabs" className="mx-auto max-w-2xl px-4 pb-2"><div className="relative grid grid-cols-4 rounded-full bg-surface p-1 shadow-soft" role="tablist">
+          <span className="absolute inset-y-1 rounded-full bg-forest shadow-soft transition-all duration-500 ease-[cubic-bezier(.2,.9,.25,1)]" style={{ width: 'calc((100% - .5rem) / 4)', insetInlineStart: `calc(.25rem + ${Math.max(0, SUB.findIndex((x) => x[0] === (tab === 'stores' ? 'list' : tab)))} * (100% - .5rem) / 4)` }} aria-hidden />
+          {SUB.map(([k, I, en, fr, ar]) => { const on = (tab === 'stores' ? 'list' : tab) === k; return <button key={k} role="tab" aria-selected={on} onClick={() => go(k)} className={`relative z-10 flex items-center justify-center gap-1 rounded-full py-1.5 text-[12.5px] font-bold transition-colors duration-300 ${on ? 'text-white' : 'text-muted'}`}><I size={15} strokeWidth={2.3} aria-hidden />{L3(lang, en, fr, ar)}{k === 'list' && cartLeft > 0 && <span className={`rounded-full px-1.5 text-[10px] tabular-nums ${on ? 'bg-white/25' : 'bg-apricot/40 text-ink'}`}>{cartLeft}</span>}</button> })}
+        </div></div>}
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
       <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`} onTouchStart={swStart} onTouchEnd={swEnd}>
-        <div className="mb-3 flex items-center gap-2">
-          <div className="relative grid flex-1 grid-cols-3 rounded-full bg-surface p-1 shadow-soft" role="tablist" aria-label={L3(lang, 'Spaces', 'Espaces', 'الفضاءات')}>
-            <span className="absolute inset-y-1 rounded-full shadow-soft transition-all duration-500 ease-[cubic-bezier(.2,.9,.25,1)]" style={{ background: TONES[W_TONE[world]], width: 'calc((100% - .5rem) / 3)', insetInlineStart: `calc(.25rem + ${SPACES.indexOf(world)} * (100% - .5rem) / 3)` }} aria-hidden />
-            {SPACES.map((w) => <button key={w} role="tab" aria-selected={world === w} onClick={() => goWorld(w)} className={`relative z-10 flex items-center justify-center gap-1.5 rounded-full py-2 text-[13px] font-bold transition-colors duration-300 ${world === w ? 'text-white' : 'text-muted'}`}>{(() => { const I = W_ICON[w]; return <I size={16} strokeWidth={2.3} className={world === w ? 'pop' : ''} aria-hidden /> })()} {L3(lang, W_LABEL[w][1], W_LABEL[w][2], W_LABEL[w][3])}</button>)}
-          </div>
-        </div>
         {tab !== 'home' && <Hint tab={tab} />}
         {space === 'out' ? <div key={tab} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>
           {tab === 'home' && <HomeTab composeFor={(o) => composeWith(o)} clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
-          {tab === 'week' && <button className="mb-3 flex w-full items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm font-bold text-forest shadow-soft" onClick={() => go('recipes')}><BookOpen size={18} aria-hidden /> {t('tRecipes', lang)} · {lang === 'en' ? 'browse & favorites' : 'parcourir et favoris'} <span className="ms-auto">›</span></button>}
           {tab === 'week' && <WeekTab clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}

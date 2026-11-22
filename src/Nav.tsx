@@ -1,6 +1,6 @@
 import { zf } from './lib/zgh'
 import { useState } from 'react'
-import { Dumbbell, BookOpen, CalendarDays, Home, LayoutGrid, MapPinned, ShoppingBasket, ShoppingCart, Store, UserRound, Wallet, type LucideIcon } from 'lucide-react'
+import { Dumbbell, Ticket, UtensilsCrossed, BookOpen, CalendarDays, Home, MapPinned, ShoppingBasket, ShoppingCart, Store, UserRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useApp } from './lib/store'
 import { t, type Lang } from './lib/i18n'
 import { LANG_LABEL } from './lib/i18n'
@@ -22,9 +22,7 @@ const isOn = (tab: Tab, k: Tab) => tab === k
 export function Nav({ tab, go, left, onCaddie, hasCart, openCountry }: { tab: Tab; go: (k: Tab) => void; left: number; onCaddie: () => void; hasCart: boolean; openCountry: () => void }) {
   const { lang, setLang, me } = useApp()
   const [all, setAll] = useState(false)
-  const g = items(lang); const every = [...g.food, ...g.life, ...g.me]
-  const inMore = !['home', 'week', 'list'].includes(tab); const cur = every.find(([k]) => k === tab)
-  const MoreIcon = inMore && cur ? cur[1] : LayoutGrid
+  const g = items(lang)
   const c = countryOf(me!.country)
   const Bar = ({ k, Icon, label, on, onClick }: { k: string; Icon: LucideIcon; label: string; on: boolean; onClick: () => void }) => (
     <button key={k} onClick={onClick} aria-current={on ? 'page' : undefined} className={`relative flex flex-1 flex-col items-center gap-1 pb-1.5 pt-2 text-[10.5px] font-semibold transition ${on ? 'text-forest' : 'text-cream/75'}`}>
@@ -50,11 +48,11 @@ export function Nav({ tab, go, left, onCaddie, hasCart, openCountry }: { tab: Ta
     {/* Mobile floating bar */}
     <nav data-tour="tabs" className="navbar lg:hidden" aria-label="Main">
       <div className="zellige pointer-events-none absolute inset-0 rounded-[26px] opacity-[.06]" aria-hidden />
-      <Bar k="home" Icon={Home} label={t('tHome', lang)} on={tab === 'home'} onClick={() => go('home')} />
-      <Bar k="week" Icon={CalendarDays} label={L(lang, 'Week', 'Semaine', 'الأسبوع')} on={tab === 'week' || tab === 'recipes'} onClick={() => go('week')} />
+      <Bar k="home" Icon={Home} label={t('tHome', lang)} on={tab === 'home' || tab === 'profile'} onClick={() => go('home')} />
+      <Bar k="food" Icon={UtensilsCrossed} label={L(lang, 'Meals', 'Repas', 'الوجبات')} on={['week', 'recipes', 'list', 'stores', 'sport'].includes(tab)} onClick={() => go(['week', 'recipes', 'list', 'stores', 'sport'].includes(tab) ? tab : 'week')} />
       <div className="flex flex-1 flex-col items-center"><Caddie big /><span className="-mt-3 text-[10.5px] font-bold text-apricot">{L(lang, 'Caddie', 'Caddie', 'العربة')}</span></div>
-      <Bar k="list" Icon={ShoppingBasket} label={t('list', lang)} on={tab === 'list' || tab === 'stores'} onClick={() => go('list')} />
-      <Bar k="all" Icon={MoreIcon} label={inMore && cur && tab !== 'recipes' && tab !== 'stores' ? cur[2] : L(lang, 'All', 'Tout', 'الكل')} on={inMore && tab !== 'recipes' && tab !== 'stores'} onClick={() => setAll(true)} />
+      <Bar k="sorties" Icon={Ticket} label={t('tSorties', lang)} on={tab === 'sorties'} onClick={() => go('sorties')} />
+      <Bar k="budget" Icon={Wallet} label={t('tBudget', lang)} on={tab === 'budget'} onClick={() => go('budget')} />
     </nav>
     <Sheet open={all} onClose={() => setAll(false)} title={L(lang, 'Everything in KUZINTI', 'Tout KUZINTI', 'كل كوزينتي')}>
       <p className="mb-2 text-[11px] font-bold uppercase tracking-[.16em] text-terracotta">{L(lang, 'Kitchen', 'Cuisine', 'المطبخ')}</p>

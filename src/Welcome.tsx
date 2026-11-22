@@ -2,10 +2,10 @@ import { zf } from './lib/zgh'
 import { useState } from 'react'
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 import { useApp } from './lib/store'
-import { money, setCurrency, t, type Lang } from './lib/i18n'
+import { setCurrency, t, type Lang } from './lib/i18n'
 import { setStoreCountry } from './lib/stores'
 import { COUNTRIES, cname, countryOf } from './lib/countries'
-import { FLAG, type Prefs } from './lib/plan'
+import { ALLERGY, FLAG, type Prefs } from './lib/plan'
 import type { Meal } from './data/recipes'
 import { HEALTH, nutName, type Health } from './lib/nutri'
 
@@ -23,21 +23,21 @@ export function Welcome({ onDone }: { onDone: (o?: Partial<Prefs>) => void }) {
   const [cu, setCu] = useState<string[]>(() => me!.known && me!.cuisine ? me!.cuisine.split(',') : [])
   const [veg, setVeg] = useState(me!.diet.includes('vegetarian'))
   const [goals, setGoals] = useState<string[]>((me!.goals ?? []).filter((g) => ['cheap', 'quick', 'healthy', 'varied'].includes(g)))
-  const [budget, setBudget] = useState(me!.budget || 800)
+  const [alg, setAlg] = useState<string[]>(me!.diet.filter((d) => d.startsWith('no-')))
   const [kcal, setKcal] = useState(me!.kcal ?? 2100)
   const [health, setHealth] = useState<Health>((me!.health as Health) ?? 'none')
   const pickC = (id: string) => { setCc(id); setCurrency(id); setStoreCountry(id); patchMe({ country: id, city: countryOf(id).cities?.[0] ?? me!.city }) }
   const tog = <T,>(a: T[], x: T) => (a.includes(x) ? a.filter((y) => y !== x) : [...a, x])
   const finish = () => {
-    const cuisine = (cu.length ? cu : [countryOf(cc).cuisine]).join(','); const diet = veg ? ['vegetarian'] : []
-    const o = { cuisine, region: 'all', diet, size, meals, goals, budget, kcal, health }
+    const cuisine = (cu.length ? cu : [countryOf(cc).cuisine, 'med']).join(','); const diet = [...(veg ? ['vegetarian'] : []), ...alg]
+    const o = { cuisine, region: 'all', diet, size, meals, goals, kcal, health }
     patchMe({ ...o, known: true }); onDone(o)
   }
   const steps = [
     [L(lang, 'Where do you cook?', 'D’où cuisinez-vous ?', 'من أين تطبخ؟'), L(lang, 'Currency, stores and local dishes.', 'Pour la devise, les magasins et les plats locaux.', 'للعملة والمتاجر')],
     [L(lang, 'Who eats at home?', 'Qui mange à la maison ?', 'من يأكل في البيت؟'), L(lang, 'Portions and meals of the day.', 'Pour les portions et les repas de la journée.', 'للكميات والوجبات')],
-    [L(lang, 'What do you love?', 'Qu’aimez-vous manger ?', 'ماذا تحب؟'), L(lang, 'Pick one or several cuisines.', 'Choisissez une ou plusieurs cuisines.', 'اختر مطبخًا أو أكثر')],
-    [L(lang, 'Your priorities', 'Vos priorités', 'أولوياتك'), L(lang, 'Budget, goals and energy.', 'Budget, objectifs et énergie.', 'الميزانية والأهداف')],
+    [L(lang, 'What do you love?', 'Qu’aimez-vous manger ?', 'ماذا تحب؟'), L(lang, 'Cuisines, diet and allergies.', 'Cuisines, régime et allergies.', 'المطابخ والحمية والحساسية')],
+    [L(lang, 'Your priorities', 'Vos priorités', 'أولوياتك'), L(lang, 'Goals and energy.', 'Objectifs et énergie.', 'الأهداف والطاقة')],
   ]
   return (
     <div className="rise mx-auto max-w-xl pb-6">
@@ -58,11 +58,12 @@ export function Welcome({ onDone }: { onDone: (o?: Partial<Prefs>) => void }) {
         {i === 2 && <>
           <div className="grid grid-cols-3 gap-2">{CUIS.map((c) => <button key={c} onClick={() => setCu(tog(cu, c))} aria-pressed={cu.includes(c)} className={`relative flex flex-col items-center gap-1 rounded-2xl p-3 text-xs font-bold transition active:scale-95 ${cu.includes(c) ? 'bg-forest text-white shadow-lift' : 'bg-surface shadow-soft'}`}><span className="text-3xl leading-none">{FLAG[c]}</span>{c === 'hint' ? 'Healthy' : t('c_' + c, lang)}{cu.includes(c) && <Check size={14} className="absolute end-2 top-2" aria-hidden />}</button>)}</div>
           <button onClick={() => setVeg(!veg)} aria-pressed={veg} className={`flex w-full items-center gap-3 rounded-2xl p-3 text-start text-sm font-bold ${veg ? 'bg-leaf/30 text-forest ring-2 ring-forest' : 'bg-surface shadow-soft'}`}><span className="text-xl">🥕</span>{L(lang, 'Vegetarian', 'Végétarien', 'نباتي')}<span className="ms-auto text-xs font-normal text-muted">{L(lang, 'no meat, no fish', 'ni viande ni poisson', 'بدون لحم')}</span></button>
-          {!cu.length && <p className="text-center text-xs text-muted">{L(lang, 'Nothing picked: we start with', 'Rien de choisi : on part de la cuisine', 'لا شيء: نبدأ بمطبخ')} {FLAG[countryOf(cc).cuisine]} {t('c_' + countryOf(cc).cuisine, lang)}</p>}
+          <div><p className="mb-2 text-sm font-bold">{L(lang, 'Allergies or foods to avoid', 'Allergies ou aliments à éviter', 'حساسية أو أطعمة يجب تجنبها')}</p>
+            <div className="grid grid-cols-2 gap-2">{ALLERGY.map(([k, e, n]) => <button key={k} onClick={() => setAlg(tog(alg, k))} aria-pressed={alg.includes(k)} className={`flex items-center gap-2 rounded-2xl p-2.5 text-start text-[12.5px] font-bold transition active:scale-95 ${alg.includes(k) ? 'bg-[#e2574c] text-white shadow-lift' : 'bg-surface shadow-soft'}`}><span className={`text-xl ${alg.includes(k) ? 'pop' : ''}`}>{e}</span>{n[lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</button>)}</div></div>
+          {!cu.length && <p className="text-center text-xs text-muted">{L(lang, 'Nothing picked: we mix', 'Rien de choisi : on mélange', 'لا شيء: نمزج')} {FLAG[countryOf(cc).cuisine]} {t('c_' + countryOf(cc).cuisine, lang)} + 🌊 {t('c_med', lang)}</p>}
         </>}
         {i === 3 && <>
           <div className="grid grid-cols-2 gap-2">{([['cheap', '💰'], ['quick', '⚡'], ['healthy', '🥗'], ['varied', '🎨']] as [string, string][]).map(([g, e]) => <button key={g} onClick={() => setGoals(tog(goals, g))} aria-pressed={goals.includes(g)} className={`flex items-center gap-2 rounded-2xl p-3 text-sm font-bold ${goals.includes(g) ? 'bg-leaf/30 text-forest ring-2 ring-forest' : 'bg-surface shadow-soft'}`}><span className="text-xl">{e}</span>{t('g_' + g, lang)}</button>)}</div>
-          <div className="card p-4"><p className="flex items-baseline justify-between text-sm font-bold">{L(lang, 'Weekly grocery budget', 'Budget courses par semaine', 'الميزانية الأسبوعية')}<b className="font-display text-xl text-forest tabular-nums">{money(budget, lang)}</b></p><input type="range" min={200} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="mt-2 w-full accent-[#245B43]" aria-label="Budget" /></div>
           <div><p className="mb-2 text-sm font-bold">{L(lang, 'Health profile', 'Profil santé', 'الملف الصحي')}</p><div className="grid grid-cols-4 gap-1.5">{(Object.keys(HEALTH) as Health[]).map((h) => <button key={h} onClick={() => setHealth(h)} aria-pressed={health === h} className={`rounded-2xl p-2 text-center text-[11px] font-bold ${health === h ? 'bg-forest text-white' : 'bg-surface shadow-soft'}`}><span className="block text-2xl">{HEALTH[h][0]}</span>{HEALTH[h][lang === 'en' ? 1 : lang === 'ar' ? 3 : 2]}</button>)}</div>
             {health !== 'none' && <p className="mt-1.5 text-xs text-muted">{L(lang, 'Dishes rich in', 'Les plats riches en', 'أطباق غنية بـ')} {HEALTH[health][4].map((n) => nutName(n, lang).toLowerCase()).join(', ')} {L(lang, 'come up more often.', 'reviennent plus souvent.', '')}</p>}</div>
           <div className="grid grid-cols-3 gap-2">{KCAL.map(([k, e, l]) => <button key={k} onClick={() => setKcal(k)} className={`rounded-2xl p-2.5 text-center text-xs font-bold ${kcal === k ? 'bg-forest text-white' : 'bg-surface shadow-soft'}`}><span className="block text-2xl">{e}</span>{l} · {k} kcal</button>)}</div>
