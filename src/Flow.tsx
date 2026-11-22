@@ -1,3 +1,4 @@
+import { Camera, Share2, Store } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
 import { curRate, money, money2, rname, t, type Lang } from './lib/i18n'
@@ -96,14 +97,14 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
         </div>
         <p className="mt-2 text-xs" style={{ color: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}><b>{t('pace', lang)}: {money(pace, lang)}</b> · {over ? `${t('overBy', lang)} ${money(pace - budget, lang)}` : `${money(budget - pace, lang)} ${t('saving', lang)}`}</p>
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <button className="btn btn-soft !min-h-11 !text-sm" onClick={goStores}>🏬 {t('compareStores', lang)}</button>
-          <button className="btn btn-primary !min-h-11 !text-sm" onClick={share}>↗ {t('shareList', lang)}</button>
+          <button className="btn btn-soft !min-h-11 !text-sm" onClick={goStores}><Store size={16} className="inline -mt-0.5" aria-hidden /> {t('compareStores', lang)}</button>
+          <button className="btn btn-primary !min-h-11 !text-sm" onClick={share}><Share2 size={16} className="inline -mt-0.5" aria-hidden /> {t('shareList', lang)}</button>
         </div>
         <p className="mt-2 text-center text-[11px] text-muted">{t('pricesAt', lang)}: {store ? store.name : t('avgPrice', lang)} · {t('qtyHint', lang)}</p>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex rounded-full bg-surface p-1 shadow-soft">{[-1, (new Date().getDay() + 6) % 7].map((d, i) => <button key={i} className={`rounded-full px-3 py-1.5 text-xs font-bold ${(i === 0 ? day < 0 : day >= 0) ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{i === 0 ? t('lWeek', lang) : t('lDay', lang)}</button>)}</div>
-        <button className="ms-auto rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}>📸 {t('fridgeS', lang)}</button>
+        <button className="ms-auto rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}><Camera size={14} className="inline -mt-0.5" aria-hidden /> {t('fridgeS', lang)}</button>
       </div>
       {day >= 0 && <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`chip shrink-0 capitalize ${d === day ? '!bg-forest !text-white' : ''}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 3)}</button>)}</div>}
       <FridgeSheet open={fridge} onClose={() => setFridge(false)} />

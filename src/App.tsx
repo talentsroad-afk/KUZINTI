@@ -8,7 +8,7 @@ import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { RecipesTab } from './Extra'
-import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, type LucideIcon } from 'lucide-react'
 import { SortiesTab } from './Sorties'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore, setStoreCountry } from './lib/stores'
@@ -226,7 +226,7 @@ function Shell() {
         </div>}
       </main>
       <><div data-tour="assist" style={space === 'out' ? { display: 'none' } : undefined} className="fixed bottom-[5.5rem] start-4 z-40 flex max-w-[78vw] items-center gap-1 rounded-full bg-ink/90 p-1 text-sm font-bold text-white shadow-lg backdrop-blur">
-        <button className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}>✨</button>
+        <button className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}><Sparkles size={18} aria-hidden /></button>
         <button className="truncate px-3 py-2 active:scale-95" onClick={help[1]}>➜ {help[0]}</button>
       </div>
       <Assistant open={assist} onClose={() => setAssist(false)} tab={tab} next={help} more={more} undo={undo} onTour={() => setTour(true)} go={go} />

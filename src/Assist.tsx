@@ -1,3 +1,4 @@
+import { Lightbulb } from 'lucide-react'
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, type Lang } from './lib/i18n'
@@ -31,7 +32,7 @@ export function Hint({ tab }: { tab: Tab }) {
   const i = pageInfo(tab, lang)
   return (
     <div className="fade-up mb-3 flex items-start gap-2 rounded-2xl bg-leaf/20 px-3 py-2 text-[13px] leading-snug" role="note">
-      <span aria-hidden>💡</span><span className="flex-1"><b>{i.what}</b> <span className="text-muted">{i.why}</span></span>
+      <Lightbulb size={16} className="mt-0.5 shrink-0 text-forest" aria-hidden /><span className="flex-1"><b>{i.what}</b> <span className="text-muted">{i.why}</span></span>
       <button className="px-1 text-muted" aria-label={L(lang, 'Masquer l’aide', 'Hide tip')} onClick={() => { ls.set(k, '1'); setHidden(true) }}>✕</button>
     </div>
   )
