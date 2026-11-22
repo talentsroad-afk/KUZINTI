@@ -73,6 +73,11 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
   return (
     <div className="stagger space-y-4 pb-4">
       {p.age < 18 && p.goal === 'cut' && <p className="rounded-2xl bg-apricot/25 px-3 py-2 text-xs font-semibold">{L(lang, 'Under 18: no calorie deficit. Aim for fitness and good habits, and talk to a doctor before changing your weight.', 'Moins de 18 ans : pas de déficit calorique. Visez la forme et les bonnes habitudes, et parlez-en à un médecin avant de changer de poids.', 'أقل من 18 سنة: لا عجز في السعرات.')}</p>}
+      <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+        <h2 className="font-display text-[17px] font-extrabold">{L(lang, 'My athlete meals', 'Mes repas de sportif', 'Mes repas de sportif')}</h2>
+        <p className="mt-0.5 text-xs text-muted">{L(lang, 'Sport-nutrition dishes only, the same whatever your country.', 'Uniquement des plats de sportif, les mêmes quel que soit votre pays.', 'Uniquement des plats de sportif, les mêmes quel que soit votre pays.')}</p>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[13px] font-bold">{([['week', '📅', L(lang, 'Week meals', 'Plats de la semaine', 'Plats de la semaine')], ['month', '🗓️', L(lang, 'Month meals', 'Plats du mois', 'Plats du mois')], ['shop', '🛒', L(lang, 'To buy', 'À acheter', 'À acheter')]] as const).map(([k, e, l]) => <button key={k} className="rounded-2xl bg-cream px-1 py-3 leading-tight active:scale-95" onClick={() => window.dispatchEvent(new CustomEvent('kz-plan', { detail: k }))}><span className="block text-2xl" aria-hidden>{e}</span>{l}</button>)}</div>
+      </section>
       <GoalJourney p={p as GoalP} set={set as never} lang={lang} lo={n.lo} hi={n.hi} />
       <section className="relative overflow-hidden rounded-[28px] p-4 text-white" style={{ background: 'linear-gradient(140deg,#2f6fa8,#1d3f6e)' }}>
         <span className="zellige pointer-events-none absolute inset-0 opacity-[.07]" aria-hidden />
