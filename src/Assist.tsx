@@ -85,7 +85,7 @@ export function Assistant({ open, onClose, tab, next, more, undo, onTour, go }: 
 
 /** Short spotlight tour over real UI elements marked with data-tour. Skippable, replayable. */
 const TOUR: [string, string, string, string, string][] = [
-  ['subtabs', 'Tes repas', 'Your meals', 'Dans Repas, tout est rangé en 4 onglets : Semaine, Recettes, Courses et Sport.', 'Meals has 4 tabs: Week, Recipes, Shopping and Sport.'],
+  ['subtabs', 'Tes repas', 'Your meals', 'Dans Repas, tout est rangé en 3 onglets : Semaine, Courses et Forme.', 'Meals has 3 tabs: Week, Shopping and Fitness.'],
   ['tabs', 'La barre du bas', 'The bottom bar', 'Les 3 thèmes à un geste : Repas, Sorties, Budget. Le Caddie au centre pour faire les courses en magasin.', 'The 3 themes one tap away: Meals, Outings, Budget. The Caddie in the middle for in-store shopping.'],
 ]
 export const tourDone = () => ls.get('kz-tour') === '1'

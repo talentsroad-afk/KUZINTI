@@ -255,7 +255,7 @@ function Shell() {
         </div>}
       </main>
       <>
-      <Tour run={tour} onEnd={() => setTour(false)} />
+      <Tour run={tour && !!me!.known} onEnd={() => setTour(false)} />
       <CartMode open={caddie} onClose={() => setCaddie(false)} items={cart} onFinish={() => endTrip(celebrate)} />
       {up && <button className="fixed bottom-[6.5rem] end-4 lg:bottom-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
       {/* Pinned shopping: once a trip has started, a slim bar keeps it one tap away from every other screen. */}

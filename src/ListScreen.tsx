@@ -21,7 +21,7 @@ function Pantry() {
       {items.map(([id, v]) => { const c = CATALOG.find((x) => x.id === id)!; return (
         <div key={id} className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">{c.n[li(lang)]}</span>
           <span className="flex items-center gap-2"><span className="text-sm tabular-nums text-muted">{fmtQty(v, c.base)}</span><Stepper v={Math.round(v / step(id))} min={0} max={200} set={(n) => upHouse((h) => { h.pantry[id] = n * step(id) })} /></span></div>) })}
-      <select className="input" value={add} onChange={(e) => { const id = e.target.value; if (id) upHouse((h) => { h.pantry[id] = (h.pantry[id] ?? 0) + step(id) * 2 }, `pantry +${id}`); setAdd('') }}><option value="">+ {t('addPantry', lang)}</option>{CATALOG.map((c) => <option key={c.id} value={c.id}>{c.n[li(lang)]}</option>)}</select>
+      <select className="input" value={add} onChange={(e) => { const id = e.target.value; if (id) upHouse((h) => { h.pantry[id] = (h.pantry[id] ?? 0) + step(id) * 2 }, `pantry +${id}`); setAdd('') }}><option value="">+ {t('addPantry', lang)}</option>{(['produce', 'meat', 'dairy', 'bakery', 'grocery', 'spices'] as const).map((a) => <optgroup key={a} label={{ produce: '🥬 Fruits et légumes', meat: '🥩 Viandes et poissons', dairy: '🥛 Crèmerie', bakery: '🥖 Boulangerie', grocery: '🫙 Épicerie', spices: '🧂 Épices' }[a]}>{CATALOG.filter((c) => c.aisle === a).map((c) => <option key={c.id} value={c.id}>{c.n[li(lang)]}</option>)}</optgroup>)}</select>
     </div>
   )
 }

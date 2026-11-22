@@ -45,10 +45,10 @@ export function Welcome({ onDone }: { onDone: (o?: Partial<Prefs>) => void }) {
     <div className="rise mx-auto max-w-xl pb-6">
       <div className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-forest to-[#173d2d] p-5 text-cream">
         <div className="zellige pointer-events-none absolute inset-0 opacity-[.07]" aria-hidden />
-        <p className="relative text-[11px] font-bold uppercase tracking-[.18em] text-apricot">{L(lang, 'Let’s get to know you', 'Faisons connaissance', 'لنتعارف')} · {i + 1}/3</p>
+        <p className="relative text-[11px] font-bold uppercase tracking-[.18em] text-apricot">{L(lang, 'Let’s get to know you', 'Faisons connaissance', 'لنتعارف')}{i > 0 ? ` · ${i + 1}/3` : ''}</p>
         <h1 className="relative mt-1 font-serif text-[30px] font-semibold leading-tight text-cream">{steps[i][0]}</h1>
         <p className="relative text-sm text-cream/80">{steps[i][1]}</p>
-        <div className="relative mt-4 flex gap-1.5">{steps.map((_, k) => <span key={k} className={`h-1.5 flex-1 rounded-full transition-all ${k <= i ? 'bg-apricot' : 'bg-white/20'}`} />)}</div>
+        <div className={`relative mt-4 flex gap-1.5 ${i === 0 ? 'hidden' : ''}`}>{steps.map((_, k) => <span key={k} className={`h-1.5 flex-1 rounded-full transition-all ${k <= i ? 'bg-apricot' : 'bg-white/20'}`} />)}</div>
       </div>
       <div key={i} className="fade-up mt-4 space-y-4">
         {i === 0 && <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">{(allC ? COUNTRIES : COUNTRIES.filter((c) => TOPC.includes(c.id) || c.id === cc)).map((c) => <button key={c.id} onClick={() => pickC(c.id)} aria-pressed={cc === c.id} className={`flex flex-col items-center gap-0.5 rounded-2xl p-2 text-[11px] font-bold transition active:scale-95 ${cc === c.id ? 'bg-forest text-white shadow-lift' : 'bg-surface shadow-soft'}`}><span className="text-[28px] leading-none">{c.f}</span><span className="w-full truncate text-center">{cname(c, lang)}</span></button>)}{!allC && <button onClick={() => setAllC(true)} className="flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-cream p-2 text-[11px] font-bold text-forest active:scale-95"><span className="text-[22px] leading-none"><Ic e="🌍" /> </span>{L(lang, 'Others', 'Autres', 'أخرى')}</button>}</div>}
@@ -71,9 +71,11 @@ export function Welcome({ onDone }: { onDone: (o?: Partial<Prefs>) => void }) {
           <div className="grid grid-cols-3 gap-2">{KCAL.map(([k, e, l]) => <button key={k} onClick={() => setKcal(k)} className={`rounded-2xl p-2.5 text-center text-xs font-bold ${kcal === k ? 'bg-forest text-white' : 'bg-surface shadow-soft'}`}><span className="block text-2xl"><E3 e={e} /></span>{l} · {k} kcal</button>)}</div>
         </>}
       </div>
+      {i === 0 && <button className="mt-3 w-full text-center text-sm font-semibold text-forest" onClick={() => setI(1)}>{L(lang, 'Refine: cuisines, allergies, health ›', 'Affiner : cuisines, allergies, santé ›', 'تخصيص: المطابخ والحساسية والصحة ›')}</button>}
       <div className="mt-5 flex gap-2">
         {i > 0 ? <button className="btn btn-soft !min-h-14 !px-5" onClick={() => setI(i - 1)} aria-label={t('back', lang)}><ArrowLeft size={20} aria-hidden /></button> : <button className="btn btn-soft !min-h-14 !px-5 text-sm" onClick={() => { patchMe({ known: true }); onDone() }}>{L(lang, 'Later', 'Plus tard', 'لاحقًا')}</button>}
-        {i < 2 ? <button className="btn btn-primary flex-1 !min-h-14 text-base" onClick={() => setI(i + 1)}>{L(lang, 'Next', 'Suivant', 'التالي')} <ArrowRight size={20} aria-hidden /></button>
+        {i === 0 ? <button className="btn btn-primary flex-1 !min-h-14 text-base" onClick={finish}><Ic e="✨" /> {L(lang, 'My tailored week', 'Ma semaine sur mesure', 'أسبوعي على المقاس')}</button>
+          : i < 2 ? <button className="btn btn-primary flex-1 !min-h-14 text-base" onClick={() => setI(i + 1)}>{L(lang, 'Next', 'Suivant', 'التالي')} <ArrowRight size={20} aria-hidden /></button>
           : <button className="btn btn-primary flex-1 !min-h-14 text-base" onClick={finish}><Ic e="✨" /> {L(lang, 'My tailored week', 'Ma semaine sur mesure', 'أسبوعي على المقاس')}</button>}
       </div>
     </div>

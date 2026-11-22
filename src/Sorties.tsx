@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { E3 } from './E3'
 import { Ic } from './Ic'
 import { useApp } from './lib/store'
@@ -283,11 +283,11 @@ export function SortiesTab() {
   const cost = (d: Day) => parts(d).all
   const sum = days.reduce((s, [k]) => { if (!plan[k]) return s; const q = parts(plan[k]); return { a: s.a + q.a, m: s.m + q.m, tr: s.tr + q.tr } }, { a: 0, m: 0, tr: 0 })
   const total = sum.a + sum.m + sum.tr
-  const compose = () => {
+  const compose = (auto?: boolean) => {
     setValidated(false)
     const out: Record<string, Day> = {}; const used = new Set<string>(); let left = budget
     for (const [k, , def] of days) { const f = fmt === 'auto' ? def : fmt; const per = left / Math.max(1, days.length - Object.keys(out).length); const meals = parts({ fmt: f, acts: [] }).m; const a = pickActs(acts, kinds, f, Math.max(0, per - meals - 30), people, used, mv); while (a.length > 1 && cost({ fmt: f, acts: a }) > per * 1.05) a.pop(); a.forEach((x) => used.add(x)); out[k] = { fmt: f, acts: a }; left -= cost(out[k]) }
-    save(out, `🎈 sorties ${city}`); setOpen(days[0][0]); award(10, '🎈')
+    save(out, `🎈 sorties ${city}`); setOpen(days[0][0]); if (auto !== true) award(10, '🎈')
   }
   const validate = () => { const m = me!.money; if (m) patchMe({ money: { ...m, exp: [...m.exp, { id: Math.random().toString(36).slice(2, 8), t: Date.now(), c: 'outings', a: Math.round(total), n: `Sortie ${city}` }] } }); upHouse(() => { /* shared plan already synced */ }, `🎈 programme validé ${city}`); setValidated(true); toast(m ? `✓ ${M$(total)} ajoutés au budget sorties` : '✓ Programme validé et partagé avec le foyer'); award(5, '🎈') }
   const swap = (k: string, i: number) => { const d = plan[k]; const alt = pickActs(acts.filter((a) => !d.acts.includes(a.id)), kinds, d.fmt, budget, people, new Set(), mv, d.acts[i - 1] ?? d.acts[i + 1])[0]; if (!alt) return; const acts2 = [...d.acts]; acts2[i] = alt; save({ ...plan, [k]: { ...d, acts: acts2 } }, '↻ activité') }
@@ -298,6 +298,8 @@ export function SortiesTab() {
     const alt = acts.filter((a) => !d.acts.includes(a.id) && a.p < top.p * 0.5 && a.h <= maxH[d.fmt] && a.k.some((k) => top.k.includes(k))).sort((a, b) => a.p - b.p)[0]
     return alt ? { top, alt, save: (top.p - alt.p) * people } : null }
   const takeDeal = (k: string, d: Day, x: { top: Act; alt: Act }) => save({ ...plan, [k]: { ...d, acts: d.acts.map((id) => (id === x.top.id ? x.alt.id : id)) } }, '💡 bon plan')
+  // Open on a ready proposal: nothing to configure before seeing a first idea.
+  useEffect(() => { if (!days.some(([k]) => plan[k])) compose(true) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const ctryName = { MA: 'Maroc', FR: 'France' }[me!.country]
   return (
     <div className="stagger space-y-3">
@@ -308,8 +310,9 @@ export function SortiesTab() {
         {pickC && <div className="fade-up -mx-1 grid grid-cols-5 gap-1.5 rounded-2xl bg-cream/70 p-2">{COUNTRIES.filter((c) => COUNTRY_CITIES[c.id]).map((c) => <button key={c.id} className={`flex flex-col items-center rounded-xl py-1.5 text-[10px] font-bold ${c.id === cc ? 'bg-forest text-white' : 'bg-surface'}`} onClick={() => { setCc(c.id); setPickC(false); patchMe({ city: COUNTRY_CITIES[c.id][0] }); save({}, `${c.f} ${COUNTRY_CITIES[c.id][0]}`, true) }}><span className="text-xl leading-none">{c.f}</span><span className="w-full truncate px-0.5 text-center">{cname(c, 'fr')}</span></button>)}</div>}
         <p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Quand ?</p>
         <div className="grid grid-cols-4 gap-2">{([['day', '☀️', 'Journée', 'linear-gradient(140deg,#ffcf8a,#ee9b45)'], ['eve', '🌙', 'Soirée', 'linear-gradient(140deg,#8b7be0,#3d2f8f)'], ['we', '🏖️', 'Week-end', 'linear-gradient(140deg,#8fd3ff,#3d8fd6)'], ['week', '🗓️', '7 jours', 'linear-gradient(140deg,#7fc79a,#245B43)']] as [Mode, string, string, string][]).map(([m, e, l, g]) => <button key={m} className={`crit relative flex flex-col items-center gap-1 overflow-hidden rounded-[18px] py-2.5 text-[12px] font-bold transition-all duration-300 active:scale-95 ${mode === m ? 'text-white shadow-lift' : 'bg-cream/80 text-ink'}`} style={mode === m ? { background: g } : undefined} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }} aria-pressed={mode === m}><span className={`text-[22px] leading-none ${mode === m ? 'pop' : ''}`}><E3 e={e} /></span>{l}</button>)}</div>
-        <p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">Envie de… <span className="normal-case tracking-normal text-muted/80">(plusieurs choix possibles)</span></p>
+        <details className="group"><summary className="flex cursor-pointer list-none items-center justify-between text-[11px] font-bold uppercase tracking-[.14em] text-muted">Envie de… <span className="normal-case tracking-normal">{kinds.length ? kinds.length + ' choisies' : 'toutes'} <span className="inline-block transition-transform group-open:rotate-90">›</span></span></summary>
         <div className="grid grid-cols-3 gap-2">{KINDS.map(([k, l]) => { const on = kinds.includes(k); const [e, ...w] = l.split(' '); return <button key={k} className={`crit flex items-center gap-2 rounded-[16px] p-2 text-start text-[12.5px] font-bold transition-all duration-300 active:scale-95 ${on ? 'text-white shadow-lift' : 'bg-cream/80 text-ink'}`} style={on ? { background: KTONE[k][0] } : undefined} onClick={() => setKinds(on ? kinds.filter((x) => x !== k) : [...kinds, k])} aria-pressed={on}><span className={`grid h-8 w-8 shrink-0 place-items-center rounded-xl text-lg ${on ? 'pop bg-white/20' : 'bg-surface'}`}><E3 e={e} /></span><span className="truncate">{w.join(' ')}</span></button> })}</div>
+        </details>
         <div className="rounded-[20px] bg-cream/70 p-3">
           <div className="flex items-baseline justify-between"><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted"><Ic e="💰" /> Mon budget sortie · {mode === 'day' ? 'la journée' : mode === 'eve' ? 'la soirée' : mode === 'we' ? 'le week-end' : 'la semaine'}</p><b className="font-display text-xl tabular-nums text-forest">{M$(budget)}</b></div>
           <input type="range" min={0} max={3000} step={25} value={budget} onChange={(e) => setBudget(+e.target.value)} className="mt-1 w-full accent-[#245B43]" aria-label="Budget sorties" />
@@ -317,7 +320,7 @@ export function SortiesTab() {
           <p className="mt-1.5 text-[10.5px] text-muted">Prix moyens indicatifs (touchez ✎ pour mettre le vôtre). Propre aux sorties, pour {people} pers., activités + repas + trajets. {envOut ? `Votre enveloppe Sorties du Budget : ${M$(envOut)} par mois.` : 'Indépendant des repas et du budget du foyer.'}</p>
           <div className="mt-2 flex gap-1.5">{MOVES.map(([m, l]) => <button key={m} className={`flex-1 rounded-full py-1.5 text-[11.5px] font-bold transition ${mv === m ? 'bg-ink text-white' : 'bg-surface'}`} aria-pressed={mv === m} onClick={() => setMv(m)}>{l}</button>)}</div>
         </div>
-        <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}><Ic e="✨" /> {days.some(([k]) => plan[k]) ? 'Proposer autre chose' : mode === 'day' ? 'Ma journée idéale' : mode === 'eve' ? 'Ma soirée' : mode === 'we' ? 'Mon week-end' : 'Mes 7 jours'}</button>
+        <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => compose()}><Ic e="✨" /> {days.some(([k]) => plan[k]) ? 'Proposer autre chose' : mode === 'day' ? 'Ma journée idéale' : mode === 'eve' ? 'Ma soirée' : mode === 'we' ? 'Mon week-end' : 'Mes 7 jours'}</button>
       </div>
       {!days.some(([k]) => plan[k]) ? (
         <div className="card overflow-hidden"><div className="relative grid h-28 place-items-center bg-gradient-to-br from-forest to-[#1a4a35] text-5xl"><div className="zellige absolute inset-0 opacity-20" aria-hidden /><span className="float relative"><Ic e="🗺️" /> </span></div><div className="space-y-1 p-5 text-center"><p className="font-display text-lg font-extrabold">Une idée de sortie à {city} ?</p><p className="text-sm text-muted">Un seul bouton : vous recevez un programme heure par heure, où manger, comment y aller et le bon plan pour payer moins.</p></div></div>

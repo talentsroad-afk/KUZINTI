@@ -7,7 +7,7 @@ import { useApp } from './lib/store'
 import type { Lang } from './lib/i18n'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
-export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number; kcalO?: number; protO?: number; lvl?: 'beg' | 'mid' | 'adv' }
+export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number; kcalO?: number; protO?: number; ok?: boolean; lvl?: 'beg' | 'mid' | 'adv' }
 const DEF: SportProfile = { sex: 'm', age: 30, h: 175, w: 75, sport: 'gym', goal: 'fit', days: 3 }
 
 const SPORTS: [string, string, string, string, string][] = [
