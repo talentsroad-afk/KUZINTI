@@ -6,7 +6,7 @@ import { RECIPES } from './data/recipes'
 import { Controls, HomeTab, usePrefs, WeekTab } from './Screens'
 import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
-import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost, offMode } from './lib/plan'
+import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { RecipesTab } from './Extra'
 import { SortiesTab } from './Sorties'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
@@ -166,11 +166,11 @@ function Shell() {
     addEventListener('popstate', on); return () => removeEventListener('popstate', on)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const nChk = Object.values(h.checked).filter(Boolean).length
-  const steps: [string, Tab, boolean][] = [['st_compose', 'home', hasPlan], ['st_week', 'week', hasPlan], ['st_list', 'list', nChk > 0], ['st_store', 'stores', !!h.store], ['st_done', 'list', items.length > 0 && nChk >= items.length]]
+  const steps: [string, Tab, boolean][] = [['st_compose', 'home', hasPlan], ['st_week', 'week', hasPlan], ['st_store', 'stores', !!h.store], ['st_list', 'list', nChk > 0], ['st_done', 'list', items.length > 0 && nChk >= items.length]]
   const cur = steps.findIndex((x) => !x[2])
   const nextStep: [string, string, () => void] | null = !hasPlan ? null
     : tab === 'home' ? [t('ns_week', lang), t('ns_weekD', lang), () => go('week')]
-    : tab === 'week' || tab === 'recipes' ? [t('ns_list', lang), t('ns_listD', lang), () => go('list')]
+    : tab === 'week' || tab === 'recipes' ? (h.store ? [t('ns_list', lang), t('ns_listD', lang), () => go('list')] : [t('ns_store', lang), t('ns_storeD', lang), () => go('stores')])
     : tab === 'list' ? (h.store ? [t('ns_done', lang), t('ns_doneD', lang), () => scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })] : [t('ns_store', lang), t('ns_storeD', lang), () => go('stores')])
     : tab === 'stores' ? [t('ns_shop', lang), t('ns_shopD', lang), () => go('list')]
     : null
@@ -178,7 +178,7 @@ function Shell() {
   const pickBest = () => { const u = snap(t('h_store', lang)); const b = bestStore(lines, (s) => homeCost * s.m.grocery + customCost); upHouse((x) => { x.store = b.id }, `🏬 ${b.name}`); say(`👑 ${b.name} · ${t('bestPicked', lang)}`, u); go('list') }
   const help: [string, () => void] = !hasPlan || tab === 'home' || tab === 'recipes' ? [t('composeAuto', lang), compose]
     : over ? [t('h_budget', lang), () => adapt()]
-    : tab === 'week' ? (offMode(h.plan, 'light') > 3 && p.goals.includes('healthy') ? [t('makeHealthy', lang), makeHealthy] : [t('h_shop', lang), () => go('list')])
+    : tab === 'week' ? (h.store ? [t('h_shop', lang), () => go('list')] : [t('h_store', lang), pickBest])
     : tab === 'list' && !h.store ? [t('h_store', lang), pickBest]
     : tab === 'stores' ? [t('h_store', lang), pickBest]
     : [t('h_shop', lang), () => go('list')]
@@ -207,7 +207,7 @@ function Shell() {
         {space === 'food' && <><div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-1">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
           <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${ok ? 'bg-forest text-white' : i === cur ? 'bg-apricot text-ink ring-2 ring-apricot/40' : 'bg-cream text-muted'}`}>{ok ? '✓' : i + 1}</span>
           <span className={`truncate ${i === cur ? 'text-ink' : 'text-muted'}`}>{t(k, lang)}</span>{i < 4 && <span className={`h-0.5 min-w-1 flex-1 rounded ${ok ? 'bg-forest' : 'bg-line'}`} />}</button>)}</div>
-        <p className="mx-auto max-w-2xl px-4 pb-2 text-[11px] font-semibold text-forest">{cur < 0 ? '🎉 Parcours terminé ! Recompose une nouvelle semaine quand tu veux.' : `👉 Étape ${cur + 1} sur 5 · ${[t('stepHint0', lang), t('stepHint1', lang), t('stepHint2', lang), t('stepHint3', lang), t('stepHint4', lang)][cur]}`}</p></>}
+        <p className="mx-auto max-w-2xl px-4 pb-2 text-[11px] font-semibold text-forest">{cur < 0 ? '🎉 Parcours terminé ! Recompose une nouvelle semaine quand tu veux.' : `👉 Étape ${cur + 1} sur 5 · ${[t('stepHint0', lang), t('stepHint1', lang), t('stepHint3', lang), t('stepHint2', lang), t('stepHint4', lang)][cur]}`}</p></>}
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
       <main className="mx-auto w-full max-w-2xl px-4 pb-40 pt-2">

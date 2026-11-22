@@ -84,6 +84,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
     </div>) }
   return (
     <div className="space-y-3">
+      {!store && <button className="card fade-up flex w-full items-center gap-3 border-2 border-apricot p-4 text-start" onClick={goStores}><span className="text-3xl">🏬</span><span className="flex-1"><b className="block font-display">{lang === 'en' ? 'First, pick your store' : 'D’abord, choisis ton magasin'}</b><span className="text-xs text-muted">{lang === 'en' ? 'Your list will use its prices.' : 'Ta liste utilisera ses prix. Compare 11 magasins en un coup d’œil.'}</span></span><span className="text-xl text-forest">→</span></button>}
       <div className="card p-4">
         <div className="grid grid-cols-4 gap-1 text-center">
           {([[t('budgetW', lang), budget, 'ink'], [t('taken', lang), spent, 'forest'], [t('toTake', lang), pace - spent, 'ink'], [t('solde', lang), budget - pace, budget - pace < 0 ? 'danger' : 'forest']] as [string, number, string][]).map(([l, v, c]) => (

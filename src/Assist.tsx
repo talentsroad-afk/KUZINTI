@@ -78,7 +78,7 @@ export function Assistant({ open, onClose, tab, next, more, undo, onTour, go }: 
 
 /** Short spotlight tour over real UI elements marked with data-tour. Skippable, replayable. */
 const TOUR: [string, string, string, string, string][] = [
-  ['steps', 'Ton parcours', 'Your journey', 'Ces 5 étapes montrent où tu en es : Composer → Semaine → Courses → Magasin → Fini. Touche une étape pour y aller.', 'These 5 steps show where you are. Tap a step to jump there.'],
+  ['steps', 'Ton parcours', 'Your journey', 'Ces 5 étapes montrent où tu en es : Composer → Semaine → Magasin → Courses → Fini. Touche une étape pour y aller.', 'These 5 steps show where you are. Tap a step to jump there.'],
   ['budget', 'Ton budget', 'Your budget', 'Le total de ta liste face à ton budget. Touche-le pour changer le budget, le nombre de personnes ou les repas.', 'Your list total vs budget. Tap it to change budget, people or meals.'],
   ['tabs', 'Les 5 espaces', 'The 5 spaces', 'Accueil, Recettes, Ma semaine, Courses, Profil. Touche l’onglet actif pour remonter en haut.', 'Home, Recipes, Week, Shopping, Profile. Tap the active tab to scroll to top.'],
   ['assist', 'Ton assistant', 'Your assistant', 'Il sait où tu es et te propose la prochaine action. Touche ✨ dès que tu hésites.', 'It knows where you are and suggests the next action. Tap ✨ whenever unsure.'],
