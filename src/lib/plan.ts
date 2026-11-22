@@ -37,7 +37,7 @@ const pickW = <T,>(items: T[], w: number[], rnd = Math.random) => { let x = rnd(
 /** Turn a dish into a complete, culturally coherent meal (bread, salad, drink, fruit…), without padding full meals. */
 export function composeSides(rid: string, slot: Meal, rnd = Math.random): string[] {
   const r = REC[rid]; const c = cuisineOf(r)
-  if (slot === 'g') return r.tags.includes('sweet') || ['banane-amandes', 'orange-cannelle', 'yaourt-dattes', 'amlou'].includes(rid) ? ['x-the'] : []
+  if (slot === 'g') return rid === 'the-dattes' ? [] : c === 'ma' ? ['x-the'] : ['x-cafe']
   if (slot === 'b') {
     const drink = c === 'ma' ? (rnd() < 0.75 ? 'x-the' : 'x-cafe') : 'x-cafe'
     const x: string[] = []
@@ -56,12 +56,28 @@ export function composeSides(rid: string, slot: Meal, rnd = Math.random): string
 }
 export const entry = (rid: string, n: number, slot: Meal): PlanEntry => ({ r: rid, n, x: composeSides(rid, slot) })
 
+/** Moroccan household rhythm: simple weekday ftour, msemen/baghrir at the weekend, tajine lunches,
+ *  couscous on Friday, a festive Sunday lunch, soups and light plates at dinner. Days are 0 = Monday. */
+const WEEKDAY_BF = ['khlii-oeufs', 'omelette', 'amlou', 'harcha', 'bissara', 'msemen']
+const WEEKEND_BF = ['msemen', 'baghrir', 'rghaif', 'sfenj', 'harcha', 'shakshuka']
+const LIGHT_DIN = ['harira', 'chorba', 'soupe-legumes', 'soupe-lentilles', 'bissara', 'maakouda', 'salade-thon', 'poisson-grille', 'loubia', 'omelette', 'shakshuka', 'zaalouk', 'veloute-potiron', 'brochettes', 'sandwich-kefta', 'sardines']
+const FEAST = ['pastilla', 'rfissa', 'tajine-agneau', 'tajine-pruneaux', 'mrouzia', 'tanjia', 'seffa']
+function rhythm(r: Recipe, s: Meal, d: number) {
+  const id = r.id
+  if (s === 'b') return (d >= 5 ? WEEKEND_BF : WEEKDAY_BF).includes(id) ? (id === 'khlii-oeufs' && d < 5 ? 4 : 2) : 0.05
+  if (s === 'l') { if (id.startsWith('couscous')) return 0.02; if (FEAST.includes(id)) return d === 6 ? 6 : 0.15; return id.startsWith('tajine') || ['mqualli', 'poulet-citron', 'loubia', 'riz-poulet'].includes(id) ? 2 : 1 }
+  if (s === 'd') return LIGHT_DIN.includes(id) ? (['harira', 'chorba', 'soupe-legumes'].includes(id) ? 2.5 : 1.5) : 0.03
+  return 1
+}
+
 /** One tap: a complete, varied week built from the user's preferences, then fitted to the budget. */
 export function composeWeek(p: Prefs, pantry: Record<string, number>, extras: Record<string, number>): Plan {
   const used: Record<string, number> = {}; const plan: Plan = {}
   for (let d = 0; d < 7; d++) for (const s of p.meals) {
     const pl = pool(s, p); if (!pl.length) continue
-    const r = pickW(pl, pl.map((x) => weight(x, s, p, used)))
+    const ma = p.cuisine === 'ma'
+    const fri = ma && s === 'l' && d === 4 ? pl.filter((x) => x.id.startsWith('couscous')) : []
+    const r = fri.length ? fri[Math.floor(Math.random() * fri.length)] : pickW(pl, pl.map((x) => weight(x, s, p, used) * (ma ? rhythm(x, s, d) : 1)))
     used[r.id] = (used[r.id] ?? 0) + 1; plan[`${d}-${s}`] = entry(r.id, p.size, s)
   }
   return adaptToBudget(plan, p.budget, pantry, extras, p).plan

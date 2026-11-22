@@ -18,6 +18,7 @@ const AISLE: Record<Aisle, [string, string, string, string]> = {
 }
 const m2 = (n: number, l: Lang) => `${n.toFixed(2)} ${l === 'ar' ? 'د.م.' : 'MAD'}`
 const stepOf = (l: Line) => (l.ing.base === 'pc' ? 1 : l.buy < 100 && l.ing.aisle === 'spices' ? 10 : 50)
+const unitP = (l: Line, m: number) => l.ing.base === 'pc' ? `${(l.ing.p * m).toFixed(2)} MAD/u` : `${(l.ing.p * m * 1000).toFixed(2)} MAD/${l.ing.base === 'g' ? 'kg' : 'L'}`
 const useName = (u: string, lang: Lang) => (u === 'basics' ? t('basics', lang) : SIDE[u] ? SIDE[u].n[li(lang)] : REC[u] ? rname(REC[u].n, lang) : u)
 
 /** Everything in the basket with one total. Estimates use the chosen store's price index when one is picked. */
@@ -75,8 +76,10 @@ export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goS
     <div className="flex items-center gap-3 py-2">
       <button className="check !h-8 !w-8" data-on={on} onClick={() => toggle(k, name)} aria-pressed={on} aria-label={name}>{on && '✓'}</button>
       <button className="min-w-0 flex-1 text-start" onClick={() => openEdit(k, name, est, line)}><span className={`block truncate font-semibold ${on ? 'text-muted line-through' : ''}`}>{name}</span>{sub && <span className="block truncate text-xs text-muted">{sub}</span>}</button>
-      {q && <span className="shrink-0 rounded-lg bg-cream px-2 py-1 text-sm font-extrabold tabular-nums text-forest">{q}</span>}
-      <button className={`shrink-0 rounded-lg px-2 py-1 text-sm font-bold tabular-nums ${paid !== undefined ? 'bg-leaf/30 text-forest' : ''}`} onClick={() => openEdit(k, name, est, line)}>{price(k, est).toFixed(2)}</button>
+      <button className={`shrink-0 rounded-xl px-2.5 py-1 text-end tabular-nums ${paid !== undefined ? 'bg-leaf/30' : 'bg-cream'}`} onClick={() => openEdit(k, name, est, line)}>
+        {q && <span className="block text-[15px] font-extrabold leading-tight text-forest">{q}</span>}
+        <span className="block text-xs font-semibold leading-tight text-ink">{m2(price(k, est), lang)}</span>
+      </button>
     </div>) }
   return (
     <div className="space-y-3">
@@ -91,19 +94,22 @@ export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goS
           <div className="absolute inset-y-0 start-0 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (spent / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} />
         </div>
         <p className="mt-2 text-xs" style={{ color: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}><b>{t('pace', lang)}: {money(pace, lang)}</b> · {over ? `${t('overBy', lang)} ${money(pace - budget, lang)}` : `${money(budget - pace, lang)} ${t('saving', lang)}`}</p>
-        <button className="mt-2 text-xs font-semibold text-muted underline" onClick={goStores}>{t('pricesAt', lang)}: {store ? store.name : t('avgPrice', lang)} ›</button>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button className="btn btn-soft !min-h-11 !text-sm" onClick={goStores}>🏬 {t('compareStores', lang)}</button>
+          <button className="btn btn-primary !min-h-11 !text-sm" onClick={share}>↗ {t('shareList', lang)}</button>
+        </div>
+        <p className="mt-2 text-center text-[11px] text-muted">{t('pricesAt', lang)}: {store ? store.name : t('avgPrice', lang)} · {t('qtyHint', lang)}</p>
       </div>
       <div className="flex items-center gap-2">
         <div className="flex rounded-full bg-surface p-1 shadow-soft">{[-1, (new Date().getDay() + 6) % 7].map((d, i) => <button key={i} className={`rounded-full px-3 py-1.5 text-xs font-bold ${(i === 0 ? day < 0 : day >= 0) ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{i === 0 ? t('lWeek', lang) : t('lDay', lang)}</button>)}</div>
-        <button className="ms-auto rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}>📸</button>
-        <button className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-forest shadow-soft" onClick={share}>↗ {t('share', lang)}</button>
+        <button className="ms-auto rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}>📸 {t('fridgeS', lang)}</button>
       </div>
       {day >= 0 && <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`chip shrink-0 capitalize ${d === day ? '!bg-forest !text-white' : ''}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 3)}</button>)}</div>}
       <FridgeSheet open={fridge} onClose={() => setFridge(false)} />
       <p className="px-1 text-xs text-muted">{done}/{items.length} · {t('paid', lang).replace(' (MAD)', '')} → {t('ok', lang)}</p>
       {groups.map(([a, rows]) => (
         <div key={a} className="card px-4 py-2"><h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>
-          <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} q={fmtQty(l.buy, l.ing.base)} sub={l.uses.map((u) => useName(u, lang)).join(', ')} est={l.cost * mul(a)} line={l} />)}</div></div>
+          <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} q={fmtQty(l.buy, l.ing.base)} sub={`${unitP(l, mul(a))} · ${l.uses.map((u) => useName(u, lang)).join(', ')}`} est={l.cost * mul(a)} line={l} />)}</div></div>
       ))}
       <div className="card px-4 py-2">
         <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted">🏠 {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>

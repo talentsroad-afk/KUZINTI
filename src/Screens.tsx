@@ -158,8 +158,31 @@ export function WeekTab({ compose, makeHealthy, say }: { compose: () => void; ma
   const { lang, me, house, upHouse } = useApp()
   const p = usePrefs(); const plan = house!.plan
   const today = (new Date().getDay() + 6) % 7
-  const [open, setOpen] = useState<Record<number, boolean>>({ [today]: true })
-  const [rep, setRep] = useState<string | null>(null); const [view, setView] = useState<Recipe | null>(null)
+  const [view, setView] = useState<'day' | 'week' | 'month'>('week'); const [day, setDay] = useState(today)
+  const [rep, setRep] = useState<string | null>(null); const [rv, setRv] = useState<Recipe | null>(null)
+  const dayKc = (d: number) => slots.reduce((a, s) => a + (plan[`${d}-${s}`] ? entryKcal(plan[`${d}-${s}`]) : 0), 0)
+  const dayCost = (d: number) => slots.reduce((a, s) => a + (plan[`${d}-${s}`] ? entryCost(plan[`${d}-${s}`]) : 0), 0)
+  const now = new Date(); const first = (new Date(now.getFullYear(), now.getMonth(), 1).getDay() + 6) % 7; const nDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const monthCells = [...Array(first).fill(null), ...Array.from({ length: nDays }, (_, i) => ({ n: i + 1, wd: (first + i) % 7, today: i + 1 === now.getDate() }))] as ({ n: number; wd: number; today: boolean } | null)[]
+  const mealRow = (k: string, s: Meal) => {
+    const e = plan[k]
+    if (!e) return <button key={s} className="flex w-full items-center gap-3 px-4 py-3 text-start text-muted" onClick={() => setRep(k)}><span className="w-6 text-center">{SLOT_E[s]}</span><span className="font-semibold">＋ {t(s, lang)}</span></button>
+    const r = REC[e.r]
+    return (
+      <div key={s} className="px-4 py-3">
+        <div className="flex gap-3">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}>{r.e}</span>
+          <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wide text-muted">{SLOT_E[s]} {t(s, lang)}</p><p className="font-semibold leading-tight">{rname(r.n, lang)}</p>{(e.x ?? []).length > 0 && <p className="mt-0.5 text-xs text-muted">+ {sideNames(e.x, lang)}</p>}</div>
+          <span className="shrink-0 text-xs text-muted tabular-nums">{Math.round(entryKcal(e))} kcal</span>
+        </div>
+        <div className="mt-2 flex items-center gap-2 ps-[3.75rem]">
+          <button className="rounded-full bg-forest px-3.5 py-1.5 text-xs font-bold text-white active:scale-95" onClick={() => setRep(k)}>↻ {t('change', lang)}</button>
+          <span className="inline-flex items-center rounded-full bg-cream text-xs font-bold"><button className="px-2.5 py-1.5" onClick={() => upHouse((h) => { h.plan[k] = { ...e, n: Math.max(1, e.n - 1) } })} aria-label="−">−</button><span className="tabular-nums">👤 {e.n}</span><button className="px-2.5 py-1.5" onClick={() => upHouse((h) => { h.plan[k] = { ...e, n: Math.min(12, e.n + 1) } })} aria-label="+">+</button></span>
+          <button className="rounded-full bg-cream px-3 py-1.5 text-xs font-bold active:scale-95" onClick={() => setRv(r)}>📖 {t('recipe', lang)}</button>
+        </div>
+      </div>
+    )
+  }
   const off = offMode(plan, modeOf(p.goals.includes('healthy') ? p.goals : ['healthy']))
   const slots = SLOTS.filter((s) => p.meals.includes(s) || Object.keys(plan).some((k) => k.endsWith('-' + s)))
   if (!Object.keys(plan).length) return <div className="card space-y-4 p-8 text-center"><p className="text-5xl">🗓️</p><p className="text-muted">{t('emptyWeek', lang)}</p><button className="btn btn-primary w-full" onClick={compose}>✨ {t('composeAuto', lang)}</button></div>
@@ -167,42 +190,30 @@ export function WeekTab({ compose, makeHealthy, say }: { compose: () => void; ma
     <div className="space-y-3">
       <Mascot plan={plan} />
       <div className="flex gap-2"><button className="btn btn-soft flex-1 !min-h-11" onClick={compose}>🎲 {t('reshuffle', lang)}</button>{off > 0 && <button className="btn btn-soft flex-1 !min-h-11 !text-forest" onClick={makeHealthy}>🥗 {t('makeHealthy', lang)}</button>}</div>
-      {Array.from({ length: 7 }, (_, d) => {
-        const es = slots.map((s) => plan[`${d}-${s}`]).filter(Boolean); const isOpen = !!open[d]
-        const kc = es.reduce((a, e) => a + entryKcal(e), 0); const cost = es.reduce((a, e) => a + entryCost(e), 0)
-        return (
-          <div key={d} className="card overflow-hidden">
-            <button className="flex w-full items-center gap-3 px-4 py-3 text-start" onClick={() => setOpen({ ...open, [d]: !isOpen })} aria-expanded={isOpen}>
-              <span className="min-w-0 flex-1"><span className={`block font-display text-[17px] font-extrabold capitalize ${d === today ? 'text-forest' : ''}`}>{dayName(d, lang)}{d === today && <span className="ms-2 rounded-full bg-leaf/40 px-2 py-0.5 align-middle text-[10px] font-bold">{t('today', lang)}</span>}</span><span className="text-xs text-muted tabular-nums">{Math.round(kc)} kcal · {money(cost, lang)}</span></span>
-              {!isOpen && <span className="text-xl tracking-tight">{es.map((e) => REC[e.r].e).join('')}</span>}
-              <span className={`text-muted transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
-            </button>
-            {isOpen && <div className="divide-y divide-line/70 border-t border-line/70">
-              {slots.map((s) => {
-                const k = `${d}-${s}`; const e = plan[k]
-                if (!e) return <button key={s} className="flex w-full items-center gap-3 px-4 py-3 text-start text-muted" onClick={() => setRep(k)}><span className="w-6 text-center">{SLOT_E[s]}</span><span className="font-semibold">＋ {t(s, lang)}</span></button>
-                const r = REC[e.r]
-                return (
-                  <div key={s} className="px-4 py-3">
-                    <div className="flex gap-3">
-                      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}>{r.e}</span>
-                      <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wide text-muted">{SLOT_E[s]} {t(s, lang)}</p><p className="font-semibold leading-tight">{rname(r.n, lang)}</p>{(e.x ?? []).length > 0 && <p className="mt-0.5 text-xs text-muted">+ {sideNames(e.x, lang)}</p>}</div>
-                      <span className="shrink-0 text-xs text-muted tabular-nums">{Math.round(entryKcal(e))} kcal</span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2 ps-[3.75rem]">
-                      <button className="rounded-full bg-forest px-3.5 py-1.5 text-xs font-bold text-white active:scale-95" onClick={() => setRep(k)}>↻ {t('change', lang)}</button>
-                      <span className="inline-flex items-center rounded-full bg-cream text-xs font-bold"><button className="px-2.5 py-1.5" onClick={() => upHouse((h) => { h.plan[k] = { ...e, n: Math.max(1, e.n - 1) } })} aria-label="−">−</button><span className="tabular-nums">👤 {e.n}</span><button className="px-2.5 py-1.5" onClick={() => upHouse((h) => { h.plan[k] = { ...e, n: Math.min(12, e.n + 1) } })} aria-label="+">+</button></span>
-                      <button className="rounded-full bg-cream px-3 py-1.5 text-xs font-bold active:scale-95" onClick={() => setView(r)}>📖 {t('recipe', lang)}</button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>}
-          </div>
-        )
-      })}
+      <div className="flex rounded-full bg-surface p-1 shadow-soft">{(['day', 'week', 'month'] as const).map((v) => <button key={v} className={`flex-1 rounded-full py-2 text-sm font-bold ${view === v ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setView(v)}>{t('v_' + v, lang)}</button>)}</div>
+      {view === 'day' && <>
+        <div className="grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => setDay(d)} className={`rounded-2xl py-2 text-center ${d === day ? 'bg-forest text-white' : 'bg-surface'}`}><span className="block text-[10px] font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span><span className="block text-base">{d === today ? '•' : ' '}</span></button>)}</div>
+        <div className="card overflow-hidden">
+          <div className="flex items-baseline justify-between px-4 pt-3"><span className="font-display text-lg font-extrabold capitalize">{dayName(day, lang)}</span><span className="text-xs text-muted tabular-nums">{Math.round(dayKc(day))} kcal · {money(dayCost(day), lang)}</span></div>
+          <div className="divide-y divide-line/70">{slots.map((s) => mealRow(`${day}-${s}`, s))}</div>
+        </div>
+      </>}
+      {view === 'week' && <div className="card p-2">
+        <div className="grid grid-cols-[2rem_repeat(7,1fr)] gap-1 text-center">
+          <span />{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => { setDay(d); setView('day') }} className={`rounded-lg py-1 text-[10px] font-bold uppercase ${d === today ? 'bg-leaf/40 text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 2)}</button>)}
+          {slots.map((s) => [<span key={s} className="grid place-items-center text-base">{SLOT_E[s]}</span>, ...Array.from({ length: 7 }, (_, d) => { const e = plan[`${d}-${s}`]; return <button key={s + d} onClick={() => setRep(`${d}-${s}`)} className="grid aspect-square place-items-center rounded-xl text-xl active:scale-90" style={{ background: e ? `hsl(${REC[e.r].h} 80% 90%)` : 'rgb(var(--cream))' }} aria-label={e ? rname(REC[e.r].n, lang) : '+'}>{e ? REC[e.r].e : '＋'}</button> })])}
+        </div>
+        <p className="mt-2 text-center text-[11px] text-muted">{t('tapSwap', lang)}</p>
+      </div>}
+      {view === 'month' && <div className="card p-3">
+        <p className="mb-2 font-display font-extrabold capitalize">{new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, { month: 'long', year: 'numeric' }).format(new Date())}</p>
+        <div className="grid grid-cols-7 gap-1 text-center">{Array.from({ length: 7 }, (_, d) => <span key={d} className="text-[10px] font-bold uppercase text-muted">{dayName(d, lang).slice(0, 2)}</span>)}
+          {monthCells.map((c, i) => c ? <button key={i} onClick={() => { setDay(c.wd); setView('day') }} className={`rounded-xl py-1 ${c.today ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-bold">{c.n}</span><span className="block text-xs leading-tight">{slots.map((s) => plan[`${c.wd}-${s}`] ? REC[plan[`${c.wd}-${s}`].r].e : '').join('').slice(0, 4)}</span></button> : <span key={i} />)}
+        </div>
+        <p className="mt-2 text-center text-[11px] text-muted">{t('monthNote', lang)}</p>
+      </div>}
       {rep && <ReplaceSheet k={rep} onClose={() => setRep(null)} say={say} />}
-      {view && <RecipeSheet r={view} onClose={() => setView(null)} />}
+      {rv && <RecipeSheet r={rv} onClose={() => setRv(null)} />}
       <p className="px-1 text-center text-xs text-muted">{me!.size} 👤 · {t('c_' + p.cuisine, lang)}</p>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, t, type Lang } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
@@ -138,6 +138,12 @@ function Shell() {
   }
   const setBudget = (b: number) => { patchMe({ budget: b }); if (hasPlan && total > b) adapt(b) }
   const makeHealthy = () => { const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`); award(10, '🥗'); celebrate() }
+  const [up, setUp] = useState(false)
+  useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
+  const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { setTab(k); scrollTo(0, 0) } }
+  const nChk = Object.values(h.checked).filter(Boolean).length
+  const steps: [string, Tab, boolean][] = [['st_compose', 'home', hasPlan], ['st_week', 'week', hasPlan], ['st_list', 'list', nChk > 0], ['st_store', 'stores', !!h.store], ['st_done', 'list', items.length > 0 && nChk >= items.length]]
+  const cur = steps.findIndex((x) => !x[2])
   const title = t(tab === 'stores' ? 'tStores' : TABS.find((x) => x[0] === tab)![2], lang)
 
   return (
@@ -151,20 +157,24 @@ function Shell() {
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
           </button>
         </div>
+        <div className="mx-auto flex max-w-2xl items-center px-4 pb-2">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
+          <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${ok ? 'bg-forest text-white' : i === cur ? 'bg-apricot text-ink ring-2 ring-apricot/40' : 'bg-cream text-muted'}`}>{ok ? '✓' : i + 1}</span>
+          <span className={`truncate ${i === cur ? 'text-ink' : 'text-muted'}`}>{t(k, lang)}</span>{i < 4 && <span className={`h-0.5 min-w-1 flex-1 rounded ${ok ? 'bg-forest' : 'bg-line'}`} />}</button>)}</div>
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><button className="w-full rounded-2xl bg-forest px-4 py-2 text-start text-sm font-semibold text-white" onClick={() => setNote(null)}>{note}</button></div>}
       </header>
       <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-2">
         <div key={tab + lang} className="fade-up">
-          {tab === 'home' && <HomeTab compose={compose} go={setTab} total={total} items={items.length} />}
+          {tab === 'home' && <HomeTab compose={compose} go={go} total={total} items={items.length} />}
           {tab === 'week' && <WeekTab compose={compose} makeHealthy={makeHealthy} say={say} />}
-          {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => setTab('stores')} />}
-          {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => setTab('list')} /></>}
+          {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} />}
+          {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
           {tab === 'recipes' && <RecipesTab say={say} />}
           {tab === 'profile' && <ProfileScreen celebrate={celebrate} />}
         </div>
       </main>
+      {up && <button className="fixed bottom-24 end-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
       <nav className="tabbar" aria-label="Main">
-        {TABS.map(([k, e, key]) => <button key={k} onClick={() => setTab(k)} aria-current={tab === k || (k === 'list' && tab === 'stores') ? 'page' : undefined} className={`tab ${tab === k ? 'tab-on' : ''}`}><span className={`text-[22px] leading-none ${tab === k ? 'pop' : 'grayscale-[.6] opacity-70'}`}>{e}</span><span>{t(key, lang)}</span></button>)}
+        {TABS.map(([k, e, key]) => <button key={k} onClick={() => go(k === 'list' && tab === 'stores' ? 'list' : k)} aria-current={tab === k || (k === 'list' && tab === 'stores') ? 'page' : undefined} className={`tab ${tab === k ? 'tab-on' : ''}`}><span className={`text-[22px] leading-none ${tab === k ? 'pop' : 'grayscale-[.6] opacity-70'}`}>{e}</span><span>{t(key, lang)}</span></button>)}
       </nav>
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>
         <Controls setBudget={setBudget} />
