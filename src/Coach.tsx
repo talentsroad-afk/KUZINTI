@@ -146,26 +146,34 @@ export function Athlete({ kind, paused, onRep }: { kind: Kind; paused?: boolean;
 /** Story mode for a session: one exercise per slide, the athlete shows it, reps count up, tap to go on, hold or ⏸ to pause. */
 export function WorkoutStory({ title, ex, lang, onClose }: { title: string; ex: [string, string][]; lang: Lang; onClose: () => void }) {
   const [i, setI] = useState(0); const [paused, setPaused] = useState(false); const [reps, setReps] = useState(0)
-  const [sec, setSec] = useState(0)
+  const [sec, setSec] = useState(0); const [rest, setRest] = useState(0)
   useEffect(() => { setReps(0); setSec(0) }, [i])
+  // Rest between strength sets: countdown with a short beep at the end.
+  useEffect(() => {
+    if (paused || rest <= 0) return
+    const id = setTimeout(() => { setRest((r) => r - 1); if (rest === 1) { try { const a = new AudioContext(); const o = a.createOscillator(); o.connect(a.destination); o.frequency.value = 880; o.start(); o.stop(a.currentTime + 0.25) } catch { /* no audio */ } } }, 1000)
+    return () => clearTimeout(id)
+  }, [rest, paused])
+  const next = () => { if (i < ex.length && /×/.test(ex[i][1])) setRest(60); setI(i + 1) }
   useEffect(() => { if (paused) return; const id = setInterval(() => setSec((x) => x + 1), 1000); return () => clearInterval(id) }, [paused, i])
   const N = ex.length + 1; const done = i >= ex.length
   const kind = done ? 'stretch' : kindOfEx(ex[i][0]); const timed = !done && /\d+\s*(s|min)\b/.test(ex[i][1])
   return createPortal(
     <div className={`fixed inset-0 z-[80] flex select-none flex-col text-white ${paused ? 'story-paused' : ''}`} style={{ background: 'radial-gradient(120% 70% at 50% 0%, #2f7d5b, #0b1712 70%)' }} role="dialog" aria-label={title}>
       <div className="flex gap-1 px-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}>{Array.from({ length: N }, (_, k) => <span key={k} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20"><span className={`block h-full rounded-full bg-white transition-all duration-300 ${k <= i ? 'w-full' : 'w-0'}`} /></span>)}</div>
-      <div className="flex items-center gap-3 px-4 py-3"><span className="min-w-0 flex-1"><b className="block truncate">{title}</b><span className="text-[11px] text-white/60">{done ? L2(lang, 'Done!', 'Terminé !') : `${i + 1}/${ex.length}`}</span></span>
+      <div className="flex items-center gap-3 px-4 py-3"><span className="min-w-0 flex-1"><b className="block truncate">{title}</b><span className="text-[12px] text-white/60">{done ? L2(lang, 'Done!', 'Terminé !') : `${i + 1}/${ex.length}`}</span></span>
         <button className="grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={() => setPaused(!paused)} aria-label="Pause">{paused ? <Play size={16} /> : <Pause size={16} />}</button>
         <button className="grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close"><X size={18} /></button></div>
-      <button className="relative flex flex-1 flex-col justify-center px-6 text-center" onClick={() => (done ? onClose() : setI(i + 1))} aria-label="›">
+      <button className="relative flex flex-1 flex-col justify-center px-6 text-center" onClick={() => (done ? onClose() : next())} aria-label="›">
         <div key={i} className="fade-up">
+          {rest > 0 && <div className="mb-2 flex items-center justify-center gap-3 rounded-full bg-white/15 px-4 py-2 text-sm font-bold"><span>{L2(lang, 'Rest', 'Repos')} {Math.floor(rest / 60)}:{String(rest % 60).padStart(2, '0')}</span><span role="button" tabIndex={0} className="rounded-full bg-apricot px-3 py-1 text-ink" onClick={(ev) => { ev.stopPropagation(); setRest(0) }}>{L2(lang, 'Skip', 'Passer')}</span></div>}
           <Athlete kind={kind} paused={paused} onRep={() => setReps((r) => r + 1)} />
           {!done ? <>
             <p className="mt-4 font-display text-[26px] font-extrabold leading-tight">{ex[i][0]}</p>
             <p className="mt-1 inline-block rounded-full bg-white px-4 py-1 font-display text-lg font-extrabold text-ink">{ex[i][1]}</p>
             <p className="mt-3 text-sm text-white/75">{TIP[kind][lang === 'en' ? 0 : 1]}</p>
             <p className="mt-4 font-display text-5xl font-extrabold tabular-nums text-apricot">{timed ? `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}` : reps}</p>
-            <p className="text-[11px] uppercase tracking-[.2em] text-white/50">{timed ? L2(lang, 'time', 'chrono') : L2(lang, 'reps', 'répétitions')}</p>
+            <p className="text-[12px] uppercase tracking-[.2em] text-white/50">{timed ? L2(lang, 'time', 'chrono') : L2(lang, 'reps', 'répétitions')}</p>
           </> : <><p className="mt-4 font-display text-3xl font-extrabold">{L2(lang, 'Great job!', 'Bravo, séance terminée !')}</p><p className="mt-1 text-white/70">{L2(lang, 'Drink water and stretch 5 minutes', 'Bois de l’eau et étire-toi 5 minutes')}</p></>}
         </div>
         <span className="mt-6 text-xs text-white/45">{done ? L2(lang, 'tap to close', 'touchez pour fermer') : L2(lang, 'tap for the next exercise', 'touchez pour l’exercice suivant')}</span>

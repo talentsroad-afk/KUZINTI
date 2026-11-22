@@ -147,7 +147,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
         <div className="flex items-center gap-3">
           <button onClick={goStores} className="flex min-w-0 flex-1 items-center gap-2.5 text-start active:opacity-70">{store ? <StoreLogo id={store.id} w={64} /> : <span className="grid h-11 w-11 place-items-center rounded-xl bg-apricot/30 text-forest"><Store size={20} aria-hidden /></span>}
             <span className="min-w-0"><b className="block truncate text-[15px]">{store ? store.name : (lang === 'en' ? 'Choose a store' : 'Choisir un magasin')}</b><span className="text-xs text-muted">{store ? (lang === 'en' ? 'Change ›' : 'Changer ›') : (lang === 'en' ? 'Compare prices ›' : 'Comparer les prix ›')}</span></span></button>
-          <span className="text-end"><b className="block font-display text-xl tabular-nums"><Num v={pace} fmt={(x) => money(x, lang)} /></b><span className="text-[11px] text-muted">{void spent}{over ? `+${money(pace - budget, lang)} ${lang === 'en' ? 'over' : 'au-delà'}` : `${money(budget - pace, lang)} ${lang === 'en' ? 'left' : 'de marge'}`}</span></span>
+          <span className="text-end"><b className="block font-display text-xl tabular-nums"><Num v={pace} fmt={(x) => money(x, lang)} /></b><span className="text-[12px] text-muted">{void spent}{over ? `+${money(pace - budget, lang)} ${lang === 'en' ? 'over' : 'au-delà'}` : `${money(budget - pace, lang)} ${lang === 'en' ? 'left' : 'de marge'}`}</span></span>
           <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cream text-forest active:scale-90" onClick={share} aria-label={t('shareList', lang)}><Share2 size={17} aria-hidden /></button>
         </div>
         <div className="relative mt-3 h-2 overflow-hidden rounded-full bg-cream"><div className="absolute inset-y-0 start-0 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (pace / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></div>
@@ -172,7 +172,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       ))}
       <div className="card px-4 py-2">
         <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted"><Ic e="🏠" /> {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>
-        {homeOpen && <div className="grid grid-cols-4 gap-1.5 pb-2">{HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return <button key={x.id} className={`rounded-xl border p-1.5 text-center active:scale-95 ${q ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => upHouse((h) => { h.home = { ...(h.home ?? {}), [x.id]: q ? 0 : 1 } })} aria-pressed={q > 0}><div className="text-xl"><E3 e={x.e} /></div><div className="line-clamp-2 text-[10px] font-semibold leading-tight">{x.n[li(lang)]}</div></button> })}</div>}
+        {homeOpen && <div className="grid grid-cols-4 gap-1.5 pb-2">{HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return <button key={x.id} className={`rounded-xl border p-1.5 text-center active:scale-95 ${q ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => upHouse((h) => { h.home = { ...(h.home ?? {}), [x.id]: q ? 0 : 1 } })} aria-pressed={q > 0}><div className="text-xl"><E3 e={x.e} /></div><div className="line-clamp-2 text-[12px] font-semibold leading-tight">{x.n[li(lang)]}</div></button> })}</div>}
         <div className="divide-y divide-line/60">{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} e={x.e} name={HOME_BY[x.id].n[li(lang)]} q={`×${x.q}`} sub='' est={x.q * x.p * mul('grocery')} />)}</div>
       </div>
       <div className="card px-4 py-2">
@@ -188,7 +188,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
         {shareTxt && <div className="space-y-4">
           <div className="relative overflow-hidden rounded-[22px] bg-forest p-4 text-white">
             <span className="zellige pointer-events-none absolute inset-0 opacity-[.07]" aria-hidden />
-            <p className="relative text-[11px] font-bold uppercase tracking-[.16em] text-apricot">{lang === 'en' ? 'Live with my partner' : lang === 'ar' ? 'مباشرة مع شريكي' : 'En direct avec mon partenaire'}</p>
+            <p className="relative text-[12px] font-bold uppercase tracking-[.16em] text-apricot">{lang === 'en' ? 'Live with my partner' : lang === 'ar' ? 'مباشرة مع شريكي' : 'En direct avec mon partenaire'}</p>
             <div className="relative mt-1 flex items-center gap-3"><b className="flex-1 font-display text-[32px] font-extrabold tracking-[.18em] tabular-nums">{house!.code}</b>
               <button className="rounded-full bg-white px-4 py-2 text-sm font-bold text-forest active:scale-95" onClick={() => copy(house!.code, lang === 'en' ? 'Code copied' : 'Code copié')}>{lang === 'en' ? 'Copy' : 'Copier'}</button></div>
             <p className="relative mt-1 text-xs text-white/80">{lang === 'en' ? 'Your partner opens KUZINTI, taps “Join with a code” and sees the same list, ticks and prices in real time.' : lang === 'ar' ? 'يفتح شريكك كوزينتي ويدخل هذا الرمز ليرى نفس القائمة مباشرة.' : 'Votre partenaire ouvre KUZINTI, touche « Rejoindre avec un code » et voit la même liste, les cases cochées et les prix en temps réel.'}</p>
@@ -297,8 +297,8 @@ export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
         <div key={s.id} className={`card rise p-3 transition-all ${chosen === s.id && house!.store ? '!shadow-[0_0_0_2px_rgb(var(--forest))]' : ''}`} style={{ animationDelay: `${i * 60}ms` }}>
           <div className="flex items-center gap-3">
             <StoreLogo id={s.id} />
-            <span className="min-w-0 flex-1">{i === 0 ? <span className="inline-block rounded-full bg-apricot px-2.5 py-0.5 text-[11px] font-bold text-[#3c280a]">👑 {t('best', lang)}</span> : <span className="text-xs text-muted">+{money(tot - best.tot, lang)}</span>}</span>
-            <span className="text-end"><span className="block font-display text-xl font-extrabold tabular-nums text-forest">{money(tot, lang)}</span>{i === 0 && <span className="text-[11px] font-semibold text-forest">−{money(worst.tot - tot, lang)}</span>}</span>
+            <span className="min-w-0 flex-1">{i === 0 ? <span className="inline-block rounded-full bg-apricot px-2.5 py-0.5 text-[12px] font-bold text-[#3c280a]">👑 {t('best', lang)}</span> : <span className="text-xs text-muted">+{money(tot - best.tot, lang)}</span>}</span>
+            <span className="text-end"><span className="block font-display text-xl font-extrabold tabular-nums text-forest">{money(tot, lang)}</span>{i === 0 && <span className="text-[12px] font-semibold text-forest">−{money(worst.tot - tot, lang)}</span>}</span>
           </div>
           <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
             <button className="btn btn-primary !min-h-11 !text-sm" onClick={() => { upHouse((h) => { h.store = s.id }); onShop(s.id) }}><ShoppingCart size={16} aria-hidden /> {lang === 'en' ? 'Shop here' : 'Mes courses ici'}</button>
@@ -318,11 +318,11 @@ export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
           return (
             <div>
               <div className="receipt p-4 text-[13px]">
-                <div className="flex items-center justify-between"><StoreLogo id={st.id} w={104} /><span className="text-end text-[11px] text-muted">{new Date().toLocaleDateString(lang === 'ar' ? 'ar-MA-u-nu-latn' : lang)}<br />{t('ticket', lang)} · demo</span></div>
+                <div className="flex items-center justify-between"><StoreLogo id={st.id} w={104} /><span className="text-end text-[12px] text-muted">{new Date().toLocaleDateString(lang === 'ar' ? 'ar-MA-u-nu-latn' : lang)}<br />{t('ticket', lang)} · demo</span></div>
                 <div className="dash my-3" />
                 <div className="space-y-1.5">
                   {all.map((x) => (
-                    <div key={x.k} className="flex items-baseline gap-2"><span className="min-w-0 flex-1 truncate">{x.name}<span className="text-muted"> · {x.q}</span></span>{x.unit > 0 && <span className="shrink-0 text-[11px] text-muted tabular-nums">{x.unit.toFixed(1)}/{x.ub}</span>}<span className="w-14 shrink-0 text-end font-semibold tabular-nums">{x.total.toFixed(2)}</span></div>
+                    <div key={x.k} className="flex items-baseline gap-2"><span className="min-w-0 flex-1 truncate">{x.name}<span className="text-muted"> · {x.q}</span></span>{x.unit > 0 && <span className="shrink-0 text-[12px] text-muted tabular-nums">{x.unit.toFixed(1)}/{x.ub}</span>}<span className="w-14 shrink-0 text-end font-semibold tabular-nums">{x.total.toFixed(2)}</span></div>
                   ))}
                 </div>
                 <div className="dash my-3" />
@@ -330,7 +330,7 @@ export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
                 <div className="mt-1 flex justify-between text-xs" style={{ color: total > budget ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}><span>{t('budgetW', lang)} {money(budget, lang)}</span><b>{total > budget ? t('overBy', lang) : t('left', lang)} {money(Math.abs(budget - total), lang)}</b></div>
                 <div className="mt-3 h-8 opacity-70" style={{ background: 'repeating-linear-gradient(90deg, rgb(var(--ink)) 0 2px, transparent 2px 4px, rgb(var(--ink)) 4px 5px, transparent 5px 9px)' }} aria-hidden />
               </div>
-              <p className="mb-3 text-[11px] text-muted">{t('storesNote', lang)}</p>
+              <p className="mb-3 text-[12px] text-muted">{t('storesNote', lang)}</p>
               <div className="grid gap-2"><button className="btn btn-primary" onClick={() => { upHouse((h) => { h.store = st.id }); setOpen(null); onShop(st.id) }}><Ic e="🏬" /> {t('shopHere', lang)}</button><button className="btn btn-soft" onClick={() => { upHouse((h) => { h.store = st.id }); setOpen(null) }}>{chosen === st.id ? '✓ ' : ''}{t('chooseStore', lang)}</button></div>
             </div>
           )

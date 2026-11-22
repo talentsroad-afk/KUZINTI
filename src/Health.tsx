@@ -14,6 +14,10 @@ const BRK: M[] = [
   ['Omelette 3 œufs, pain complet, avocat', '3-egg omelette, wholegrain bread, avocado', 510, 26, [['Œufs', 3, 'pc'], ['Pain complet', 60, 'g'], ['Avocat', 0.5, 'pc']]],
   ['Yaourt grec, granola, fruits rouges, miel', 'Greek yoghurt, granola, berries, honey', 430, 28, [['Yaourt grec', 250, 'g'], ['Granola', 40, 'g'], ['Fruits rouges', 100, 'g'], ['Miel', 10, 'g']]],
   ['Pancakes avoine-banane-œufs', 'Oat-banana-egg pancakes', 450, 25, [['Flocons d’avoine', 50, 'g'], ['Œufs', 2, 'pc'], ['Banane', 1, 'pc'], ['Fromage blanc', 100, 'g']]],
+  ['Œufs brouillés tomate, pain complet', 'Scrambled eggs with tomato, wholegrain bread', 440, 24, [['Œufs', 3, 'pc'], ['Tomates', 150, 'g'], ['Pain complet', 60, 'g'], ['Huile d’olive', 5, 'ml']]],
+  ['Bissara, huile d’olive, pain complet', 'Split-pea soup, olive oil, wholegrain bread', 430, 22, [['Bissara', 300, 'ml'], ['Huile d’olive', 10, 'ml'], ['Pain complet', 60, 'g']]],
+  ['Fromage blanc, flocons d’avoine, dattes, amandes', 'Quark, oats, dates, almonds', 470, 30, [['Fromage blanc', 200, 'g'], ['Flocons d’avoine', 40, 'g'], ['Dattes', 3, 'pc'], ['Amandes', 15, 'g']]],
+  ['Smoothie banane, lait, avoine, cacahuète', 'Banana, milk, oat and peanut smoothie', 480, 22, [['Lait', 300, 'ml'], ['Banane', 1, 'pc'], ['Flocons d’avoine', 40, 'g'], ['Beurre de cacahuète', 15, 'g']]],
 ]
 const LUN: M[] = [
   ['Poulet grillé, riz basmati, brocoli', 'Grilled chicken, basmati rice, broccoli', 620, 52, [['Blanc de poulet', 150, 'g'], ['Riz (cru)', 80, 'g'], ['Brocoli', 200, 'g'], ['Huile d’olive', 10, 'ml']]],
@@ -21,6 +25,10 @@ const LUN: M[] = [
   ['Bowl lentilles, feta, crudités', 'Lentil bowl, feta, raw veg', 560, 30, [['Lentilles cuites', 200, 'g'], ['Feta', 40, 'g'], ['Crudités', 150, 'g'], ['Huile d’olive', 10, 'ml']]],
   ['Wrap thon, houmous, crudités', 'Tuna wrap, hummus, raw veg', 540, 38, [['Tortilla complète', 1, 'pc'], ['Thon', 120, 'g'], ['Houmous', 40, 'g'], ['Crudités', 100, 'g']]],
   ['Bœuf 5 %, patate douce, haricots verts', 'Lean beef, sweet potato, green beans', 600, 45, [['Bœuf haché 5 %', 150, 'g'], ['Patate douce', 250, 'g'], ['Haricots verts', 150, 'g']]],
+  ['Sardines grillées, salade marocaine, pain complet', 'Grilled sardines, Moroccan salad, wholegrain bread', 560, 38, [['Sardines', 200, 'g'], ['Salade marocaine', 250, 'g'], ['Pain complet', 60, 'g'], ['Huile d’olive', 10, 'ml']]],
+  ['Harira légère, 2 œufs durs, dattes', 'Light harira, 2 boiled eggs, dates', 520, 32, [['Harira', 400, 'ml'], ['Œufs durs', 2, 'pc'], ['Dattes', 3, 'pc']]],
+  ['Poulet rôti, lentilles, carottes', 'Roast chicken, lentils, carrots', 610, 55, [['Blanc de poulet', 160, 'g'], ['Lentilles cuites', 180, 'g'], ['Carottes', 150, 'g'], ['Huile d’olive', 10, 'ml']]],
+  ['Kefta de bœuf maigre, riz, légumes', 'Lean beef kefta, rice, vegetables', 620, 44, [['Bœuf haché 5 %', 140, 'g'], ['Riz (cru)', 80, 'g'], ['Légumes', 200, 'g']]],
 ]
 const DIN: M[] = [
   ['Cabillaud vapeur, légumes, pommes de terre', 'Steamed cod, vegetables, potatoes', 450, 38, [['Cabillaud', 160, 'g'], ['Pommes de terre', 200, 'g'], ['Légumes', 200, 'g']]],
@@ -28,6 +36,10 @@ const DIN: M[] = [
   ['Curry léger de poulet, riz complet', 'Light chicken curry, brown rice', 520, 40, [['Poulet', 140, 'g'], ['Riz complet (cru)', 60, 'g'], ['Lait de coco light', 80, 'ml']]],
   ['Soupe de légumes, œufs durs, fromage blanc', 'Vegetable soup, boiled eggs, quark', 400, 30, [['Soupe de légumes', 400, 'ml'], ['Œufs durs', 2, 'pc'], ['Fromage blanc', 150, 'g']]],
   ['Tofu sauté, nouilles soba, légumes', 'Stir-fried tofu, soba noodles, vegetables', 480, 26, [['Tofu ferme', 150, 'g'], ['Nouilles soba (crues)', 60, 'g'], ['Légumes', 200, 'g']]],
+  ['Tajine de poulet aux légumes, semoule complète', 'Chicken and vegetable tagine, wholegrain semolina', 520, 42, [['Poulet', 150, 'g'], ['Légumes', 250, 'g'], ['Semoule complète (crue)', 50, 'g']]],
+  ['Lentilles aux légumes, œuf poché', 'Lentils with vegetables, poached egg', 450, 28, [['Lentilles cuites', 220, 'g'], ['Légumes', 150, 'g'], ['Œufs', 1, 'pc']]],
+  ['Poisson blanc au four, pommes de terre, courgettes', 'Baked white fish, potatoes, courgettes', 460, 40, [['Poisson blanc', 170, 'g'], ['Pommes de terre', 200, 'g'], ['Courgettes', 200, 'g']]],
+  ['Salade de pois chiches, thon, œuf', 'Chickpea, tuna and egg salad', 480, 38, [['Pois chiches cuits', 180, 'g'], ['Thon', 100, 'g'], ['Œufs', 1, 'pc'], ['Crudités', 150, 'g']]],
 ]
 const PRE: M[] = [['Banane et amandes', 'Banana and almonds', 250, 6, [['Banane', 1, 'pc'], ['Amandes', 20, 'g']]], ['Pain complet et miel', 'Wholegrain bread and honey', 220, 6, [['Pain complet', 50, 'g'], ['Miel', 15, 'g']]]]
 const POST: M[] = [['Shaker lait et banane', 'Milk and banana shake', 300, 25, [['Lait', 300, 'ml'], ['Banane', 1, 'pc'], ['Whey (option)', 20, 'g']]], ['Skyr et fruit', 'Skyr and fruit', 200, 20, [['Skyr', 200, 'g'], ['Fruit', 1, 'pc']]], ['2 œufs durs et une pomme', '2 boiled eggs and an apple', 230, 13, [['Œufs durs', 2, 'pc'], ['Pomme', 1, 'pc']]]]
@@ -74,12 +86,12 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
       {view !== 'month' && <div className="mt-2 flex gap-1.5">{[0, 1, 2, 3].map((i) => <button key={i} onClick={() => setW(i)} className={`flex-1 rounded-xl py-1.5 text-xs font-bold ${w === i ? 'bg-ink text-white' : 'bg-cream text-muted'}`}>{L(lang, 'Wk', 'S')}{i + 1}{i === 3 ? ' · ' + L(lang, 'rec.', 'récup') : ''}</button>)}</div>}
 
       {view === 'day' && <>
-        <div className="mt-3 grid grid-cols-7 gap-1">{DN.map((n, i) => { const has = !!buildProgram(p, w + blk * 4).days[i]; return <button key={i} onClick={() => { setD(i); setOpen(null) }} className={`rounded-xl py-1.5 text-center transition ${d === i ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-extrabold uppercase">{n}</span><span className={`mx-auto mt-1 block h-1.5 w-1.5 rounded-full ${has ? (d === i ? 'bg-apricot' : 'bg-forest') : 'bg-transparent'}`} /></button> })}</div>
+        <div className="mt-3 grid grid-cols-7 gap-1">{DN.map((n, i) => { const has = !!buildProgram(p, w + blk * 4).days[i]; return <button key={i} onClick={() => { setD(i); setOpen(null) }} className={`rounded-xl py-1.5 text-center transition ${d === i ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[12px] font-extrabold uppercase">{n}</span><span className={`mx-auto mt-1 block h-1.5 w-1.5 rounded-full ${has ? (d === i ? 'bg-apricot' : 'bg-forest') : 'bg-transparent'}`} /></button> })}</div>
         <div className="mt-3 flex items-center justify-between rounded-2xl bg-cream/70 px-3 py-2 text-xs"><span><b className="font-display text-base tabular-nums">{day.tk}</b> kcal · <b className="tabular-nums">{day.tp} g</b> {L(lang, 'protein', 'protéines')}</span>
           {day.s && <span className="flex rounded-full bg-surface p-0.5 font-bold">{[[true, L(lang, 'Morning', 'Matin')], [false, L(lang, 'Evening', 'Soir')]].map(([v, l]) => <button key={String(v)} onClick={() => setAm(v as boolean)} className={`rounded-full px-2.5 py-1 ${am === v ? 'bg-forest text-white' : 'text-muted'}`}>{l as string}</button>)}</span>}</div>
         <ol key={`${w}-${d}-${am}`} className="stagger relative mt-3 space-y-2 before:absolute before:bottom-3 before:start-[52px] before:top-3 before:w-0.5 before:bg-line">{day.items.map((x, i) => (
           <li key={i} className="relative flex gap-2.5">
-            <span className="w-10 shrink-0 pt-2.5 text-end text-[11px] font-bold tabular-nums text-muted">{x.at}</span>
+            <span className="w-10 shrink-0 pt-2.5 text-end text-[12px] font-bold tabular-nums text-muted">{x.at}</span>
             <span className="relative z-10 mt-1.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-white ring-4 ring-surface" style={{ background: x.tone }}><x.icon size={14} strokeWidth={2.4} aria-hidden /></span>
             <button className={`min-w-0 flex-1 rounded-2xl px-3 py-2 text-start transition ${x.list ? 'active:scale-[.99]' : ''} ${x.icon === Dumbbell ? 'bg-forest text-white' : 'bg-cream/70'}`} onClick={() => x.list && setOpen(open === i ? null : i)} aria-expanded={open === i}>
               <span className="flex items-start gap-2"><b className="flex-1 text-[14px] leading-snug">{x.title}</b>{x.list && <ChevronDown size={16} className={`mt-0.5 shrink-0 opacity-60 transition-transform ${open === i ? 'rotate-180' : ''}`} aria-hidden />}</span>
@@ -91,14 +103,14 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
 
       {view === 'week' && <div key={w} className="stagger mt-3 space-y-1.5">{DN.map((n, i) => { const x = dayPlan(p, w + blk * 4, i, kcal, lang, am); return (
         <button key={i} onClick={() => { setD(i); setView('day') }} className="flex w-full items-center gap-3 rounded-2xl bg-cream/70 px-3 py-2.5 text-start active:scale-[.99]">
-          <span className="w-9 text-[11px] font-extrabold uppercase text-muted">{n}</span>
+          <span className="w-9 text-[12px] font-extrabold uppercase text-muted">{n}</span>
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: x.s ? ['#25a35a', '#e0a526', '#e5484d'][x.s.hard - 1] : '#9aa3ab' }}>{x.s ? <Dumbbell size={16} aria-hidden /> : <Moon size={16} aria-hidden />}</span>
           <span className="min-w-0 flex-1"><b className="block truncate text-sm">{x.s ? `${x.s.t} · ${x.s.min} min` : L(lang, 'Rest + walk', 'Repos + marche')}</b><span className="block truncate text-xs text-muted">{x.items.filter((y) => y.kcal).length} {L(lang, 'meals', 'repas')} · {x.tk} kcal · {x.tp} g</span></span>
           <Utensils size={15} className="text-muted" aria-hidden /></button>) })}</div>}
 
       {view === 'month' && <div className="mt-3 space-y-2">{[0, 1, 2, 3].map((i) => { const pr = buildProgram(p, i + blk * 4); const n = pr.days.filter(Boolean).length; const min = pr.days.reduce((a, x) => a + (x?.min ?? 0), 0); return (
         <button key={i} onClick={() => { setW(i); setView('week') }} className={`w-full rounded-2xl p-3 text-start active:scale-[.99] ${i === 3 ? 'bg-leaf/20' : 'bg-cream/70'}`}>
-          <div className="flex items-center justify-between"><b className="font-display">{L(lang, 'Week', 'Semaine')} {i + 1}</b><span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-forest">{['Base', '+15 %', '+30 %', L(lang, 'Recovery', 'Récupération')][i]}</span></div>
+          <div className="flex items-center justify-between"><b className="font-display">{L(lang, 'Week', 'Semaine')} {i + 1}</b><span className="rounded-full bg-surface px-2 py-0.5 text-[12px] font-bold text-forest">{['Base', '+15 %', '+30 %', L(lang, 'Recovery', 'Récupération')][i]}</span></div>
           <p className="mt-1 text-xs text-muted">{n} {L(lang, 'sessions', 'séances')} · {min} min · {kcal} kcal/{L(lang, 'day', 'jour')} · {prot} g {L(lang, 'protein', 'protéines')}</p>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface"><div className="grow-x h-full rounded-full bg-forest" style={{ width: `${[60, 75, 90, 45][i]}%` }} /></div>
           <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold"><Scale size={13} aria-hidden /> {L(lang, 'Sunday weigh-in', 'Pesée le dimanche')}{perWeek ? ` · ${L(lang, 'target', 'objectif')} ${perWeek > 0 ? '+' : ''}${(perWeek * (i + 1)).toFixed(perWeek % 0.5 ? 2 : 1)} kg` : ` · ${L(lang, 'keep your weight', 'garder ton poids')}`}</p>

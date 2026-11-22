@@ -21,7 +21,7 @@ function Pantry() {
       {items.map(([id, v]) => { const c = CATALOG.find((x) => x.id === id)!; return (
         <div key={id} className="flex items-center justify-between gap-2"><span className="text-sm font-semibold">{c.n[li(lang)]}</span>
           <span className="flex items-center gap-2"><span className="text-sm tabular-nums text-muted">{fmtQty(v, c.base)}</span><Stepper v={Math.round(v / step(id))} min={0} max={200} set={(n) => upHouse((h) => { h.pantry[id] = n * step(id) })} /></span></div>) })}
-      <select className="input" value={add} onChange={(e) => { const id = e.target.value; if (id) upHouse((h) => { h.pantry[id] = (h.pantry[id] ?? 0) + step(id) * 2 }, `pantry +${id}`); setAdd('') }}><option value="">+ {t('addPantry', lang)}</option>{CATALOG.map((c) => <option key={c.id} value={c.id}>{c.n[li(lang)]}</option>)}</select>
+      <select className="input" value={add} onChange={(e) => { const id = e.target.value; if (id) upHouse((h) => { h.pantry[id] = (h.pantry[id] ?? 0) + step(id) * 2 }, `pantry +${id}`); setAdd('') }}><option value="">+ {t('addPantry', lang)}</option>{(['produce', 'meat', 'dairy', 'bakery', 'grocery', 'spices'] as const).map((a) => <optgroup key={a} label={{ produce: '🥬 Fruits et légumes', meat: '🥩 Viandes et poissons', dairy: '🥛 Crèmerie', bakery: '🥖 Boulangerie', grocery: '🫙 Épicerie', spices: '🧂 Épices' }[a]}>{CATALOG.filter((c) => c.aisle === a).map((c) => <option key={c.id} value={c.id}>{c.n[li(lang)]}</option>)}</optgroup>)}</select>
     </div>
   )
 }
@@ -58,8 +58,8 @@ export function ProfileScreen({ celebrate, openCountry }: { celebrate: () => voi
             <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-apricot px-3 py-1 text-xs font-extrabold text-[#3c280a]"><E3 e="⭐" /> {t('level', lang)} {lvl}</span></div>
         </div>
         <div className="relative mt-4 grid grid-cols-3 gap-2 text-center">{([['🔥', me!.streak, t('streak', lang)], ['✨', me!.xp, 'XP'], ['👥', house!.members.length, t('members', lang)]] as [string, number, string][]).map(([e, v, l], k) => (
-          <div key={k} className="rise rounded-2xl bg-white/10 py-2.5" style={{ animationDelay: `${k * 80}ms` }}><span className="text-2xl"><E3 e={e} /></span><b className="block font-display text-lg tabular-nums">{v}</b><span className="text-[11px] text-white/65">{l}</span></div>))}</div>
-        <div className="relative mt-3"><div className="h-2 overflow-hidden rounded-full bg-white/15"><div className="grow-x h-full rounded-full bg-apricot" style={{ width: `${me!.xp % 100}%` }} /></div><p className="mt-1 text-[11px] text-white/60">{100 - (me!.xp % 100)} XP {lang === 'en' ? 'to level' : 'avant le niveau'} {lvl + 1}</p></div>
+          <div key={k} className="rise rounded-2xl bg-white/10 py-2.5" style={{ animationDelay: `${k * 80}ms` }}><span className="text-2xl"><E3 e={e} /></span><b className="block font-display text-lg tabular-nums">{v}</b><span className="text-[12px] text-white/65">{l}</span></div>))}</div>
+        <div className="relative mt-3"><div className="h-2 overflow-hidden rounded-full bg-white/15"><div className="grow-x h-full rounded-full bg-apricot" style={{ width: `${me!.xp % 100}%` }} /></div><p className="mt-1 text-[12px] text-white/60">{100 - (me!.xp % 100)} XP {lang === 'en' ? 'to level' : 'avant le niveau'} {lvl + 1}</p></div>
       </section>
       <section className="card space-y-3 p-4">
         <div className="flex items-center gap-2"><span className="text-2xl"><E3 e="🏡" /></span><h2 className="flex-1 font-display text-lg font-extrabold">{house!.name}</h2><span className="flex -space-x-2">{house!.members.map((m) => <span key={m.id} className="grid h-8 w-8 place-items-center rounded-full bg-leaf/50 text-xs font-bold ring-2 ring-surface" title={m.name}>{m.name[0]}</span>)}</span></div>

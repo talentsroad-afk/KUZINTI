@@ -120,7 +120,11 @@ const D: D = {
   stepHint0: ['Plan: pick your goal and tap “Plan my week”', 'Composer : choisis ton objectif et touche « Composer ma semaine »', 'خطط: اختر هدفك واضغط «خطط أسبوعي»'], stepHint1: ['Week: check and swap your meals', 'Semaine : vérifie et change tes repas', 'الأسبوع: راجع وجباتك'], stepHint2: ['Shopping: tick your products in the store', 'Courses : coche tes produits en magasin', 'التسوق: ضع علامة على منتجاتك'], stepHint3: ['Store: pick where to shop', 'Magasin : choisis où faire tes courses', 'المتجر: اختر أين تتسوق'], stepHint4: ['Done: tick everything and finish', 'Fini : coche tout et termine', 'تم: ضع علامة على الكل وأنهِ'],
   tSport: ['Sport', 'Sport', 'الرياضة'], share: ['Share', 'Partager', 'مشاركة'], shared: ['List copied', 'Liste copiée', 'تم نسخ القائمة'], lWeek: ['Week', 'Semaine', 'الأسبوع'], lDay: ['Day', 'Jour', 'اليوم'],
 }
-export const t = (k: string, l: Lang) => (l === 'zgh' && (Z[k] || ZF[(D[k] ?? [k, k, k])[1]])) || (D[k] ?? [k, k, k])[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
+let RAMADAN = false
+export const setRamadan = (v: boolean) => { RAMADAN = v }
+const RMD: Record<string, [string, string, string]> = { b: ['Suhoor', 'S’hour', 'السحور'], d: ['Iftar', 'Ftour', 'الفطور'] }
+export const t = (k: string, l: Lang) => (RAMADAN && RMD[k] ? RMD[k][l === 'en' ? 0 : l === 'ar' ? 2 : 1] : t0(k, l))
+const t0 = (k: string, l: Lang) => (l === 'zgh' && (Z[k] || ZF[(D[k] ?? [k, k, k])[1]])) || (D[k] ?? [k, k, k])[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
 export const rname = (n: [string, string, string], l: Lang) => n[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
 export const dayName = (i: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l === 'zgh' ? 'fr' : l, { weekday: 'long' }).format(new Date(2024, 0, 1 + i))
 // Amounts are stored in MAD; France shows an estimated euro equivalent (local price level, not a bank rate).

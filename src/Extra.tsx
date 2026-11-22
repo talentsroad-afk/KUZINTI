@@ -40,7 +40,7 @@ export function RecipesTab({ say }: { say: (m: string) => void }) {
           <div key={r.id} className="card overflow-hidden">
             <button className="block w-full text-start" onClick={() => setView(r)}>
               <FoodTile r={r} className="h-28" />
-              <div className="p-2.5"><p className="line-clamp-2 text-sm font-bold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-[11px] text-muted"><Ic e="⏱" /> {r.t} min · {Math.round(kcalPerServing(r.id))} kcal</p></div>
+              <div className="p-2.5"><p className="line-clamp-2 text-sm font-bold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-[12px] text-muted"><Ic e="⏱" /> {r.t} min · {Math.round(kcalPerServing(r.id))} kcal</p></div>
             </button>
             <div className="flex items-center justify-between px-2.5 pb-2.5">
               <button className="text-xl" aria-pressed={on} aria-label="favorite" onClick={() => fav(r)}>{on ? '❤️' : '🤍'}</button>
@@ -73,7 +73,7 @@ export function FridgeSheet({ open, onClose }: { open: boolean; onClose: () => v
         <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) setImg(URL.createObjectURL(file)) }} />
       </label>
       <p className="mt-3 text-sm font-semibold">{t('fridgeHave', lang)}</p>
-      <p className="text-[11px] text-muted">{t('fridgeNote', lang)}</p>
+      <p className="text-[12px] text-muted">{t('fridgeNote', lang)}</p>
       <div className="mt-2 flex flex-wrap gap-2">{cands.map((l) => <button key={l.id} className={`chip ${have[l.id] ? '!bg-forest !text-white' : ''}`} onClick={() => setHave({ ...have, [l.id]: !have[l.id] })}>{have[l.id] ? '✓ ' : ''}{l.ing.n[li(lang)]}</button>)}</div>
       <button className="btn btn-primary mt-4 w-full" onClick={apply}>{t('fridgeApply', lang)}</button>
     </Sheet>

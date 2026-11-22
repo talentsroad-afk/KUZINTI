@@ -62,7 +62,7 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
       onPointerDown={down} onPointerUp={up} onPointerCancel={up}>
       <span className="pointer-events-none absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl" style={{ background: `hsl(${hue} 80% 55% / .35)` }} aria-hidden />
       <div className="relative flex gap-1 px-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}>{Array.from({ length: N }, (_, k) => <span key={k} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20"><span key={i} className={`block h-full rounded-full bg-white ${k < i ? 'w-full' : k === i && i < N - 1 ? 'story-bar' : k === i ? 'w-full' : 'w-0'}`} style={k === i ? { animationDuration: `${dur / 1000}s`, animationPlayState: paused ? 'paused' : 'running' } : undefined} /></span>)}</div>
-      <div className="relative flex items-center gap-3 px-4 py-3"><Dish r={r} w={120} className="h-9 w-9 rounded-full" /><span className="min-w-0 flex-1"><b className="block truncate">{rname(r.n, lang)}</b><span className="text-[11px] text-white/60">{sv} {t('servings', lang)} · ⏱ {r.t} min</span></span><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-sm" onClick={() => setPaused(!paused)} aria-label={paused ? (lang === 'en' ? 'Play' : 'Lecture') : 'Pause'}>{paused ? '▶' : '❚❚'}</button><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close">✕</button></div>
+      <div className="relative flex items-center gap-3 px-4 py-3"><Dish r={r} w={120} className="h-9 w-9 rounded-full" /><span className="min-w-0 flex-1"><b className="block truncate">{rname(r.n, lang)}</b><span className="text-[12px] text-white/60">{sv} {t('servings', lang)} · ⏱ {r.t} min</span></span><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-sm" onClick={() => setPaused(!paused)} aria-label={paused ? (lang === 'en' ? 'Play' : 'Lecture') : 'Pause'}>{paused ? '▶' : '❚❚'}</button><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close">✕</button></div>
       {paused && <div className="pointer-events-none absolute inset-x-0 top-24 z-30 flex justify-center"><span className="rounded-full bg-black/55 px-4 py-2 text-sm font-bold backdrop-blur">❚❚ {lang === 'en' ? 'Paused · tap ▶ to resume' : 'En pause · ▶ pour reprendre'}</span></div>}
       <div className="relative flex-1" style={{ perspective: 1100 }}>
         <button className="absolute inset-y-0 start-0 z-10 w-1/3" onClick={() => { if (!held.current) go(Math.max(0, i - 1)) }} aria-label="‹" />
@@ -73,13 +73,13 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
             <div className="mt-4 grid grid-cols-3 gap-3" style={{ transformStyle: 'preserve-3d' }}>{ings.slice(0, 12).map((x, k) => (
               <div key={k} className="ing3d relative flex flex-col items-center rounded-[20px] border border-white/15 bg-white/[.08] px-2 pb-2.5 pt-3 text-center shadow-[0_18px_40px_-12px_rgba(0,0,0,.6)] backdrop-blur-md" style={{ animationDelay: `${k * 260}ms`, ['--fz' as string]: `${(k % 3) * 8}px` }}>
                 <span className="ing-emoji text-[40px] leading-none drop-shadow-[0_10px_8px_rgba(0,0,0,.45)]" style={{ animationDelay: `${k * 260 + 700}ms` }}><E3 e={x.e} /></span>
-                <span className="mt-1.5 line-clamp-1 text-[11px] font-semibold text-white/85">{x.n}</span>
+                <span className="mt-1.5 line-clamp-1 text-[12px] font-semibold text-white/85">{x.n}</span>
                 <span className="qty-pop mt-1 rounded-full bg-white px-2 py-0.5 font-display text-[13px] font-extrabold text-ink tabular-nums" style={{ animationDelay: `${k * 260 + 420}ms` }}>{x.q}</span>
               </div>))}</div></>}
           {i > 0 && i <= steps.length && (() => { const si = ings.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5))); const act = actOf(steps[i - 1]); return <>
             <StepScene dish={r.n.join(' ')} text={steps[i - 1]} ings={sceneIngs.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5)))} />
             <div className="-mt-2 rounded-[28px] border border-white/15 bg-white/[.07] p-5 shadow-[0_30px_60px_-20px_rgba(0,0,0,.7)] backdrop-blur-md" style={{ transform: 'translateZ(40px)' }}>
-            <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.2em] text-apricot"><span className="grid h-6 w-6 place-items-center rounded-full bg-apricot font-display text-[12px] text-ink">{i}</span>{ACT_LABEL[act][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p>
+            <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[.2em] text-apricot"><span className="grid h-6 w-6 place-items-center rounded-full bg-apricot font-display text-[12px] text-ink">{i}</span>{ACT_LABEL[act][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p>
             <p className="mt-2 font-display text-[21px] font-bold leading-snug">{steps[i - 1]}</p>
             <div className="mt-4 flex flex-wrap gap-1.5">{si.slice(0, 4).map((x, k) => <span key={k} className="qty-pop inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-bold text-ink" style={{ animationDelay: `${300 + k * 120}ms` }}><E3 e={x.e} /> {x.q}</span>)}</div>
             <p className="mt-4 text-xs text-white/55">{lang === 'en' ? 'Step' : 'Étape'} {i}/{steps.length} · {lang === 'en' ? 'tap to continue' : 'touchez pour continuer'}</p></div></> })()}
@@ -123,9 +123,9 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
       </ul>
       {!onServings && r.m.length > 0 && <div className="mb-5 rounded-2xl bg-leaf/15 p-3">
         <p className="mb-2 text-sm font-bold"><Ic e="🛒" /> {lang === 'en' ? 'Add to my week and shopping list' : 'Ajouter à ma semaine et à mes courses'}</p>
-        <div className="mb-2 grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`rounded-lg py-1.5 text-[11px] font-bold uppercase ${d === day ? 'bg-forest text-white' : 'bg-surface'}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 2)}</button>)}</div>
+        <div className="mb-2 grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`rounded-lg py-1.5 text-[12px] font-bold uppercase ${d === day ? 'bg-forest text-white' : 'bg-surface'}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 2)}</button>)}</div>
         <div className="flex gap-2">{r.m.map((sl) => <button key={sl} className="btn btn-primary !min-h-10 flex-1 !px-2 !text-sm" onClick={() => addToWeek(sl)}><Ic e={SLOT_E[sl]} /> {t(sl, lang)}</button>)}</div>
-        <p className="mt-1.5 text-[11px] text-muted">{lang === 'en' ? `For ${sv} people · replaces the dish already planned there.` : `Pour ${sv} personne(s) · remplace le plat déjà prévu à ce moment.`}</p>
+        <p className="mt-1.5 text-[12px] text-muted">{lang === 'en' ? `For ${sv} people · replaces the dish already planned there.` : `Pour ${sv} personne(s) · remplace le plat déjà prévu à ce moment.`}</p>
       </div>}
       <h3 className="mb-2 font-bold">{t('steps', lang)}</h3>
       <ol className="mb-4 space-y-2.5 text-sm">{stepsOf(r, lang).map((x, i) => <li key={i} className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-forest text-xs font-extrabold text-white">{i + 1}</span><span className="pt-1 leading-relaxed">{x}</span></li>)}</ol>
@@ -138,7 +138,7 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
 
 export function usePrefs(): Prefs {
   const { me } = useApp(); const u = me!
-  return { size: Math.max(1, u.size), diet: u.diet, cuisine: u.cuisine ?? 'ma', region: u.region ?? 'all', goals: (u.goals ?? []).filter((g) => g !== 'healthy' && g !== 'gourmand'), meals: u.meals ?? ['b', 'l', 'd'], budget: u.budget, kcal: (u.kcal ?? 2000) + (u.health === 'sport' ? 300 : u.health === 'preg' ? 300 : 0), health: u.health }
+  return { size: Math.max(1, u.size), diet: u.diet, cuisine: u.cuisine ?? 'ma', region: u.region ?? 'all', goals: (u.goals ?? []).filter((g) => g !== 'healthy' && g !== 'gourmand'), meals: u.ramadan ? ['d', 'b'] : u.meals ?? ['b', 'l', 'd'], budget: u.budget, kcal: (u.kcal ?? 2000) + (u.health === 'sport' ? 300 : u.health === 'preg' ? 300 : 0), health: u.health, ramadan: u.ramadan }
 }
 const sideNames = (x: string[] | undefined, lang: Lang) => (x ?? []).filter((s) => SIDE[s]).map((s) => SIDE[s].n[li(lang)]).join(' · ')
 
@@ -195,7 +195,7 @@ export function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => vo
     <Sheet open onClose={onClose} title={`${dayName(+d, lang)} · ${t(slot, lang)}`}>
       <button className="btn btn-warm mb-3 w-full !min-h-12" onClick={() => put(surpriseOne(k, plan, p))}><Dices size={18} className="inline -mt-0.5" aria-hidden /> {t('surprise', lang)}</button>
       <div className="-mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1 pb-1">{[['same', 'fSame'], ['all', 'fAll'], ['cheaper', 'fCheaper'], ['healthier', 'fHealthier'], ['quick', 'fQuick'], ['veg', 'veg']].map(([id, key]) => <button key={id} className="chip shrink-0" aria-pressed={f === id} onClick={() => setF(id)}>{t(key, lang)}</button>)}</div>
-      {!q && list.length > 2 && <div className="mb-3 grid grid-cols-3 gap-2">{list.slice(0, 3).map((r) => { const e = { r: r.id, n: cur?.n ?? p.size, x: composeSides(r.id, slot) }; return <button key={r.id} className="flex flex-col items-center gap-1 rounded-2xl bg-cream/70 p-2 text-center transition active:scale-95" onClick={() => put(e)}><span className="grid h-14 w-14 place-items-center rounded-2xl text-3xl" style={{ background: `hsl(${r.h} 80% 90%)` }}><E3 e={r.e} /></span><span className="line-clamp-2 text-[12px] font-bold leading-tight">{rname(r.n, lang)}</span><span className="text-[10px] text-muted">{r.t} min</span></button> })}</div>}
+      {!q && list.length > 2 && <div className="mb-3 grid grid-cols-3 gap-2">{list.slice(0, 3).map((r) => { const e = { r: r.id, n: cur?.n ?? p.size, x: composeSides(r.id, slot) }; return <button key={r.id} className="flex flex-col items-center gap-1 rounded-2xl bg-cream/70 p-2 text-center transition active:scale-95" onClick={() => put(e)}><span className="grid h-14 w-14 place-items-center rounded-2xl text-3xl" style={{ background: `hsl(${r.h} 80% 90%)` }}><E3 e={r.e} /></span><span className="line-clamp-2 text-[12px] font-bold leading-tight">{rname(r.n, lang)}</span><span className="text-[12px] text-muted">{r.t} min</span></button> })}</div>}
       <input className="input mb-2 !min-h-10" placeholder={t('search', lang)} value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="divide-y divide-line/70">
         {list.map((r) => { const e = { r: r.id, n: cur?.n ?? p.size, x: composeSides(r.id, slot) }; const c = entryCost(e) / e.n; const dc = c - curCost; return (
@@ -232,7 +232,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
       <div key={s} className="px-4 py-3">
         <div className="flex gap-3">
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}><E3 e={r.e} /></span>
-          <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wide text-muted"><Ic e={SLOT_E[s]} /> {t(s, lang)}</p><p className="font-semibold leading-tight">{rname(r.n, lang)}</p>{(e.x ?? []).length > 0 && <p className="mt-0.5 text-xs text-muted">+ {sideNames(e.x, lang)}</p>}</div>
+          <div className="min-w-0 flex-1"><p className="text-[12px] font-bold uppercase tracking-wide text-muted"><Ic e={SLOT_E[s]} /> {t(s, lang)}</p><p className="font-semibold leading-tight">{rname(r.n, lang)}</p>{(e.x ?? []).length > 0 && <p className="mt-0.5 text-xs text-muted">+ {sideNames(e.x, lang)}</p>}</div>
           <span className="shrink-0 text-xs text-muted tabular-nums">{Math.round(entryKcal(e))} kcal</span>
         </div>
         <div className="mt-2 flex items-center gap-2 ps-[3.75rem]">
@@ -252,7 +252,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
         <button className="grid h-11 w-11 place-items-center rounded-full bg-surface text-forest shadow-soft active:scale-90" onClick={compose} aria-label={t('reshuffle', lang)} title={t('reshuffle', lang)}><Shuffle size={18} aria-hidden /></button>
         <button className="grid h-11 w-11 place-items-center rounded-full bg-surface text-danger shadow-soft active:scale-90" onClick={clear} aria-label={lang === 'en' ? 'Clear' : 'Vider'} title={lang === 'en' ? 'Clear' : 'Vider'}><Ic e="🗑" /></button></div>
       {view === 'day' && <>
-        <div className="grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => setDay(d)} className={`rounded-2xl py-2 text-center ${d === day ? 'bg-forest text-white' : 'bg-surface'}`}><span className="block text-[10px] font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span><span className="block text-base">{d === today ? '•' : ' '}</span></button>)}</div>
+        <div className="grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => setDay(d)} className={`rounded-2xl py-2 text-center ${d === day ? 'bg-forest text-white' : 'bg-surface'}`}><span className="block text-[12px] font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span><span className="block text-base">{d === today ? '•' : ' '}</span></button>)}</div>
         <div className="flex items-center justify-between text-sm font-semibold"><button className="rounded-full bg-surface px-3 py-1.5 capitalize text-muted shadow-soft active:scale-95" onClick={() => goDay(-1)}>‹ {dayName((day + 6) % 7, lang)}</button><button className="rounded-full bg-surface px-3 py-1.5 capitalize text-muted shadow-soft active:scale-95" onClick={() => goDay(1)}>{dayName((day + 1) % 7, lang)} ›</button></div>
         <div key={day} className={`card overflow-hidden touch-pan-y ${dir > 0 ? 'slide-in-r' : 'slide-in-l'}`} onTouchStart={(e) => { tx.current = e.touches[0].clientX }} onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - tx.current; if (Math.abs(dx) > 60) goDay(dx < 0 ? 1 : -1) }}>
           <div className="flex items-baseline justify-between px-4 pt-3"><span className="font-display text-lg font-extrabold capitalize">{dayName(day, lang)}</span><span className="text-xs text-muted tabular-nums">{Math.round(dayKc(day))} kcal · {money(dayCost(day), lang)}</span></div>
@@ -262,7 +262,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
       {view === 'week' && <div className="space-y-3">
         <div className="rounded-[22px] bg-surface p-2 shadow-soft">
           <div className="grid gap-1" style={{ gridTemplateColumns: `22px repeat(7, minmax(0, 1fr))` }}>
-            <span />{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => <button key={d} onClick={() => setDay(d)} className={`rounded-xl py-1 text-center text-[10px] font-extrabold uppercase transition ${d === day ? 'bg-forest text-white' : d === today ? 'text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 3)}</button>)}
+            <span />{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => <button key={d} onClick={() => setDay(d)} className={`rounded-xl py-1 text-center text-[12px] font-extrabold uppercase transition ${d === day ? 'bg-forest text-white' : d === today ? 'text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 3)}</button>)}
             {slots.map((s) => [<span key={s} className="grid place-items-center text-[13px]" title={t(s, lang)}><Ic e={SLOT_E[s]} /></span>, ...Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => { const e = plan[`${d}-${s}`]; const r = e ? REC[e.r] : null; return (
               <button key={s + d} onClick={() => setDay(d)} className={`cal-cell flex min-h-[64px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl px-0.5 py-1 transition active:scale-90 ${d === day ? 'ring-2 ring-forest ring-offset-1 ring-offset-surface' : ''}`} style={{ background: SLOT_BG[s] ?? '#F4F1E8' }} aria-label={r ? rname(r.n, lang) : t(s, lang)}>
                 {r ? <><span className="text-[22px] leading-none drop-shadow-sm" aria-hidden><E3 e={r.e} /></span>{rname(r.n, lang).split(/[ ,(]/).filter((w) => w.length > 2).slice(0, 2).map((w, i) => <span key={i} className="block w-full truncate text-center text-[8.5px] font-bold leading-[1.15] text-ink/80">{w}</span>)}</> : <span className="text-muted">＋</span>}</button>) })])}
@@ -275,10 +275,10 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
       </div>}
       {view === 'month' && <div className="card p-3">
         <p className="mb-2 font-display font-extrabold capitalize">{new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang === 'zgh' ? 'fr' : lang, { month: 'long', year: 'numeric' }).format(new Date())}</p>
-        <div className="grid grid-cols-7 gap-1 text-center">{Array.from({ length: 7 }, (_, d) => <span key={d} className="text-[10px] font-bold uppercase text-muted">{dayName(d, lang).slice(0, 2)}</span>)}
-          {monthCells.map((c, i) => c ? <button key={i} onClick={() => { setDay(c.wd); setView('week') }} className={`rounded-xl py-1 ${c.today ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-bold">{c.n}</span>{plan[`${c.wd}-l`] && <span className="block truncate px-0.5 text-[8.5px] font-semibold leading-tight">{REC[plan[`${c.wd}-l`].r].e} {short(rname(REC[plan[`${c.wd}-l`].r].n, lang)).split(' ')[0]}</span>}</button> : <span key={i} />)}
+        <div className="grid grid-cols-7 gap-1 text-center">{Array.from({ length: 7 }, (_, d) => <span key={d} className="text-[12px] font-bold uppercase text-muted">{dayName(d, lang).slice(0, 2)}</span>)}
+          {monthCells.map((c, i) => c ? <button key={i} onClick={() => { setDay(c.wd); setView('week') }} className={`rounded-xl py-1 ${c.today ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[12px] font-bold">{c.n}</span>{plan[`${c.wd}-l`] && <span className="block truncate px-0.5 text-[8.5px] font-semibold leading-tight">{REC[plan[`${c.wd}-l`].r].e} {short(rname(REC[plan[`${c.wd}-l`].r].n, lang)).split(' ')[0]}</span>}</button> : <span key={i} />)}
         </div>
-        <p className="mt-2 text-center text-[11px] text-muted">{t('monthNote', lang)}</p>
+        <p className="mt-2 text-center text-[12px] text-muted">{t('monthNote', lang)}</p>
       </div>}
       <button className="cta-glow btn btn-primary sticky bottom-28 z-20 w-full !min-h-14 text-base shadow-lift" onClick={toBasket}><Ic e="🛒" /> {lang === 'en' ? 'Done choosing → my basket' : lang === 'ar' ? 'انتهيت → سلتي' : 'J’ai fini mes choix → mon panier'}</button>
       {rep && <ReplaceSheet k={rep} onClose={() => setRep(null)} say={say} />}

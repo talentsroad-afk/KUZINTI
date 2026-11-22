@@ -73,18 +73,18 @@ export function Program({ p, set, lang }: { p: SportProfile & { lvl?: Lvl }; set
   const tot = days.reduce((a, d) => a + (d?.min ?? 0), 0)
   return (
     <section className="rounded-[24px] bg-surface p-4 shadow-soft">
-      <div className="flex items-center justify-between"><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My programme', 'Mon programme')}</p><span className="text-xs font-semibold text-muted">{days.filter(Boolean).length} {L(lang, 'sessions', 'séances')} · {tot} min</span></div>
+      <div className="flex items-center justify-between"><p className="text-[12px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My programme', 'Mon programme')}</p><span className="text-xs font-semibold text-muted">{days.filter(Boolean).length} {L(lang, 'sessions', 'séances')} · {tot} min</span></div>
       <div className="mt-3 flex rounded-full bg-cream p-1">{(['beg', 'mid', 'adv'] as Lvl[]).map((l) => <button key={l} onClick={() => set({ lvl: l })} className={`flex-1 rounded-full py-1.5 text-sm font-bold transition ${(p.lvl ?? 'beg') === l ? 'bg-forest text-white shadow-soft' : 'text-muted'}`}>{{ beg: L(lang, 'Beginner', 'Débutant'), mid: L(lang, 'Intermediate', 'Intermédiaire'), adv: L(lang, 'Advanced', 'Confirmé') }[l]}</button>)}</div>
-      <div className="mt-3 grid grid-cols-4 gap-1.5">{[0, 1, 2, 3].map((i) => <button key={i} onClick={() => { setW(i); setOpen(null) }} className={`rounded-2xl py-2 text-center transition active:scale-95 ${w === i ? 'bg-ink text-white' : 'bg-cream'}`}><b className="block text-sm">{L(lang, 'Wk', 'S')}{i + 1}</b><span className={`text-[10px] ${w === i ? 'text-white/70' : 'text-muted'}`}>{i === 3 ? L(lang, 'recovery', 'récup') : i === 0 ? L(lang, 'base', 'base') : `+${i * 15} %`}</span></button>)}</div>
+      <div className="mt-3 grid grid-cols-4 gap-1.5">{[0, 1, 2, 3].map((i) => <button key={i} onClick={() => { setW(i); setOpen(null) }} className={`rounded-2xl py-2 text-center transition active:scale-95 ${w === i ? 'bg-ink text-white' : 'bg-cream'}`}><b className="block text-sm">{L(lang, 'Wk', 'S')}{i + 1}</b><span className={`text-[12px] ${w === i ? 'text-white/70' : 'text-muted'}`}>{i === 3 ? L(lang, 'recovery', 'récup') : i === 0 ? L(lang, 'base', 'base') : `+${i * 15} %`}</span></button>)}</div>
       {soft && <p className="mt-2 rounded-xl bg-leaf/20 px-3 py-2 text-xs text-forest">{L(lang, 'Low-impact version: easy on the joints.', 'Version douce pour les articulations : sans sauts ni course au début.')}</p>}
       <div key={w} className="stagger mt-3 space-y-1.5">{days.map((d, i) => d ? (
         <div key={i} className="overflow-hidden rounded-2xl border border-line">
           <button className="flex w-full items-center gap-3 px-3 py-2.5 text-start active:bg-cream" onClick={() => setOpen(open === i ? null : i)} aria-expanded={open === i}>
-            <span className="w-8 text-[11px] font-extrabold uppercase text-muted">{DN[i]}</span>
+            <span className="w-8 text-[12px] font-extrabold uppercase text-muted">{DN[i]}</span>
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white" style={{ background: ['#25a35a', '#e0a526', '#e5484d'][d.hard - 1] }}><d.icon size={18} strokeWidth={2.2} aria-hidden /></span>
             <span className="min-w-0 flex-1"><b className="block truncate text-[14.5px]">{d.t}</b><span className="text-xs text-muted">{d.min} min · {'●'.repeat(d.hard)}{'○'.repeat(3 - d.hard)}</span></span>
             <ChevronDown size={18} className={`text-muted transition-transform ${open === i ? 'rotate-180' : ''}`} aria-hidden /></button>
           {open === i && <ul className="fade-up space-y-1 border-t border-line bg-cream/50 px-4 py-2.5">{d.ex.map(([n, dose], j) => <li key={j} className="flex justify-between gap-3 text-sm"><span>{n}</span><b className="shrink-0 tabular-nums text-forest">{dose}</b></li>)}</ul>}
-        </div>) : <div key={i} className="flex items-center gap-3 px-3 py-1.5 text-muted"><span className="w-8 text-[11px] font-extrabold uppercase">{DN[i]}</span><Moon size={15} aria-hidden /><span className="text-xs">{L(lang, 'Rest', 'Repos')}</span></div>)}</div>
+        </div>) : <div key={i} className="flex items-center gap-3 px-3 py-1.5 text-muted"><span className="w-8 text-[12px] font-extrabold uppercase">{DN[i]}</span><Moon size={15} aria-hidden /><span className="text-xs">{L(lang, 'Rest', 'Repos')}</span></div>)}</div>
     </section>)
 }

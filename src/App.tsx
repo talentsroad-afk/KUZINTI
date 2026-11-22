@@ -1,7 +1,7 @@
 import { zf } from './lib/zgh'
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from './lib/store'
-import { money, setCurrency, t, type Lang } from './lib/i18n'
+import { money, setCurrency, t, type Lang, setRamadan } from './lib/i18n'
 import { LANG_LABEL } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
@@ -10,7 +10,7 @@ import { HomeTab } from './Home'
 import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket, useCart } from './Flow'
 import { CartMode } from './Cart'
-import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
+import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost, setRamadanSides } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
 import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, Wallet, Dumbbell, type LucideIcon } from './icons'
@@ -124,7 +124,7 @@ const L3 = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l
 
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
-  setCurrency(me!.country); setStoreCountry(me!.country); setDietFilter(me!.diet)
+  setCurrency(me!.country); setStoreCountry(me!.country); setDietFilter(me!.diet); setRamadan(!!me!.ramadan); setRamadanSides(!!me!.ramadan)
   useEffect(() => { document.documentElement.dataset.country = me!.country }, [me!.country]) // eslint-disable-line react-hooks/exhaustive-deps
   const h = house!; const hasPlan = Object.keys(h.plan).length > 0
   const [tab, setTab] = useState<Tab>(hasPlan ? 'week' : 'home')
@@ -236,7 +236,7 @@ function Shell() {
         </div>
         {FOOD_TABS.includes(tab) && <div data-tour="subtabs" className="mx-auto max-w-2xl px-4 pb-2"><div className="relative grid grid-cols-3 rounded-full bg-surface p-1 shadow-soft" role="tablist">
           <span className="absolute inset-y-1 rounded-full bg-forest shadow-soft transition-all duration-500 ease-[cubic-bezier(.2,.9,.25,1)]" style={{ width: 'calc((100% - .5rem) / 3)', insetInlineStart: `calc(.25rem + ${Math.max(0, SUB.findIndex((x) => x[0] === (tab === 'stores' ? 'list' : tab === 'recipes' ? 'week' : tab)))} * (100% - .5rem) / 3)` }} aria-hidden />
-          {SUB.map(([k, I, en, fr, ar]) => { const on = (tab === 'stores' ? 'list' : tab === 'recipes' ? 'week' : tab) === k; return <button key={k} role="tab" aria-selected={on} onClick={() => go(k)} className={`relative z-10 flex items-center justify-center gap-1 rounded-full py-1.5 text-[12.5px] font-bold transition-colors duration-300 ${on ? 'text-white' : 'text-muted'}`}><I size={15} strokeWidth={2.3} className="hidden sm:inline-grid" aria-hidden />{L3(lang, en, fr, ar)}{k === 'list' && cartLeft > 0 && <span className={`rounded-full px-1.5 text-[10px] tabular-nums ${on ? 'bg-white/25' : 'bg-apricot/40 text-ink'}`}>{cartLeft}</span>}</button> })}
+          {SUB.map(([k, I, en, fr, ar]) => { const on = (tab === 'stores' ? 'list' : tab === 'recipes' ? 'week' : tab) === k; return <button key={k} role="tab" aria-selected={on} onClick={() => go(k)} className={`relative z-10 flex items-center justify-center gap-1 rounded-full py-1.5 text-[12.5px] font-bold transition-colors duration-300 ${on ? 'text-white' : 'text-muted'}`}><I size={15} strokeWidth={2.3} className="hidden sm:inline-grid" aria-hidden />{L3(lang, en, fr, ar)}{k === 'list' && cartLeft > 0 && <span className={`rounded-full px-1.5 text-[12px] tabular-nums ${on ? 'bg-white/25' : 'bg-apricot/40 text-ink'}`}>{cartLeft}</span>}</button> })}
         </div></div>}
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
@@ -251,11 +251,11 @@ function Shell() {
           {tab === 'recipes' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => go('week')}>‹ {L3(lang, 'My week', 'Ma semaine', 'أسبوعي')}</button><RecipesTab say={say} /></>}
           {tab === 'sport' && <SportTab apply={(k) => { patchMe({ kcal: k, health: 'sport' }); if (hasPlan) composeWith({ kcal: k, health: 'sport' }, true); else composeWith({ kcal: k, health: 'sport' }); go('week') }} />}
           {tab === 'profile' && <ProfileScreen celebrate={celebrate} openCountry={() => setCtry(true)} />}
-          {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
+          {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[12px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
       </main>
       <>
-      <Tour run={tour} onEnd={() => setTour(false)} />
+      <Tour run={tour && !!me!.known} onEnd={() => setTour(false)} />
       <CartMode open={caddie} onClose={() => setCaddie(false)} items={cart} onFinish={() => endTrip(celebrate)} />
       {up && <button className="fixed bottom-[6.5rem] end-4 lg:bottom-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
       {/* Pinned shopping: once a trip has started, a slim bar keeps it one tap away from every other screen. */}

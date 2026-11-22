@@ -67,7 +67,7 @@ export function Assistant({ open, onClose, tab, next, more, undo, onTour, go }: 
   return (
     <Sheet open={open} onClose={() => { setQ(null); onClose() }} title={`✨ ${L(lang, 'Assistant', 'Assistant')}`}>
       <div className="rounded-3xl bg-forest p-4 text-white">
-        <p className="text-[11px] font-bold uppercase tracking-[.16em] text-white/70">{i.name} · {L(lang, 'étape suivante', 'next step')}</p>
+        <p className="text-[12px] font-bold uppercase tracking-[.16em] text-white/70">{i.name} · {L(lang, 'étape suivante', 'next step')}</p>
         <button className="mt-2 flex w-full items-center gap-3 rounded-2xl bg-white p-3.5 text-start text-ink active:scale-[.98]" onClick={() => { next[1](); onClose() }}><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-forest text-white">➜</span><b className="flex-1 font-display text-[16px] leading-tight">{next[0]}</b></button>
         <p className="mt-2 text-xs text-white/75">{i.what}</p>
       </div>
@@ -85,7 +85,7 @@ export function Assistant({ open, onClose, tab, next, more, undo, onTour, go }: 
 
 /** Short spotlight tour over real UI elements marked with data-tour. Skippable, replayable. */
 const TOUR: [string, string, string, string, string][] = [
-  ['subtabs', 'Tes repas', 'Your meals', 'Dans Repas, tout est rangé en 4 onglets : Semaine, Recettes, Courses et Sport.', 'Meals has 4 tabs: Week, Recipes, Shopping and Sport.'],
+  ['subtabs', 'Tes repas', 'Your meals', 'Dans Repas, tout est rangé en 3 onglets : Semaine, Courses et Forme.', 'Meals has 3 tabs: Week, Shopping and Fitness.'],
   ['tabs', 'La barre du bas', 'The bottom bar', 'Les 3 thèmes à un geste : Repas, Sorties, Budget. Le Caddie au centre pour faire les courses en magasin.', 'The 3 themes one tap away: Meals, Outings, Budget. The Caddie in the middle for in-store shopping.'],
 ]
 export const tourDone = () => ls.get('kz-tour') === '1'
@@ -104,7 +104,7 @@ export function Tour({ run, onEnd }: { run: boolean; onEnd: () => void }) {
     <div className="fixed inset-0 z-[80]" role="dialog" aria-modal="true" aria-label={lang === 'en' ? s[2] : s[1]}>
       <div className={r ? "absolute" : "absolute inset-0"} onClick={end} style={r ? { boxShadow: `0 0 0 9999px rgb(0 0 0 / .55)`, left: r.left - 6, top: r.top - 6, width: r.width + 12, height: r.height + 12, borderRadius: 18, transition: 'all .3s ease' } : { background: 'rgb(0 0 0 / .55)' }} />
       <div className="fade-up absolute inset-x-4 mx-auto max-w-sm rounded-3xl bg-surface p-4 shadow-lg" style={below ? { top: (r ? r.bottom : 80) + 16 } : { bottom: innerHeight - (r ? r.top : innerHeight) + 16 }}>
-        <p className="text-[11px] font-bold uppercase text-muted">{i + 1} / {TOUR.length}</p>
+        <p className="text-[12px] font-bold uppercase text-muted">{i + 1} / {TOUR.length}</p>
         <p className="font-display text-lg font-extrabold">{lang === 'en' ? s[2] : s[1]}</p>
         <p className="mt-1 text-sm">{lang === 'en' ? s[4] : s[3]}</p>
         <div className="mt-3 flex gap-2"><button className="btn btn-soft flex-1" onClick={end}>{L(lang, 'Passer', 'Skip')}</button>

@@ -27,14 +27,16 @@ export function Welcome({ onDone }: { onDone: (o?: Partial<Prefs>) => void }) {
   const [veg, setVeg] = useState(me!.diet.includes('vegetarian'))
   const [goals, setGoals] = useState<string[]>((me!.goals ?? []).filter((g) => ['cheap', 'quick', 'healthy', 'varied'].includes(g)))
   const [alg, setAlg] = useState<string[]>(me!.diet.filter((d) => d.startsWith('no-')))
+  const [kids, setKids] = useState(me!.kids ?? 0); const [ram, setRam] = useState(!!me!.ramadan)
   const [kcal, setKcal] = useState(me!.kcal ?? 2100)
   const [health, setHealth] = useState<Health>((me!.health as Health) ?? 'none')
   const pickC = (id: string) => { setCc(id); setCurrency(id); setStoreCountry(id); patchMe({ country: id, city: countryOf(id).cities?.[0] ?? me!.city }) }
   const tog = <T,>(a: T[], x: T) => (a.includes(x) ? a.filter((y) => y !== x) : [...a, x])
   const finish = () => {
     const cuisine = (cu.length ? cu : [countryOf(cc).cuisine, 'med']).join(','); const diet = [...(veg ? ['vegetarian'] : []), ...alg]
-    const o = { cuisine, region: 'all', diet, size, meals, goals, kcal, health }
-    patchMe({ ...o, known: true }); onDone(o)
+    const eff = Math.max(1, size + Math.round(kids * 0.6)) // a child counts as ~0.6 of a portion
+    const o = { cuisine, region: 'all', diet, size: eff, meals: ram ? ['d', 'b'] as Meal[] : meals, goals, kcal, health, ramadan: ram }
+    patchMe({ ...o, kids, known: true }); onDone(o)
   }
   const steps = [
     [L(lang, 'Where and for whom?', 'Où et pour qui ?', 'أين ولمن؟'), L(lang, 'Country, people and meals of the day.', 'Pays, personnes et repas de la journée.', 'البلد والأشخاص والوجبات')],
@@ -45,13 +47,13 @@ export function Welcome({ onDone }: { onDone: (o?: Partial<Prefs>) => void }) {
     <div className="rise mx-auto max-w-xl pb-6">
       <div className="relative overflow-hidden rounded-[30px] bg-gradient-to-br from-forest to-[#173d2d] p-5 text-cream">
         <div className="zellige pointer-events-none absolute inset-0 opacity-[.07]" aria-hidden />
-        <p className="relative text-[11px] font-bold uppercase tracking-[.18em] text-apricot">{L(lang, 'Let’s get to know you', 'Faisons connaissance', 'لنتعارف')} · {i + 1}/3</p>
+        <p className="relative text-[12px] font-bold uppercase tracking-[.18em] text-apricot">{L(lang, 'Let’s get to know you', 'Faisons connaissance', 'لنتعارف')}{i > 0 ? ` · ${i + 1}/3` : ''}</p>
         <h1 className="relative mt-1 font-serif text-[30px] font-semibold leading-tight text-cream">{steps[i][0]}</h1>
         <p className="relative text-sm text-cream/80">{steps[i][1]}</p>
-        <div className="relative mt-4 flex gap-1.5">{steps.map((_, k) => <span key={k} className={`h-1.5 flex-1 rounded-full transition-all ${k <= i ? 'bg-apricot' : 'bg-white/20'}`} />)}</div>
+        <div className={`relative mt-4 flex gap-1.5 ${i === 0 ? 'hidden' : ''}`}>{steps.map((_, k) => <span key={k} className={`h-1.5 flex-1 rounded-full transition-all ${k <= i ? 'bg-apricot' : 'bg-white/20'}`} />)}</div>
       </div>
       <div key={i} className="fade-up mt-4 space-y-4">
-        {i === 0 && <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">{(allC ? COUNTRIES : COUNTRIES.filter((c) => TOPC.includes(c.id) || c.id === cc)).map((c) => <button key={c.id} onClick={() => pickC(c.id)} aria-pressed={cc === c.id} className={`flex flex-col items-center gap-0.5 rounded-2xl p-2 text-[11px] font-bold transition active:scale-95 ${cc === c.id ? 'bg-forest text-white shadow-lift' : 'bg-surface shadow-soft'}`}><span className="text-[28px] leading-none">{c.f}</span><span className="w-full truncate text-center">{cname(c, lang)}</span></button>)}{!allC && <button onClick={() => setAllC(true)} className="flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-cream p-2 text-[11px] font-bold text-forest active:scale-95"><span className="text-[22px] leading-none"><Ic e="🌍" /> </span>{L(lang, 'Others', 'Autres', 'أخرى')}</button>}</div>}
+        {i === 0 && <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">{(allC ? COUNTRIES : COUNTRIES.filter((c) => TOPC.includes(c.id) || c.id === cc)).map((c) => <button key={c.id} onClick={() => pickC(c.id)} aria-pressed={cc === c.id} className={`flex flex-col items-center gap-0.5 rounded-2xl p-2 text-[12px] font-bold transition active:scale-95 ${cc === c.id ? 'bg-forest text-white shadow-lift' : 'bg-surface shadow-soft'}`}><span className="text-[28px] leading-none">{c.f}</span><span className="w-full truncate text-center">{cname(c, lang)}</span></button>)}{!allC && <button onClick={() => setAllC(true)} className="flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-cream p-2 text-[12px] font-bold text-forest active:scale-95"><span className="text-[22px] leading-none"><Ic e="🌍" /> </span>{L(lang, 'Others', 'Autres', 'أخرى')}</button>}</div>}
         {i === 0 && <>
           <div className="card p-4"><p className="mb-2 text-sm font-bold">{L(lang, 'People', 'Personnes', 'الأشخاص')}</p><div className="grid grid-cols-8 gap-1.5">{[1, 2, 3, 4, 5, 6, 7, 8].map((n) => <button key={n} onClick={() => setSize(n)} className={`aspect-square rounded-xl text-base font-extrabold ${size === n ? 'bg-forest text-white' : 'bg-cream'}`}>{n}</button>)}</div>
             <p className="mt-2 text-center text-2xl tracking-tight">{'🧑'.repeat(Math.min(size, 8))}</p></div>
@@ -65,15 +67,19 @@ export function Welcome({ onDone }: { onDone: (o?: Partial<Prefs>) => void }) {
           {!cu.length && <p className="text-center text-xs text-muted">{L(lang, 'Nothing picked: we mix', 'Rien de choisi : on mélange', 'لا شيء: نمزج')} {FLAG[countryOf(cc).cuisine]} {t('c_' + countryOf(cc).cuisine, lang)} + 🌊 {t('c_med', lang)}</p>}
         </>}
         {i === 2 && <>
+          <button onClick={() => setRam(!ram)} aria-pressed={ram} className={`flex w-full items-center gap-3 rounded-2xl p-3 text-start text-sm font-bold ${ram ? 'bg-leaf/30 text-forest ring-2 ring-forest' : 'bg-surface shadow-soft'}`}><span className="text-xl">🌙</span><span className="flex-1">{L(lang, 'Ramadan mode', 'Mode Ramadan', 'وضع رمضان')}<span className="block text-xs font-normal text-muted">{L(lang, 'Iftar and suhoor only, ftour dishes first', 'Ftour et s’hour seulement, plats de ftour en premier', 'الفطور والسحور فقط')}</span></span><span>{ram ? '✓' : ''}</span></button>
+          <div className="card flex items-center justify-between p-3"><span className="text-sm font-bold">{L(lang, 'Children (smaller portions)', 'Enfants (portions réduites)', 'الأطفال (حصص أصغر)')}</span><span className="flex items-center gap-2"><button className="grid h-9 w-9 place-items-center rounded-full bg-cream text-lg font-bold" onClick={() => setKids(Math.max(0, kids - 1))} aria-label="−">−</button><b className="w-6 text-center tabular-nums">{kids}</b><button className="grid h-9 w-9 place-items-center rounded-full bg-cream text-lg font-bold" onClick={() => setKids(Math.min(6, kids + 1))} aria-label="+">+</button></span></div>
           <div className="grid grid-cols-2 gap-2">{([['cheap', '💰'], ['quick', '⚡'], ['healthy', '🥗'], ['varied', '🎨']] as [string, string][]).map(([g, e]) => <button key={g} onClick={() => setGoals(tog(goals, g))} aria-pressed={goals.includes(g)} className={`flex items-center gap-2 rounded-2xl p-3 text-sm font-bold ${goals.includes(g) ? 'bg-leaf/30 text-forest ring-2 ring-forest' : 'bg-surface shadow-soft'}`}><span className="text-xl"><E3 e={e} /></span>{t('g_' + g, lang)}</button>)}</div>
-          <div><p className="mb-2 text-sm font-bold">{L(lang, 'Health profile', 'Profil santé', 'الملف الصحي')}</p><div className="grid grid-cols-4 gap-1.5">{(Object.keys(HEALTH) as Health[]).map((h) => <button key={h} onClick={() => setHealth(h)} aria-pressed={health === h} className={`rounded-2xl p-2 text-center text-[11px] font-bold ${health === h ? 'bg-forest text-white' : 'bg-surface shadow-soft'}`}><span className="block text-2xl">{HEALTH[h][0]}</span>{HEALTH[h][lang === 'en' ? 1 : lang === 'ar' ? 3 : 2]}</button>)}</div>
+          <div><p className="mb-2 text-sm font-bold">{L(lang, 'Health profile', 'Profil santé', 'الملف الصحي')}</p><div className="grid grid-cols-4 gap-1.5 [&>button]:min-w-0">{(Object.keys(HEALTH) as Health[]).map((h) => <button key={h} onClick={() => setHealth(h)} aria-pressed={health === h} className={`rounded-2xl p-2 text-center text-[12px] font-bold ${health === h ? 'bg-forest text-white' : 'bg-surface shadow-soft'}`}><span className="block text-2xl">{HEALTH[h][0]}</span>{HEALTH[h][lang === 'en' ? 1 : lang === 'ar' ? 3 : 2]}</button>)}</div>
             {health !== 'none' && <p className="mt-1.5 text-xs text-muted">{L(lang, 'Dishes rich in', 'Les plats riches en', 'أطباق غنية بـ')} {HEALTH[health][4].map((n) => nutName(n, lang).toLowerCase()).join(', ')} {L(lang, 'come up more often.', 'reviennent plus souvent.', '')}</p>}</div>
           <div className="grid grid-cols-3 gap-2">{KCAL.map(([k, e, l]) => <button key={k} onClick={() => setKcal(k)} className={`rounded-2xl p-2.5 text-center text-xs font-bold ${kcal === k ? 'bg-forest text-white' : 'bg-surface shadow-soft'}`}><span className="block text-2xl"><E3 e={e} /></span>{l} · {k} kcal</button>)}</div>
         </>}
       </div>
+      {i === 0 && <button className="mt-3 w-full text-center text-sm font-semibold text-forest" onClick={() => setI(1)}>{L(lang, 'Refine: cuisines, allergies, health ›', 'Affiner : cuisines, allergies, santé ›', 'تخصيص: المطابخ والحساسية والصحة ›')}</button>}
       <div className="mt-5 flex gap-2">
         {i > 0 ? <button className="btn btn-soft !min-h-14 !px-5" onClick={() => setI(i - 1)} aria-label={t('back', lang)}><ArrowLeft size={20} aria-hidden /></button> : <button className="btn btn-soft !min-h-14 !px-5 text-sm" onClick={() => { patchMe({ known: true }); onDone() }}>{L(lang, 'Later', 'Plus tard', 'لاحقًا')}</button>}
-        {i < 2 ? <button className="btn btn-primary flex-1 !min-h-14 text-base" onClick={() => setI(i + 1)}>{L(lang, 'Next', 'Suivant', 'التالي')} <ArrowRight size={20} aria-hidden /></button>
+        {i === 0 ? <button className="btn btn-primary flex-1 !min-h-14 text-base" onClick={finish}><Ic e="✨" /> {L(lang, 'My tailored week', 'Ma semaine sur mesure', 'أسبوعي على المقاس')}</button>
+          : i < 2 ? <button className="btn btn-primary flex-1 !min-h-14 text-base" onClick={() => setI(i + 1)}>{L(lang, 'Next', 'Suivant', 'التالي')} <ArrowRight size={20} aria-hidden /></button>
           : <button className="btn btn-primary flex-1 !min-h-14 text-base" onClick={finish}><Ic e="✨" /> {L(lang, 'My tailored week', 'Ma semaine sur mesure', 'أسبوعي على المقاس')}</button>}
       </div>
     </div>
