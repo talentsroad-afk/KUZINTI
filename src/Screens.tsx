@@ -1,4 +1,5 @@
-import { BookOpen, Coffee, Dices, Moon, RefreshCw, Shuffle, Sun, Sunrise, type LucideIcon } from 'lucide-react'
+import { RefreshCw, Shuffle } from 'lucide-react'
+import { BookOpen, Coffee, Dices, Moon, Sun, Sunrise, type LucideIcon } from './icons'
 import { E3 } from './E3'
 import { StepScene, actOf, ACT_LABEL } from './StepScene'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -42,7 +43,7 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
   const steps = stepsOf(r, lang)
   // Every ingredient with its real quantity for the chosen servings (grams, ml, pieces or kitchen units).
   const ings = r.ing.map((s) => { const p = parseIng(s); const ing = ING[p.id]; if (!ing || ing.aisle === 'spices') return null; const q = (p.qty * sv) / r.s
-    return { e: iconOf(p.id, ing.aisle), n: ing.n[li(lang)], q: p.unit && p.unit !== ing.base && UNIT[p.unit] ? `${r1(q)} ${UNIT[p.unit][li(lang)]}` : fmtQty(toBase(ing, q, p.unit), ing.base) } }).filter(Boolean) as { e: string; n: string; q: string }[]
+    return { e: iconOf(p.id, ing.aisle), c: ing.aisle === 'produce' || ing.aisle === 'meat', n: ing.n[li(lang)], q: p.unit && p.unit !== ing.base && UNIT[p.unit] ? `${r1(q)} ${UNIT[p.unit][li(lang)]}` : fmtQty(toBase(ing, q, p.unit), ing.base) } }).filter(Boolean) as { e: string; c: boolean; n: string; q: string }[]
   const N = steps.length + 2; const [i, setI] = useState(0); const [dir, setDir] = useState(1)
   const go = (k: number) => { setDir(k > i ? 1 : -1); setI(k) }
   useEffect(() => { if (i >= N - 1) return; const id = setTimeout(() => go(i + 1), i === 0 ? 2600 + ings.length * 260 : 6500); return () => clearTimeout(id) }, [i, N]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -70,7 +71,7 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
                 <span className="qty-pop mt-1 rounded-full bg-white px-2 py-0.5 font-display text-[13px] font-extrabold text-ink tabular-nums" style={{ animationDelay: `${k * 260 + 420}ms` }}>{x.q}</span>
               </div>))}</div></>}
           {i > 0 && i <= steps.length && (() => { const si = ings.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5))); const act = actOf(steps[i - 1]); return <>
-            <StepScene text={steps[i - 1]} ings={si.map((x) => x.e)} />
+            <StepScene text={steps[i - 1]} ings={si} />
             <div className="-mt-2 rounded-[28px] border border-white/15 bg-white/[.07] p-5 shadow-[0_30px_60px_-20px_rgba(0,0,0,.7)] backdrop-blur-md" style={{ transform: 'translateZ(40px)' }}>
             <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.2em] text-apricot"><span className="grid h-6 w-6 place-items-center rounded-full bg-apricot font-display text-[12px] text-ink">{i}</span>{ACT_LABEL[act][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p>
             <p className="mt-2 font-display text-[21px] font-bold leading-snug">{steps[i - 1]}</p>

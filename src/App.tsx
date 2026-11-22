@@ -13,7 +13,7 @@ import { CartMode } from './Cart'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
-import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, Wallet, Dumbbell, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, Wallet, Dumbbell, type LucideIcon } from './icons'
 import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Nav } from './Nav'
@@ -252,7 +252,7 @@ function Shell() {
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
       </main>
-      <><div data-tour="assist" style={space === 'out' || (tab === 'home' && !tour) ? { display: 'none' } : undefined} className="fixed bottom-[6.5rem] start-4 z-40 hidden items-center lg:flex rounded-full bg-ink/90 p-1 text-white shadow-lg backdrop-blur">
+      <><div data-tour="assist" style={space === 'out' || (tab === 'home' && !tour) ? { display: 'none' } : undefined} className="fixed bottom-20 end-4 z-40 hidden items-center lg:flex rounded-full bg-ink/90 p-1 text-white shadow-lg backdrop-blur">
         <button className="grid h-11 w-11 place-items-center rounded-full text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}><Sparkles size={18} aria-hidden /></button>
       </div>
       <Assistant open={assist} onClose={() => setAssist(false)} tab={tab} next={help} more={more} undo={undo} onTour={() => setTour(true)} go={go} />

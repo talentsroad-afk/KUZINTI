@@ -1,5 +1,7 @@
 import { zf } from './lib/zgh'
-import { ArrowRight, BookOpen, Dumbbell, Ticket, Carrot, Flame, Clock, Dices, Leaf, Plus, RefreshCw, Shuffle, SlidersHorizontal, Sparkles, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from 'lucide-react'
+import { E3 } from './E3'
+import { ArrowRight, Plus, RefreshCw, Shuffle, SlidersHorizontal } from 'lucide-react'
+import { BookOpen, Dumbbell, Ticket, Carrot, Flame, Clock, Dices, Leaf, Sparkles, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from './icons'
 import { useMemo, useRef, useState } from 'react'
 import { KcalGoal } from './Forme'
 import { useApp } from './lib/store'
@@ -122,8 +124,9 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
     <div className="riad pb-4">
       {/* Zone 1 — cinematic hero: greeting and the next meal over its photo */}
       <section className="hero-cine rise relative -mx-4 overflow-hidden text-white sm:mx-0 sm:rounded-[30px] lg:col-span-12" style={{ minHeight: nr ? 300 : 170 }}>
-        {nr ? <Dish r={nr} w={1100} className="kenburns absolute inset-0 h-full w-full" /> : <span className="absolute inset-0 bg-gradient-to-br from-forest to-[#0c1611]" />}
-        <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/65 via-black/35 to-black/85" />
+        <span className="absolute inset-0" style={{ background: nr ? `radial-gradient(90% 80% at 85% 35%, hsl(${nr.h} 70% 45%), #245B43 55%, #0c1611)` : 'linear-gradient(135deg,#245B43,#0c1611)' }} />
+        {nr && <span className="alive pointer-events-none absolute -end-3 top-3 text-[104px] opacity-90" style={{ filter: 'drop-shadow(0 30px 30px rgba(0,0,0,.45))' }}><E3 e={nr.e} /></span>}
+        <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/55" />
         <span className="glow pointer-events-none absolute -bottom-24 -start-16 h-64 w-64 rounded-full bg-apricot/35 blur-3xl" aria-hidden />
         <div className="relative flex h-full flex-col justify-between p-5" style={{ minHeight: nr ? 300 : 170 }}>
           <div><p className="text-[11px] font-bold uppercase tracking-[.2em] text-white/70">{date}</p>

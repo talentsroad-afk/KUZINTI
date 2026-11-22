@@ -1,6 +1,6 @@
 import { zf } from './lib/zgh'
 import { useState } from 'react'
-import { Dumbbell, Ticket, UtensilsCrossed, BookOpen, CalendarDays, Home, MapPinned, ShoppingBasket, ShoppingCart, Store, UserRound, Wallet, type LucideIcon } from 'lucide-react'
+import { Dumbbell, Ticket, UtensilsCrossed, BookOpen, CalendarDays, Home, MapPinned, ShoppingBasket, ShoppingCart, Store, UserRound, Wallet, type LucideIcon } from './icons'
 import { useApp } from './lib/store'
 import { t, type Lang } from './lib/i18n'
 import { LANG_LABEL } from './lib/i18n'
@@ -70,7 +70,6 @@ export function Nav({ tab, go, left, onCaddie, hasCart, openCountry }: { tab: Ta
       <p className="relative mb-1 mt-5 px-3.5 text-[10.5px] font-bold uppercase tracking-[.18em] text-apricot/90">{L(lang, 'Household life', 'Vie du foyer', 'حياة الأسرة')}</p>
       <div className="relative space-y-0.5">{[...g.life, ...g.me].map(Side)}</div>
       <div className="relative mt-auto space-y-3">
-        <button onClick={hasCart ? onCaddie : () => go('week')} className="flex w-full items-center gap-3 rounded-[20px] bg-apricot p-3 text-start text-forest shadow-lift transition active:scale-[.98]"><span className="relative grid h-10 w-10 place-items-center rounded-full bg-forest text-cream"><ShoppingCart size={19} aria-hidden /></span><span><b className="block leading-tight">{L(lang, 'Store mode', 'Mode magasin', 'وضع المتجر')}</b><span className="text-xs opacity-80">{left ? `${left} ${L(lang, 'items of my list to grab', 'produits de ma liste à prendre', 'منتجات للأخذ')}` : L(lang, 'Plan a week first', 'Composez d’abord votre semaine', 'خطط أولاً')}</span></span></button>
         <div className="flex items-center justify-between gap-2"><button className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-cream" onClick={openCountry}><span className="text-base">{c.f}</span>{c.sym}</button><Langs dark /></div>
       </div>
     </aside>

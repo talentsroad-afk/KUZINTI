@@ -1,5 +1,6 @@
 import { zf } from './lib/zgh'
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Lightbulb, Lock, Plus, ShieldCheck, Target, TrendingUp, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
+import { AlertTriangle, Lightbulb, Lock, ShieldCheck, Target, TrendingUp } from './icons'
 import { useMemo, useState } from 'react'
 import { useApp, type MoneyData } from './lib/store'
 import { curRate, money, type Lang } from './lib/i18n'

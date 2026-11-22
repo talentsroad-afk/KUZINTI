@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom'
 import { Trash2 } from 'lucide-react'
 import { useApp } from './lib/store'
 import type { Recipe } from './data/recipes'
-import { photoOf, photoSrc } from './data/photos'
 import { E3 } from './E3'
 
 export const Logo = ({ size = 36 }: { size?: number }) => (
@@ -14,22 +13,16 @@ export const Brand = () => <span className="inline-flex items-center gap-2 font-
 /** Illustrated tile. Swap `e` for a Higgsfield / licensed photo via the `img` prop later. */
 export function FoodTile({ r, className = '' }: { r: Recipe; className?: string }) {
   return (
-    <div className={`relative grid place-items-center overflow-hidden ${className}`} style={{ background: `linear-gradient(135deg, hsl(${r.h} 80% 88%), hsl(${(r.h + 30) % 360} 70% 78%))` }}>
-      <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/40 blur-xl" />
-      <E3 e={r.e} className="relative text-5xl drop-shadow-[0_8px_10px_rgba(0,0,0,.18)]" />
+    <div className={`relative grid place-items-center overflow-hidden ${className}`} style={{ containerType: 'size', background: `radial-gradient(120% 90% at 30% 20%, hsl(${r.h} 85% 93%), hsl(${r.h} 70% 82%) 60%, hsl(${(r.h + 25) % 360} 60% 72%))` }}>
+      <div className="absolute -right-[20%] -top-[20%] h-[70%] w-[70%] rounded-full bg-white/45 blur-2xl" />
+      <span className="absolute bottom-[14%] left-1/2 h-[8%] w-[46%] -translate-x-1/2 rounded-[50%] bg-black/15 blur-[6px]" />
+      <span className="alive relative" style={{ fontSize: 'min(150px, 52cqmin)' }}><E3 e={r.e} className="drop-shadow-[0_8px_10px_rgba(0,0,0,.18)]" /></span>
     </div>
   )
 }
-/** Real food photo when the dish family has one (Wikimedia Commons), the drawn tile otherwise or if it fails to load. */
-export function Dish({ r, className = '', w = 600, credit = false }: { r: Recipe; className?: string; w?: number; credit?: boolean }) {
-  const p = photoOf(r); const [bad, setBad] = useState(false); const [ok, setOk] = useState(false)
-  if (!p || bad) return <FoodTile r={r} className={className} />
-  return (
-    <div className={`relative overflow-hidden bg-cream ${className}`}>
-      <img src={photoSrc(p, w)} alt="" loading="lazy" decoding="async" onLoad={() => setOk(true)} onError={() => setBad(true)} className={`h-full w-full object-cover transition-[opacity,transform] duration-700 ${ok ? 'scale-100 opacity-100' : 'scale-105 opacity-0'}`} />
-      {credit && <span className="absolute bottom-2 end-3 text-[9px] font-medium text-white/75">{p.by} · {p.lic} · Wikimedia Commons</span>}
-    </div>
-  )
+/** Every dish is drawn as a unified 3D illustration (no photos: same look everywhere). */
+export function Dish({ r, className = '' }: { r: Recipe; className?: string; w?: number; credit?: boolean }) {
+  return <FoodTile r={r} className={className} />
 }
 export function Ring({ value, size = 84, children }: { value: number; size?: number; children?: ReactNode }) {
   const R = size / 2 - 7, C = 2 * Math.PI * R
@@ -96,8 +89,8 @@ export function Swipe({ onDelete, label, rtl, children }: { onDelete: () => void
         <span className="flex w-[64px] flex-col items-center gap-0.5"><Trash2 size={20} strokeWidth={2} aria-hidden /><span className="text-[11px]">{label}</span></span>
       </button>
       <div className="relative bg-surface" style={{ transform: `translateX(${dx}px)`, transition: drag ? 'none' : 'transform .32s cubic-bezier(.2,.9,.25,1)' }}>{children}
-        <button className="del-h absolute end-2 top-1/2 h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-surface text-[#e5484d] ring-1 ring-line transition hover:bg-[#e5484d] hover:text-white hover:ring-[#e5484d]" onClick={(e) => { e.stopPropagation(); setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} aria-label={label} title={label} tabIndex={-1}>
-          <Trash2 size={16} strokeWidth={2} aria-hidden /></button></div>
+        <button className="del-h absolute end-0 top-1/2 h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-muted transition hover:bg-[#e5484d]/10 hover:text-[#e5484d] active:scale-90 active:bg-[#e5484d]/15 active:text-[#e5484d]" onClick={(e) => { e.stopPropagation(); setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} aria-label={label} title={label}>
+          <Trash2 size={18} strokeWidth={1.9} aria-hidden /></button></div>
     </div>)
 }
 

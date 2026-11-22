@@ -1,4 +1,4 @@
-import { Lightbulb } from 'lucide-react'
+import { Lightbulb } from './icons'
 import { useEffect, useLayoutEffect, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, type Lang } from './lib/i18n'
