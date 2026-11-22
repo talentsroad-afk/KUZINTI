@@ -133,6 +133,54 @@ const CITIES0: Record<string, Act[]> = {
     A('catalans', '🏖️', 'Plage des Catalans et corniche Kennedy', 'Baignade et balade face aux îles', 0, 3, 'famille nature'),
   ],
 }
+// Well-known places added on top of each city list: theatres, cinemas, cable cars, landmarks.
+const EXTRA: Record<string, [Act, [number, number]][]> = {
+  Casablanca: [
+    [A('casa-arts', '🎭', 'Grand Théâtre de Casablanca (Casa Arts)', 'Concert, danse ou théâtre selon la programmation', 150, 2, 'culture couple loisirs', 'Place Mohammed V, centre-ville', 'Billets sur le site de Casa Arts|Architecture du nouveau théâtre|Spectacle du soir'), [33.592, -7.618]],
+    [A('pathe-cal', '🎬', 'Cinéma Pathé Californie', 'Grandes salles, films en VF et VO', 70, 2, 'loisirs couple famille', 'Quartier Californie', 'Popcorn et film du moment'), [33.548, -7.633]],
+    [A('zoo-casa', '🦒', 'Zoo d’Aïn Sebaâ', 'Zoo rénové : girafes, lions, ferme pour enfants', 50, 2, 'famille nature', 'Aïn Sebaâ', 'Savane africaine|Ferme pédagogique|Aire de pique-nique'), [33.603, -7.540]],
+    [A('marina-casa', '⛵', 'Casablanca Marina', 'Promenade face au port et à la mosquée', 0, 1, 'couple famille', 'Bd des Almohades', 'Promenade sur les quais|Vue sur la mosquée Hassan II'), [33.607, -7.625]],
+    [A('elhank', '🗼', 'Phare d’El Hank', 'Phare historique et rochers au coucher du soleil', 0, 1, 'couple nature', 'Bd de la Corniche, El Hank', 'Rochers et vagues|Coucher de soleil'), [33.610, -7.652]],
+  ],
+  Rabat: [
+    [A('theatre-m5', '🎭', 'Théâtre national Mohammed V', 'Pièces, humour et concerts', 120, 2, 'culture couple loisirs', 'Rue Al Kahira, centre-ville', 'Programme sur le site du théâtre|Spectacle du soir'), [34.016, -6.836]],
+    [A('renaissance', '🎬', 'Cinéma Renaissance', 'Salle mythique de l’avenue Mohammed V', 50, 2, 'loisirs couple', 'Av. Mohammed V', 'Film du moment|Café sur l’avenue'), [34.018, -6.836]],
+    [A('corniche-rabat', '🌊', 'Corniche de Rabat', 'Promenade face à l’océan, vue sur les Oudayas', 0, 1, 'couple famille nature', 'Bd Corniche', 'Marche face aux vagues|Glace en terrasse'), [34.030, -6.845]],
+    [A('arribat', '🛍️', 'Arribat Center', 'Boutiques, restaurants et cinéma', 0, 2, 'famille couple loisirs', 'Av. Mohammed VI, Agdal', 'Boutiques|Pause gourmande'), [33.990, -6.852]],
+  ],
+  Marrakech: [
+    [A('koutoubia', '🕌', 'Koutoubia et ses jardins', 'Le minaret emblème de la ville', 0, 1, 'culture famille couple', 'Av. Mohammed V, médina', 'Photo du minaret|Jardins de la Koutoubia'), [31.624, -7.994]],
+    [A('ysl', '👗', 'Musée Yves Saint Laurent', 'Créations du couturier, à côté de Majorelle', 140, 1, 'culture couple', 'Rue Yves Saint Laurent, Guéliz', 'Salle des collections|Librairie et café'), [31.641, -8.004]],
+    [A('theatre-royal', '🎭', 'Théâtre Royal de Marrakech', 'Spectacles et concerts selon la saison', 100, 2, 'culture couple loisirs', 'Av. de France, Hivernage', 'Spectacle du soir'), [31.626, -8.016]],
+    [A('colisee', '🎬', 'Cinéma Le Colisée', 'Le cinéma historique de Guéliz', 50, 2, 'loisirs couple famille', 'Bd Mohammed Zerktouni, Guéliz', 'Film du moment'), [31.637, -8.012]],
+    [A('oasiria', '💦', 'Oasiria, parc aquatique', 'Toboggans, piscine à vagues, rivière lente', 250, 4, 'famille loisirs sport', 'Route d’Amizmiz, km 4', 'Toboggans|Piscine à vagues|Déjeuner sur place'), [31.581, -8.033]],
+    [A('montgolfiere', '🎈', 'Vol en montgolfière', 'Lever du soleil sur la palmeraie et l’Atlas', 2000, 4, 'couple', 'Départ de la palmeraie (navette depuis l’hôtel)', 'Décollage à l’aube|Vol d’une heure|Thé berbère à l’atterrissage'), [31.680, -7.970]],
+    [A('oukaimeden', '🚡', 'Oukaïmeden et télésiège', 'Station de l’Atlas à 1 h 15, télésiège et panorama', 150, 5, 'nature sport famille', 'Oukaïmeden, Haut Atlas', 'Route de l’Ourika|Télésiège jusqu’au sommet|Tajine au chalet'), [31.205, -7.860]],
+  ],
+  'Fès': [
+    [A('batha', '🏺', 'Musée Batha', 'Céramique bleue de Fès dans un palais-jardin', 20, 1, 'culture', 'Place du Batha', 'Collection de céramique|Jardin andalou'), [34.061, -4.983]],
+  ],
+  Tanger: [
+    [A('legation', '🏛️', 'Légation américaine', 'Musée dans un palais de la médina', 20, 1, 'culture', 'Rue d’Amérique, médina', 'Salles d’art et d’histoire'), [35.784, -5.811]],
+    [A('marina-tng', '⛵', 'Tanja Marina Bay', 'Promenade, cafés et vue sur la médina', 0, 1, 'couple famille', 'Port de Tanger Ville', 'Promenade sur les quais|Café face aux bateaux'), [35.787, -5.807]],
+  ],
+  Agadir: [
+    [A('telecabine', '🚡', 'Télécabine d’Agadir Oufella', 'Montée en cabine vers la kasbah, vue sur la baie', 60, 1, 'famille couple loisirs', 'Gare de départ, quartier Founty', 'Montée en télécabine|Vue sur la baie|Descente au coucher du soleil'), [30.427, -9.613]],
+    [A('oiseaux', '🦜', 'Vallée des Oiseaux', 'Petit parc animalier gratuit au centre', 0, 1, 'famille', 'Bd Hassan II', 'Oiseaux et petits animaux|Aire de jeux'), [30.420, -9.598]],
+  ],
+  Paris: [
+    [A('garnier', '🎭', 'Opéra Garnier', 'Visite du palais ou ballet le soir', 160, 2, 'culture couple loisirs', 'Place de l’Opéra', 'Grand escalier|Salle et plafond de Chagall'), [48.872, 2.332]],
+    [A('grand-rex', '🎬', 'Cinéma Le Grand Rex', 'La plus grande salle d’Europe', 140, 2, 'loisirs famille couple', 'Bd Poissonnière', 'Film sur l’écran géant'), [48.871, 2.348]],
+  ],
+  Lyon: [
+    [A('celestins', '🎭', 'Théâtre des Célestins', 'Théâtre à l’italienne du XIXe siècle', 300, 2, 'culture couple loisirs', 'Place des Célestins', 'Pièce du soir'), [45.760, 4.832]],
+  ],
+  Marseille: [
+    [A('mucem', '🏛️', 'MuCEM et fort Saint-Jean', 'Musée des civilisations, passerelle sur la mer', 120, 2, 'culture famille couple', 'Esplanade du J4', 'Fort Saint-Jean|Passerelle|Toit-terrasse'), [43.297, 5.361]],
+    [A('frioul', '⛴️', 'Navette vers les îles du Frioul', 'Criques et château d’If', 130, 4, 'nature famille couple', 'Vieux-Port, quai de la Fraternité', 'Traversée en bateau|Château d’If|Baignade en crique'), [43.280, 5.310]],
+  ],
+}
+for (const [c, xs] of Object.entries(EXTRA)) for (const [a] of xs) if (CITIES0[c] && !CITIES0[c].some((b) => b.id === a.id)) CITIES0[c].push(a)
 export const COUNTRY_CITIES: Record<string, string[]> = { ...WORLD_COUNTRY_CITIES, MA: ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Chefchaouen'], FR: ['Paris', 'Lyon', 'Marseille'] }
 type Mode = 'day' | 'eve' | 'we' | 'week'
 // Everyday leisure found in every city (indicative prices, MAD base): added where the city list has no such activity.
@@ -144,14 +192,14 @@ const FUN: [string, string, string, string, number, number, string][] = [
 ]
 export const CITIES: Record<string, Act[]> = Object.fromEntries(Object.entries({ ...CITIES0, ...WORLD_CITIES }).map(([c, acts]) => [c, [...acts, ...FUN.filter(([, e]) => !acts.some((a) => a.e === e)).map(([id, e, n, d, p, h, k]) => ({ id: `${id}-${c}`, e, n, d, p, h, k: k.split(' ') as Kind[] }))]]))
 type Fmt = 'full' | 'half' | 'eve' | 'night'
-const FMT: [Fmt, string, string, number][] = [['full', '☀️ Journée entière', '10h → 21h', 3], ['half', '🌤️ Demi-journée', '14h → 19h', 2], ['eve', '🌇 Fin de journée', '17h → 20h', 1], ['night', '🌙 Soirée', '19h → 23h', 1]]
+const FMT: [Fmt, string, string, number][] = [['full', '☀️ Journée entière', '9h30 → 23h', 4], ['half', '🌤️ Demi-journée', '14h → 19h', 3], ['eve', '🌇 Fin de journée', '17h → 20h30', 2], ['night', '🌙 Soirée', '19h → 23h', 1]]
 // Where to eat and how to move, per city (real, well-known spots; prices indicative per person).
 const FOOD0: Record<string, { lunch: [string, number][]; cafe: [string, number][]; dinner: [string, number][]; move: string }> = {
-  Casablanca: { lunch: [['Grillades du Marché Central', 80], ['Snack au quartier Maârif', 60], ['Poissons au port (Le Port de Pêche)', 120]], cafe: [['Café de la Corniche face à l’océan', 30], ['Pâtisserie Bennis aux Habous', 25]], dinner: [['Rick’s Café (dîner)', 350], ['Restaurant à La Corniche', 200], ['Tajine en médina', 90]], move: 'Tramway T1/T2 (8 MAD) ou petit taxi rouge (15–30 MAD).' },
-  Rabat: { lunch: [['Poissons à la marina du Bouregreg', 120], ['Snack de l’avenue Mohammed V', 60]], cafe: [['Café Maure des Oudayas', 25], ['Salon de thé de l’Agdal', 30]], dinner: [['Dîner sur la marina du Bouregreg', 200], ['Tajine en médina', 90]], move: 'Tramway Rabat–Salé (6 MAD) ou petit taxi bleu (10–25 MAD).' },
-  Marrakech: { lunch: [['Méchoui de la rue Mechouia', 90], ['Terrasse d’un riad en médina', 120]], cafe: [['Café des Épices (place Rahba Kedima)', 35], ['Terrasse sur Jemaa el-Fna', 30]], dinner: [['Stands de Jemaa el-Fna', 70], ['Tanjia en médina', 100], ['Dîner dans un riad', 300]], move: 'À pied en médina, petit taxi beige (20–40 MAD) en dehors.' },
-  'Fès': { lunch: [['Bissara et brochettes à Bab Boujloud', 50], ['Restaurant traditionnel de la médina', 120]], cafe: [['Terrasse de Bab Boujloud', 20], ['Café Clock', 40]], dinner: [['Pastilla en médina', 150], ['Restaurant en ville nouvelle', 120]], move: 'Petit taxi rouge (10–25 MAD), puis à pied en médina (prendre un guide officiel).' },
-  Tanger: { lunch: [['Poissons au port', 100], ['Snack du Grand Socco', 50]], cafe: [['Café Hafa', 30], ['Gran Café de Paris', 30]], dinner: [['Restaurant de la Kasbah', 180], ['Poissons sur la corniche', 150]], move: 'Petit taxi bleu (10–30 MAD). Cap Spartel et Achakar : grand taxi ou voiture.' },
+  Casablanca: { lunch: [['Grillades du Marché Central', 80], ['Snack au quartier Maârif', 60], ['Poissons au port (Le Port de Pêche)', 120], ['La Sqala, jardin dans les remparts', 150]], cafe: [['Café de la Corniche face à l’océan', 30], ['Pâtisserie Bennis aux Habous', 25], ['Paul, terrasse d’Anfa', 50]], dinner: [['Rick’s Café (dîner)', 350], ['Le Cabestan, face à l’océan', 450], ['Al Mounia, cuisine marocaine', 250], ['Restaurant à La Corniche', 200], ['Tajine en médina', 90]], move: 'Tramway T1/T2 (8 MAD) ou petit taxi rouge (15–30 MAD).' },
+  Rabat: { lunch: [['Poissons à la marina du Bouregreg', 120], ['Snack de l’avenue Mohammed V', 60]], cafe: [['Café Maure des Oudayas', 25], ['Salon de thé de l’Agdal', 30]], dinner: [['Dîner sur la marina du Bouregreg', 200], ['Le Dhow, bateau sur le Bouregreg', 300], ['Dar Naji, cuisine marocaine', 120], ['Tajine en médina', 90]], move: 'Tramway Rabat–Salé (6 MAD) ou petit taxi bleu (10–25 MAD).' },
+  Marrakech: { lunch: [['Méchoui de la rue Mechouia', 90], ['Terrasse d’un riad en médina', 120], ['Le Jardin, médina', 150], ['Nomad, place des Épices', 160]], cafe: [['Café des Épices (place Rahba Kedima)', 35], ['Terrasse sur Jemaa el-Fna', 30]], dinner: [['Stands de Jemaa el-Fna', 70], ['Tanjia en médina', 100], ['Dîner dans un riad', 300], ['Al Fassia, Guéliz', 280], ['Comptoir Darna, dîner-spectacle', 450]], move: 'À pied en médina, petit taxi beige (20–40 MAD) en dehors.' },
+  'Fès': { lunch: [['Bissara et brochettes à Bab Boujloud', 50], ['Restaurant traditionnel de la médina', 120]], cafe: [['Terrasse de Bab Boujloud', 20], ['Café Clock', 40]], dinner: [['Pastilla en médina', 150], ['Restaurant en ville nouvelle', 120], ['The Ruined Garden', 160]], move: 'Petit taxi rouge (10–25 MAD), puis à pied en médina (prendre un guide officiel).' },
+  Tanger: { lunch: [['Poissons au port', 100], ['Le Saveur de Poisson', 200], ['Snack du Grand Socco', 50]], cafe: [['Café Hafa', 30], ['Gran Café de Paris', 30]], dinner: [['Restaurant de la Kasbah', 180], ['Poissons sur la corniche', 150], ['El Morocco Club, Kasbah', 300]], move: 'Petit taxi bleu (10–30 MAD). Cap Spartel et Achakar : grand taxi ou voiture.' },
   Agadir: { lunch: [['Poissons grillés au port de pêche', 90], ['Snack de la corniche', 60]], cafe: [['Café de la marina', 30], ['Salon de thé du centre', 25]], dinner: [['Tajine sur la corniche', 120], ['Poissons à la marina', 180]], move: 'Petit taxi orange (10–30 MAD) ; bus Alsa en ville.' },
   Chefchaouen: { lunch: [['Tajine sur la place Outa el Hammam', 80], ['Bissara et pain chaud en médina', 30]], cafe: [['Terrasse avec vue sur la ville bleue', 25], ['Café près de Ras el Ma', 20]], dinner: [['Restaurant en terrasse de la médina', 110], ['Fromage de chèvre et tajine local', 90]], move: 'La médina se fait à pied ; petit taxi pour Akchour (ou grand taxi partagé).' },
   Paris: { lunch: [['Bistrot de quartier, formule du midi', 130], ['Marché des Enfants Rouges', 90]], cafe: [['Café en terrasse', 30], ['Boulangerie, viennoiseries', 20]], dinner: [['Brasserie parisienne', 220], ['Crêperie', 120]], move: 'Métro et RER (ticket ~2,50 €) ; Vélib’ pour les trajets courts.' },
@@ -174,6 +222,7 @@ const maxH: Record<Fmt, number> = { full: 6, half: 4, eve: 2, night: 2 }
 const pick = <T,>(x: T[]) => x[Math.floor(Math.random() * x.length)]
 // Approximate coordinates (Greater Casablanca) so a day follows a sensible route.
 const GEO: Record<string, [number, number]> = { hassan2: [33.608, -7.632], corniche: [33.594, -7.668], habous: [33.578, -7.603], ligue: [33.588, -7.624], aquarium: [33.576, -7.706], sindibad: [33.585, -7.690], slaoui: [33.591, -7.627], 'villa-arts': [33.585, -7.636], 'surf-casa': [33.590, -7.680], 'anfa-run': [33.565, -7.656], 'ancienne-medina': [33.602, -7.618], 'art-deco': [33.595, -7.616], cathedrale: [33.590, -7.622], 'marche-central': [33.597, -7.613], 'twin-center': [33.584, -7.633], 'anfa-place': [33.598, -7.651], tamaris: [33.528, -7.818], 'dar-bouazza': [33.520, -7.830], bouskoura: [33.465, -7.640], mohammedia: [33.687, -7.383], 'technopark-escalade': [33.510, -7.650], karting: [33.470, -7.630], cinema: [33.595, -7.665], 'hammam-casa': [33.586, -7.632], 'cuisine-casa': [33.588, -7.630] }
+for (const xs of Object.values(EXTRA)) for (const [a, g] of xs) GEO[a.id] ??= g
 export type Move = 'walk' | 'taxi' | 'car'
 export const MOVES: [Move, string, number, number][] = [['walk', '🚶 À pied', 2.5, 5], ['taxi', '🚕 Taxi / tram', 12, 20], ['car', '🚗 Voiture', 60, 35]] // max hop km, speed km/h
 export const km = (a: string, b: string) => { const p = GEO[a], q = GEO[b]; if (!p || !q) return 0; const dx = (p[1] - q[1]) * 92.5, dy = (p[0] - q[0]) * 111; return Math.hypot(dx, dy) * 1.3 }
@@ -191,15 +240,19 @@ function pickActs(acts: Act[], kinds: Kind[], fmt: Fmt, left: number, people: nu
   return out
 }
 /** Turns a day's activities into a concrete hour-by-hour program with meals, café and transport. */
-function program(city: string, acts: Act[], day: Day): Step[] {
+function program(city: string, acts: Act[], day: Day, budget = 600): Step[] {
   const F = FOOD[city]; const A = day.acts.map((id) => acts.find((a) => a.id === id)!).filter(Boolean)
   const act = (t: string, a: Act): Step => ({ t, e: a.e, n: a.n, d: a.d, p: a.p, id: a.id })
-  const meal = (t: string, e: string, x: [string, number]): Step => ({ t, e, n: x[0], d: 'Pause repas', p: x[1] })
-  const [l, c, d] = [F.lunch[0], F.cafe[0], F.dinner[0]]
-  if (day.fmt === 'full') return [A[0] && act('10:00', A[0]), meal('13:00', '🍽️', l), A[1] && act('15:00', A[1]), A[2] && act('17:30', A[2]), meal('20:00', '🌙', F.dinner[F.dinner.length - 1])].filter(Boolean) as Step[]
-  if (day.fmt === 'half') return [A[0] && act('14:00', A[0]), meal('16:30', '☕', c), A[1] && act('17:15', A[1])].filter(Boolean) as Step[]
-  if (day.fmt === 'eve') return [A[0] && act('17:00', A[0]), meal('19:00', '☕', F.cafe[F.cafe.length - 1])].filter(Boolean) as Step[]
-  return [A[0] && act('19:00', A[0]), meal('20:30', '🌙', d)].filter(Boolean) as Step[]
+  let h = 0; for (const ch of city + day.fmt + new Date().toDateString()) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  // cheaper places when the outing budget is small, the famous ones when it allows
+  const pk = (x: [string, number][], o = 0) => { const y = [...x].sort((u, v) => u[1] - v[1]); const z = budget <= 300 ? y.slice(0, 1) : budget <= 700 ? y.slice(0, Math.ceil(y.length / 2)) : y; return z[(h + o) % z.length] }
+  const meal = (t: string, e: string, x: [string, number], d: string): Step => ({ t, e, n: x[0], d, p: x[1] })
+  const [l, c, d] = [pk(F.lunch), pk(F.cafe), pk(F.dinner, 1)]
+  const show = budget >= 600 && acts.find((a) => /cin[ée]ma|th[ée]âtre|op[ée]ra|spectacle|concert/i.test(a.n + a.d) && !day.acts.includes(a.id) && a.h <= 2)
+  if (day.fmt === 'full') return [meal('09:30', '☕', pk(F.cafe, 2), 'Petit-déjeuner'), A[0] && act('10:15', A[0]), A[1] && act('11:45', A[1]), meal('13:00', '🍽️', l, 'Déjeuner'), A[2] && act('15:00', A[2]), meal('16:45', '🧁', c, 'Goûter'), A[3] && act('17:30', A[3]), meal('20:00', '🌙', d, 'Dîner'), show && act('21:45', show)].filter(Boolean) as Step[]
+  if (day.fmt === 'half') return [A[0] && act('14:00', A[0]), A[1] && act('15:30', A[1]), meal('16:45', '☕', c, 'Goûter'), A[2] && act('17:30', A[2])].filter(Boolean) as Step[]
+  if (day.fmt === 'eve') return [A[0] && act('17:00', A[0]), meal('18:30', '☕', c, 'Café'), A[1] && act('19:15', A[1])].filter(Boolean) as Step[]
+  return [A[0] && act('19:00', A[0]), meal('20:30', '🌙', d, 'Dîner'), show && act('22:00', show)].filter((x, i) => x && !(i === 2 && A[0]?.id === show?.id)) as Step[]
 }
 const KTONE: Record<Kind, [string]> = { loisirs: ['linear-gradient(135deg,#5b4bb0,#352a75)'], famille: ['linear-gradient(135deg,#d9822b,#b85c1e)'], couple: ['linear-gradient(135deg,#b4475c,#7d2c47)'], sport: ['linear-gradient(135deg,#2f6fa8,#1d4a7a)'], culture: ['linear-gradient(135deg,#a6532f,#6e3420)'], nature: ['linear-gradient(135deg,#2f7a52,#1a4a35)'] }
 const KINDS: [Kind, string][] = [['loisirs', '🎬 Loisirs'], ['famille', '👨‍👩‍👧 Famille'], ['couple', '💑 Couple'], ['sport', '⚽ Sport'], ['culture', '🏛️ Culture'], ['nature', '🌿 Nature']]
@@ -221,7 +274,7 @@ export function SortiesTab() {
   const save = (w: Record<string, Day>, log: string, all = false) => upHouse((h) => { const x = h as unknown as O; x.outings2 = all ? {} : { ...(x.outings2 ?? {}), [mode]: w } }, log)
   const days = daysFor(mode)
   // Cost of a day = activities + meals (per person) + trips between activities (per taxi of 4, or fuel), all live.
-  const parts = (d: Day) => { const pr = program(city, acts, d); const a = pr.filter((x) => x.id).reduce((s, x) => s + x.p * people, 0); const m = pr.filter((x) => !x.id).reduce((s, x) => s + x.p * people, 0)
+  const parts = (d: Day) => { const pr = program(city, acts, d, budget); const a = pr.filter((x) => x.id).reduce((s, x) => s + x.p * people, 0); const m = pr.filter((x) => !x.id).reduce((s, x) => s + x.p * people, 0)
     const hops = d.acts.slice(1).map((id, i) => km(d.acts[i], id)); const tr = hops.reduce((s, k) => s + (mv === 'walk' ? 0 : mv === 'car' ? k * 1.2 : Math.ceil(people / 4) * (12 + 4 * k)), 0)
     return { a, m, tr: Math.round(tr), all: a + m + Math.round(tr) } }
   const cost = (d: Day) => parts(d).all
@@ -270,7 +323,7 @@ export function SortiesTab() {
           <div className="relative grid h-16 w-16 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(${total > budget ? 'rgb(var(--danger))' : 'rgb(var(--forest))'} ${Math.min(100, (total / Math.max(1, budget)) * 100)}%, rgb(var(--cream)) 0)` }}><span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-[11px] font-extrabold tabular-nums">{Math.round((total / Math.max(1, budget)) * 100)}%</span></div>
           <div className="min-w-0 flex-1"><p className="text-xs text-muted">Total estimé · {people} pers.</p><p className={`font-display text-2xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{M$(total)}</p><p className="text-[11px] text-muted"><Ic e="🎟️" /> {M$(sum.a)} · 🍽️ {M$(sum.m)} · 🚕 {M$(sum.tr)}</p></div>
         </div>
-        {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!; const tone = story(d); const dl = deal(d)
+        {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d, budget); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!; const tone = story(d); const dl = deal(d)
           const kindsHere = [...new Set(d.acts.flatMap((id) => acts.find((a) => a.id === id)?.k ?? []))] as Kind[]
           return (
           <div key={k} className="card overflow-hidden">
