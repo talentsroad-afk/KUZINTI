@@ -5,6 +5,7 @@ import { t, type Lang } from './lib/i18n'
 import { fmtQty } from './lib/engine'
 import { CATALOG } from './data/catalog'
 import { Stepper } from './ui'
+import { cname, countryOf } from './lib/countries'
 
 const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
 
@@ -32,14 +33,14 @@ function Activity() {
   )
 }
 
-export function ProfileScreen({ celebrate }: { celebrate: () => void }) {
-  const { lang, setLang, me, house, logout, toast, patchMe, upHouse } = useApp()
+export function ProfileScreen({ celebrate, openCountry }: { celebrate: () => void; openCountry: () => void }) {
+  const { lang, setLang, me, house, logout, toast, patchMe } = useApp()
   const copy = async () => { try { await navigator.clipboard.writeText(house!.code) } catch { /* shown on screen anyway */ } toast(t('copied', lang)); celebrate() }
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-extrabold text-forest">{t('profile', lang)}</h1>
       <div className="card flex items-center justify-between gap-3 p-4"><div><h2 className="font-display text-lg font-extrabold">🌍 {lang === 'en' ? 'Country' : 'Pays'}</h2><p className="text-xs text-muted">{lang === 'en' ? 'Stores, currency and default cuisine.' : 'Magasins, devise et cuisine par défaut.'}</p></div>
-        <select className="input !w-auto" value={me!.country} onChange={(e) => { patchMe({ country: e.target.value, cuisine: e.target.value === 'FR' ? 'fr' : 'ma' }); upHouse((h) => { h.store = undefined }); toast(e.target.value === 'FR' ? '🇫🇷 France · €' : '🇲🇦 Maroc · MAD') }}><option value="MA">🇲🇦 Maroc · MAD</option><option value="FR">🇫🇷 France · €</option></select></div>
+        <button className="btn btn-soft shrink-0 !min-h-11" onClick={openCountry}>{countryOf(me!.country).f} {cname(countryOf(me!.country), lang)} ›</button></div>
       <div className="card space-y-3 p-4">
         <div className="flex items-center justify-between"><h2 className="font-display text-lg font-extrabold">🎯 Forme & calories</h2>
           <label className="flex items-center gap-2 text-xs font-semibold text-muted">Afficher dans Ma semaine<input type="checkbox" className="h-5 w-5 accent-[#245B43]" checked={!!me!.showForme} onChange={(e) => patchMe({ showForme: e.target.checked })} /></label></div>

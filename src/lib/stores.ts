@@ -1,3 +1,4 @@
+import { countryOf, storesOf } from './countries'
 import type { Aisle } from '../data/catalog'
 import type { Line } from './engine'
 // DEMO price index per aisle relative to the average estimate. NOT live prices; shown as such in the UI.
@@ -28,7 +29,8 @@ const STORES_FR: Store[] = [
 let COUNTRY = 'MA'
 export const setStoreCountry = (c: string) => { COUNTRY = c }
 /** Stores of the user's country (demo price index). */
-export const storesNow = () => (COUNTRY === 'FR' ? STORES_FR : STORES_MA)
+const cache: Record<string, Store[]> = {}
+export const storesNow = (): Store[] => COUNTRY === 'MA' ? STORES_MA : COUNTRY === 'FR' ? STORES_FR : (cache[COUNTRY] ??= storesOf(countryOf(COUNTRY)))
 export const STORES = STORES_MA
 export const storeTotal = (lines: Line[], s: Store) => lines.reduce((a, l) => a + l.cost * s.m[l.ing.aisle], 0)
 export const splitTotal = (lines: Line[]) => lines.reduce((a, l) => a + l.cost * Math.min(...storesNow().map((s) => s.m[l.ing.aisle])), 0)

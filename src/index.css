@@ -131,3 +131,5 @@ h1, h2, h3 { color: rgb(var(--ink)); }
 .slide-in-r { animation: slideR .35s var(--ease) both; } .slide-in-l { animation: slideL .35s var(--ease) both; }
 @keyframes slideR { from { opacity: 0; transform: translateX(40px) rotate(1.5deg); } to { opacity: 1; transform: none; } }
 @keyframes slideL { from { opacity: 0; transform: translateX(-40px) rotate(-1.5deg); } to { opacity: 1; transform: none; } }
+.caddie-fab { animation: fabIn .45s cubic-bezier(.2,.9,.3,1.3) both; }
+@keyframes fabIn { from { transform: translateY(24px) scale(.8); opacity: 0 } to { transform: none; opacity: 1 } }

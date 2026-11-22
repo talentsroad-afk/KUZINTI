@@ -4,6 +4,7 @@ import { PRODUCTS, norm } from './data/products'
 import { CATALOG } from './data/catalog'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
+import { CHAIN, chainKey } from './lib/countries'
 import { curRate, money, money2, rname, t, type Lang } from './lib/i18n'
 import { buildList, fmtQty, type Line } from './lib/engine'
 import type { Aisle } from './data/catalog'
@@ -43,6 +44,27 @@ export function useBasket() {
   const spent = items.filter((x) => h.checked[x.key]).reduce((a, x) => a + price(x.key, x.est), 0)
   const homeCost = homeRows.reduce((a, x) => a + x.q * x.p, 0); const customCost = custom.reduce((a, c) => a + c.price, 0)
   return { lines, homeRows, custom, store, mul, price, total, spent, items, homeCost, customCost, extraCost: homeCost + customCost }
+}
+
+
+/** The whole week's basket as caddie cards + the "finish the trip" action, shared by Courses and the floating caddie button. */
+export function useCart() {
+  const { lang, house, upHouse, toast } = useApp()
+  const { lines, homeRows, custom, store, mul, price } = useBasket()
+  const cart: CartItem[] = [
+    ...(Object.keys(AISLE) as Aisle[]).flatMap((a) => lines.filter((l) => l.buy > 0 && l.ing.aisle === a).map((l) => ({ key: l.id, name: l.ing.n[li(lang)], q: fmtQty(l.buy, l.ing.base), price: price(l.id, l.cost * mul(a)), e: iconOf(l.id, a), aisle: AISLE[a][li(lang)] }))),
+    ...homeRows.map((x) => ({ key: 'h:' + x.id, name: x.n[li(lang)], q: `×${x.q}`, price: price('h:' + x.id, x.q * x.p * mul('grocery')), e: x.e, aisle: t('maison', lang) })),
+    ...custom.map((c) => ({ key: 'c:' + c.id, name: c.name, q: c.qty, price: price('c:' + c.id, c.price), e: c.e ?? '📝', aisle: t('mine', lang) })),
+  ]
+  const finish = (done?: () => void) => {
+    const chk = house!.checked
+    const all = [...lines.map((l) => ({ k: l.id, n: l.ing.n[li(lang)], q: fmtQty(l.buy, l.ing.base), est: l.cost * mul(l.ing.aisle) })), ...homeRows.map((x) => ({ k: 'h:' + x.id, n: x.n[li(lang)], q: `×${x.q}`, est: x.q * x.p * mul('grocery') })), ...custom.map((c) => ({ k: 'c:' + c.id, n: c.name, q: c.qty, est: c.price }))]
+    const got = all.filter((x) => chk[x.k]).map((x) => ({ n: x.n, q: x.q, p: Math.round(price(x.k, x.est) * 100) / 100 }))
+    const trip = { t: Date.now(), store: store?.name, total: Math.round(got.reduce((a, x) => a + x.p, 0) * 100) / 100, items: got, missed: Object.keys(house!.missing ?? {}).length }
+    upHouse((h) => { for (const l of lines) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.trips = [trip, ...(h.trips ?? [])].slice(0, 30); h.checked = {}; h.qty = {}; h.home = {}; h.custom = []; h.paid = {}; h.missing = {} }, 'finished the trip'); toast(t('pantry', lang) + ' ✓'); done?.()
+  }
+  const left = cart.filter((x) => !house!.checked[x.key] && !house!.missing?.[x.key]).length
+  return { cart, finish, left }
 }
 
 /** Shopping: live budget (planned / spent / left), big checkboxes, tap a price to enter what you really paid. */
@@ -88,12 +110,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
     ...(day < 0 ? [...homeRows.map((x) => ({ key: 'h:' + x.id, name: x.n[li(lang)], q: `×${x.q}`, price: price('h:' + x.id, x.q * x.p * mul('grocery')), e: x.e, aisle: t('maison', lang) })), ...custom.map((c) => ({ key: 'c:' + c.id, name: c.name, q: c.qty, price: price('c:' + c.id, c.price), e: c.e ?? '📝', aisle: t('mine', lang) }))] : []),
   ]
   const [cartOpen, setCartOpen] = useState(false); const [histOpen, setHistOpen] = useState(false)
-  const finish = () => {
-    const all = [...lines.map((l) => ({ k: l.id, n: l.ing.n[li(lang)], q: fmtQty(l.buy, l.ing.base), est: l.cost * mul(l.ing.aisle) })), ...homeRows.map((x) => ({ k: 'h:' + x.id, n: x.n[li(lang)], q: `×${x.q}`, est: x.q * x.p * mul('grocery') })), ...custom.map((c) => ({ k: 'c:' + c.id, n: c.name, q: c.qty, est: c.price }))]
-    const got = all.filter((x) => chk[x.k]).map((x) => ({ n: x.n, q: x.q, p: Math.round(price(x.k, x.est) * 100) / 100 }))
-    const trip = { t: Date.now(), store: store?.name, total: Math.round(got.reduce((a, x) => a + x.p, 0) * 100) / 100, items: got, missed: Object.keys(house!.missing ?? {}).length }
-    upHouse((h) => { for (const l of lines) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.trips = [trip, ...(h.trips ?? [])].slice(0, 30); h.checked = {}; h.qty = {}; h.home = {}; h.custom = []; h.paid = {}; h.missing = {} }, 'finished the trip'); toast(t('pantry', lang) + ' ✓'); celebrate()
-  }
+  const { finish: endTrip } = useCart(); const finish = () => endTrip(celebrate)
   const saveCustom = () => { if (!f.name.trim()) return; upHouse((h) => { h.custom = [...(h.custom ?? []), { id: Math.random().toString(36).slice(2, 8), name: f.name.trim(), qty: f.qty.trim(), price: Math.max(0, parseFloat(f.price.replace(',', '.')) || 0), note: f.note.trim() }] }, `+ ${f.name.trim()}`); setF({ name: '', qty: '', price: '', note: '' }); setAdding(false) }
   const Row = ({ k, name, sub, est, line, q, e }: { k: string; name: string; sub: string; est: number; line?: Line; q?: string; e?: string }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; const no = !!house!.missing?.[k]; return (
     <div className={`flex items-center gap-3 py-2 transition-opacity ${on || no ? 'opacity-70' : ''}`}>
@@ -106,7 +123,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
     </div>) }
   return (
     <div className="space-y-3">
-      {store && cart.length > 0 && <button className="fade-up flex w-full items-center gap-3 rounded-[24px] bg-forest p-4 text-start text-white shadow-lg active:scale-[.98]" onClick={() => setCartOpen(true)}>
+      {cart.length > 0 && <button className="fade-up flex w-full items-center gap-3 rounded-[24px] bg-forest p-4 text-start text-white shadow-lg active:scale-[.98]" onClick={() => setCartOpen(true)}>
         <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/15"><ShoppingCart size={28} aria-hidden /></span>
         <span className="min-w-0 flex-1"><b className="block font-display text-lg leading-tight">{lang === 'en' ? 'Start store mode' : 'Lancer le mode magasin'}</b><span className="block text-xs text-white/80">{lang === 'en' ? 'One hand, one swipe per product' : 'Une main, un geste par produit'} · {cart.filter((x) => !chk[x.key]).length} / {cart.length}</span></span>
         <span className="text-2xl" aria-hidden>→</span>
@@ -218,7 +235,10 @@ const BRAND: Record<string, { bg: string; fg: string; font: string; txt: string 
   atacadao: { bg: '#f2c200', fg: '#1d3f8f', font: '800 .95rem Manrope', txt: 'Atacadão' },
 }
 export function StoreLogo({ id, w = 92 }: { id: string; w?: number }) {
-  const b = BRAND[id]
+  const nm = storesNow().find((s) => s.id === id)?.name ?? id; const kind = (storesNow().find((s) => s.id === id) as { kind?: string } | undefined)?.kind
+  const ch = CHAIN[chainKey(nm)]
+  const b = BRAND[id] ?? (ch ? { bg: ch[0], fg: ch[1], font: `800 ${nm.length > 10 ? '.78rem' : nm.length > 6 ? '.95rem' : '1.15rem'} Manrope`, txt: nm }
+    : { bg: kind === 'm' ? '#F2B96B' : '#245B43', fg: kind === 'm' ? '#3c280a' : '#F4F1E8', font: '800 .76rem Manrope', txt: `${kind === 'm' ? '🧺' : '🏪'} ${nm}` })
   return <span className="grid shrink-0 place-items-center rounded-xl px-2 text-center leading-none shadow-soft" style={{ width: w, height: 44, background: b.bg, color: b.fg, font: b.font, boxShadow: '0 0 0 1px rgb(0 0 0 / .08)' }} aria-label={storesNow().find((s) => s.id === id)?.name}>{b.txt}</span>
 }
 

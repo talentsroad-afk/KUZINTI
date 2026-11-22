@@ -191,12 +191,13 @@ function program(city: string, acts: Act[], day: Day): Step[] {
   if (day.fmt === 'eve') return [A[0] && act('17:00', A[0]), meal('19:00', '☕', F.cafe[F.cafe.length - 1])].filter(Boolean) as Step[]
   return [A[0] && act('19:00', A[0]), meal('20:30', '🌙', d)].filter(Boolean) as Step[]
 }
+const KTONE: Record<Kind, [string]> = { famille: ['linear-gradient(135deg,#d9822b,#b85c1e)'], couple: ['linear-gradient(135deg,#b4475c,#7d2c47)'], sport: ['linear-gradient(135deg,#2f6fa8,#1d4a7a)'], culture: ['linear-gradient(135deg,#a6532f,#6e3420)'], nature: ['linear-gradient(135deg,#2f7a52,#1a4a35)'] }
 const KINDS: [Kind, string][] = [['famille', '👨‍👩‍👧 Famille'], ['couple', '💑 Couple'], ['sport', '⚽ Sport'], ['culture', '🏛️ Culture'], ['nature', '🌿 Nature']]
 
 /** Outings space: compose a day, a week or the month's weekends of real activities, each with a ready-to-follow program. */
 export function SortiesTab() {
   const { me, house, upHouse, patchMe, award } = useApp()
-  const list = COUNTRY_CITIES[me!.country] ?? COUNTRY_CITIES.MA; const city = list.includes(me!.city) ? me!.city : list[0]; const acts = CITIES[city]; const people = me!.size
+  const list = COUNTRY_CITIES[me!.country] ?? [...COUNTRY_CITIES.MA, ...COUNTRY_CITIES.FR]; const city = list.includes(me!.city) ? me!.city : list[0]; const acts = CITIES[city]; const people = me!.size
   const [kinds, setKinds] = useState<Kind[]>([]); const [budget, setBudget] = useState(400); const [mode, setMode] = useState<Mode>('day')
   const [mv, setMv] = useState<Move>('taxi'); const [fmt, setFmt] = useState<Fmt | 'auto'>('auto'); const [open, setOpen] = useState<string | null>('d0')
   type O = { outings2?: Partial<Record<Mode, Record<string, Day>>> }
@@ -217,55 +218,70 @@ export function SortiesTab() {
   }
   const swap = (k: string, i: number) => { const d = plan[k]; const alt = pickActs(acts.filter((a) => !d.acts.includes(a.id)), kinds, d.fmt, budget, people, new Set(), mv, d.acts[i - 1] ?? d.acts[i + 1])[0]; if (!alt) return; const acts2 = [...d.acts]; acts2[i] = alt; save({ ...plan, [k]: { ...d, acts: acts2 } }, '↻ activité') }
   const setDayFmt = (k: string, f: Fmt) => save({ ...plan, [k]: { fmt: f, acts: pickActs(acts, kinds, f, budget, people, new Set(), mv) } }, 'format')
+  const story = (d: Day) => KTONE[(acts.find((a) => a.id === d.acts[0])?.k[0]) ?? 'culture']
+  // Bon plan: a free or cheaper activity of the same kind that could replace the priciest one of the day.
+  const deal = (d: Day) => { const pr = d.acts.map((id) => acts.find((a) => a.id === id)!).filter(Boolean); const top = [...pr].sort((a, b) => b.p - a.p)[0]; if (!top || top.p === 0) return null
+    const alt = acts.filter((a) => !d.acts.includes(a.id) && a.p < top.p * 0.5 && a.h <= maxH[d.fmt] && a.k.some((k) => top.k.includes(k))).sort((a, b) => a.p - b.p)[0]
+    return alt ? { top, alt, save: (top.p - alt.p) * people } : null }
+  const takeDeal = (k: string, d: Day, x: { top: Act; alt: Act }) => save({ ...plan, [k]: { ...d, acts: d.acts.map((id) => (id === x.top.id ? x.alt.id : id)) } }, '💡 bon plan')
+  const ctryName = { MA: 'Maroc', FR: 'France' }[me!.country]
   return (
     <div className="stagger space-y-3">
+      {!COUNTRY_CITIES[me!.country] && <div className="rounded-2xl bg-apricot/25 p-3 text-sm">🧭 Les sorties détaillées arrivent bientôt dans votre pays. En attendant, voici nos villes au Maroc et en France.</div>}
       <div className="card space-y-3 p-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">Où ?</p>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4">{list.map((c) => <button key={c} className="chip shrink-0" aria-pressed={c === city} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>📍 {c}</button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">Quand ?</p>
-        <div className="flex rounded-full bg-cream p-1">{([['day', '📅 Jour'], ['week', '🗓️ Semaine'], ['month', '📆 Mois']] as [Mode, string][]).map(([m, l]) => <button key={m} className={`flex-1 rounded-full py-2 text-sm font-bold ${mode === m ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }}>{l}</button>)}</div>
-        <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>🎈 Composer {mode === 'day' ? 'ma journée' : mode === 'week' ? 'ma semaine' : 'mes week-ends'}</button>
-        <details className="group rounded-2xl bg-cream/70 p-3">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold"><span>⚙️ Personnaliser <span className="font-normal text-muted">· {fmt === 'auto' ? 'Auto' : FMT.find((f) => f[0] === fmt)?.[1]} · {kinds.length ? KINDS.filter(([k]) => kinds.includes(k)).map(([, l]) => l).join(', ') : 'Tous'} · {MOVES.find(([m]) => m === mv)?.[1]} · {money(budget, 'fr')}</span></span><span className="text-muted transition-transform group-open:rotate-90">›</span></summary>
-          <div className="mt-3 space-y-3">
-        <div className="grid grid-cols-2 gap-2">{([['auto', '✨ Automatique', 'soirée en semaine, journée le week-end'], ...FMT.map((f) => [f[0], f[1], f[2]])] as [string, string, string][]).map(([k, l, h]) => <button key={k} className={`rounded-2xl border p-2 text-start ${fmt === k ? 'border-forest bg-leaf/20' : 'border-line bg-surface'} ${k === 'auto' ? 'col-span-2' : ''}`} onClick={() => setFmt(k as Fmt | 'auto')} aria-pressed={fmt === k}><span className="block text-sm font-bold">{l}</span><span className="block text-[11px] text-muted">{h}</span></button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">Avec qui ?</p>
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">{list.map((c) => <button key={c} className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-bold transition active:scale-95 ${c === city ? 'bg-forest text-white shadow-lift' : 'bg-cream text-ink'}`} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>📍 {c}</button>)}</div>
+        <div className="flex rounded-full bg-cream p-1">{([['day', 'Aujourd’hui'], ['week', '7 jours'], ['month', 'Week-ends du mois']] as [Mode, string][]).map(([m, l]) => <button key={m} className={`flex-1 rounded-full py-2 text-[13px] font-bold transition ${mode === m ? 'bg-surface text-forest shadow-soft' : 'text-muted'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }}>{l}</button>)}</div>
+        <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {days.some(([k]) => plan[k]) ? 'Proposer autre chose' : mode === 'day' ? 'Que faire aujourd’hui ?' : mode === 'week' ? 'Planifier ma semaine' : 'Planifier mes week-ends'}</button>
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center justify-center gap-1 text-xs font-semibold text-muted"><span>Personnaliser · {kinds.length ? KINDS.filter(([k]) => kinds.includes(k)).map(([, l]) => l.split(' ')[0]).join(' ') : 'tout le monde'} · {money(budget, 'fr')}</span><span className="transition-transform group-open:rotate-90">›</span></summary>
+          <div className="mt-3 space-y-3 rounded-2xl bg-cream/70 p-3">
         <div className="flex flex-wrap gap-2">{KINDS.map(([k, l]) => <button key={k} className="chip" aria-pressed={kinds.includes(k)} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])}>{l}</button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">Déplacement</p>
+        <div className="flex rounded-full bg-surface p-1">{([['auto', 'Auto'], ['full', '☀️ Journée'], ['half', '🌤️ Après-midi'], ['eve', '🌇 Soirée']] as [Fmt | 'auto', string][]).map(([k, l]) => <button key={k} className={`flex-1 rounded-full py-1.5 text-xs font-bold ${fmt === k ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setFmt(k)} aria-pressed={fmt === k}>{l}</button>)}</div>
         <div className="flex gap-2">{MOVES.map(([m, l]) => <button key={m} className="chip flex-1 justify-center" aria-pressed={mv === m} onClick={() => setMv(m)}>{l}</button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">Budget</p>
-        <div className="flex items-center gap-3"><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-24 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
+        <div className="flex items-center gap-3"><span className="text-xs font-bold text-muted">Budget</span><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-20 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
+        <p className="text-center text-[11px] text-muted">« Auto » : soirée en semaine, journée le week-end.</p>
           </div>
         </details>
-        <p className="text-center text-[11px] text-muted">Pour {people} personne(s) · prix indicatifs, à vérifier sur place</p>
       </div>
       {!days.some(([k]) => plan[k]) ? (
-        <div className="card space-y-2 p-6 text-center"><p className="float text-5xl">🗺️</p><p className="font-display text-lg font-extrabold">Rien de prévu pour l’instant</p><p className="text-sm text-muted">Choisis la ville et la période, puis touche « Composer » : tu reçois un vrai programme heure par heure à {city}, avec où manger et comment y aller.</p></div>
+        <div className="card overflow-hidden"><div className="relative grid h-28 place-items-center bg-gradient-to-br from-forest to-[#1a4a35] text-5xl"><div className="zellige absolute inset-0 opacity-20" aria-hidden /><span className="float relative">🗺️</span></div><div className="space-y-1 p-5 text-center"><p className="font-display text-lg font-extrabold">Une idée de sortie à {city} ?</p><p className="text-sm text-muted">Un seul bouton : vous recevez un programme heure par heure, où manger, comment y aller et le bon plan pour payer moins.</p></div></div>
       ) : (<>
-        <div className="card p-4"><div className="flex items-center justify-between"><span className="font-semibold">💰 Total estimé · {people} pers.</span><span className={`font-display text-xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{money(total, 'fr')} <span className="text-xs font-semibold text-muted">/ {money(budget, 'fr')}</span></span></div>
-          <div className="mt-2 grid grid-cols-3 gap-1 text-center text-[11px]">{([['🎟️ Activités', sum.a], ['🍽️ Repas', sum.m], [MOVES.find((m) => m[0] === mv)![1].split(' ')[0] + ' Trajets', sum.tr]] as [string, number][]).map(([l, v]) => <div key={l} className="rounded-xl bg-cream/70 py-1.5"><p className="text-muted">{l}</p><b className="tabular-nums">{money(v, 'fr')}</b></div>)}</div>
-          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / Math.max(1, budget)) * 100)}%`, background: total > budget ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></div>
-          <p className="mt-1 text-[11px] text-muted">{total > budget ? `Dépasse de ${money(total - budget, 'fr')} : change une activité ou passe en fin de journée.` : `Reste ${money(budget - total, 'fr')} sur ton budget sorties.`}</p></div>
-        {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!
+        <div className="card flex items-center gap-4 p-4">
+          <div className="relative grid h-16 w-16 shrink-0 place-items-center rounded-full" style={{ background: `conic-gradient(${total > budget ? 'rgb(var(--danger))' : 'rgb(var(--forest))'} ${Math.min(100, (total / Math.max(1, budget)) * 100)}%, rgb(var(--cream)) 0)` }}><span className="grid h-12 w-12 place-items-center rounded-full bg-surface text-[11px] font-extrabold tabular-nums">{Math.round((total / Math.max(1, budget)) * 100)}%</span></div>
+          <div className="min-w-0 flex-1"><p className="text-xs text-muted">Total estimé · {people} pers.</p><p className={`font-display text-2xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{money(total, 'fr')}</p><p className="text-[11px] text-muted">🎟️ {money(sum.a, 'fr')} · 🍽️ {money(sum.m, 'fr')} · 🚕 {money(sum.tr, 'fr')}</p></div>
+        </div>
+        {days.map(([k, label]) => { const d = plan[k]; if (!d) return null; const pr = program(city, acts, d); const isOpen = open === k; const f = FMT.find((x) => x[0] === d.fmt)!; const tone = story(d); const dl = deal(d)
           const kindsHere = [...new Set(d.acts.flatMap((id) => acts.find((a) => a.id === id)?.k ?? []))] as Kind[]
           return (
           <div key={k} className="card overflow-hidden">
-            <button className="flex w-full items-center gap-3 px-4 py-3 text-start" onClick={() => setOpen(isOpen ? null : k)} aria-expanded={isOpen}>
-              <span className="min-w-0 flex-1"><span className="block font-display text-[17px] font-extrabold first-letter:uppercase">{label}</span><span className="text-xs text-muted">{f[1]} · {f[2]} · <b className="text-ink">≈ {money(cost(d), 'fr')}</b> (🎟️ {money(parts(d).a, 'fr')} · 🍽️ {money(parts(d).m, 'fr')} · trajets {money(parts(d).tr, 'fr')})</span></span>
-              {!isOpen && <span className="text-xl">{pr.filter((x) => x.id).map((x) => x.e).join('')}</span>}<span className={`text-muted transition-transform ${isOpen ? 'rotate-90' : ''}`}>›</span>
+            <button className="relative block w-full overflow-hidden text-start text-white" style={{ background: tone[0] }} onClick={() => setOpen(isOpen ? null : k)} aria-expanded={isOpen}>
+              <div className="zellige absolute inset-0 opacity-30" aria-hidden />
+              <div className="relative flex items-end gap-3 p-4">
+                <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wider opacity-80">{f[1].split(' ').slice(1).join(' ')} · {f[2]}</p><p className="font-serif text-2xl font-semibold leading-tight first-letter:uppercase">{label}</p>
+                  <p className="mt-1 truncate text-sm opacity-90">{pr.filter((x) => x.id).map((x) => x.n).join(' · ')}</p></div>
+                <div className="shrink-0 text-end"><p className="text-3xl leading-none tracking-tighter">{pr.filter((x) => x.id).map((x) => x.e).join('')}</p><p className="mt-2 rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold tabular-nums backdrop-blur">≈ {money(cost(d), 'fr')}</p></div>
+              </div>
             </button>
-            {isOpen && <div className="fade-up border-t border-line/70 px-4 pb-4 pt-3">
-              <div className="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1">{FMT.map(([fk, fl]) => <button key={fk} className={`chip shrink-0 !min-h-8 !text-xs ${d.fmt === fk ? '!bg-forest !text-white' : ''}`} onClick={() => setDayFmt(k, fk)}>{fl}</button>)}</div>
-              <ol className="relative space-y-3 border-s-2 border-leaf/50 ps-4">
-                {pr.map((x, i) => <li key={i} className="relative"><span className="absolute -start-[1.45rem] top-1 grid h-5 w-5 place-items-center rounded-full bg-surface text-[11px] ring-2 ring-leaf">{x.e}</span>
-                  {(() => { if (!x.id) return null; const ai = d.acts.indexOf(x.id); if (ai < 1) return null; const dist = km(d.acts[ai - 1], x.id); if (!dist) return null; const M = MOVES.find((m) => m[0] === mv)!; const mins = Math.max(5, Math.round((dist / M[3]) * 60)); return <p className="mb-1 inline-block rounded-full bg-leaf/25 px-2 py-0.5 text-[10px] font-bold text-forest">{M[1].split(' ')[0]} {mins} min · {dist.toFixed(1).replace('.', ',')} km</p> })()}
-                  <p className="text-[11px] font-bold text-forest">{x.t}</p><p className="font-semibold leading-tight">{x.n}</p><p className="text-xs text-muted">{x.d} · {x.p ? `≈ ${money(x.p * people, 'fr')}` : 'Gratuit'}</p>
-                  {(() => { const ac = x.id ? acts.find((q) => q.id === x.id) : undefined; return ac && <>{ac.a && <p className="mt-0.5 text-xs">📍 <a className="font-semibold text-forest underline" href={`https://www.google.com/maps/search/${encodeURIComponent(ac.n + ' ' + ac.a + ' ' + city)}`} target="_blank" rel="noreferrer">{ac.a}</a></p>}{ac.tl && <ul className="mt-1 space-y-0.5 text-[11px] text-ink/80">{ac.tl.map((st, j) => <li key={j}>• {st}</li>)}</ul>}</> })()}
-                  {x.id && <button className="mt-1 rounded-full bg-cream px-3 py-1 text-xs font-bold active:scale-95" onClick={() => swap(k, d.acts.indexOf(x.id!))}>↻ Changer cette activité</button>}</li>)}
+            {dl && <div className="flex items-center gap-3 border-b border-line/70 bg-apricot/15 px-4 py-2.5"><span className="text-xl">💡</span><p className="min-w-0 flex-1 text-xs"><b>Bon plan :</b> {dl.alt.e} {dl.alt.n} au lieu de {dl.top.n.toLowerCase()}, <b className="text-forest">−{money(dl.save, 'fr')}</b></p><button className="shrink-0 rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white active:scale-95" onClick={() => takeDeal(k, d, dl)}>Prendre</button></div>}
+            {isOpen && <div className="fade-up px-4 pb-4 pt-3">
+              <ol className="space-y-2">
+                {pr.map((x, i) => { const ac = x.id ? acts.find((q) => q.id === x.id) : undefined; const ai = x.id ? d.acts.indexOf(x.id) : -1; const dist = ai > 0 ? km(d.acts[ai - 1], x.id!) : 0; const M = MOVES.find((m) => m[0] === mv)!
+                  return <li key={i}>
+                  {dist > 0 && <p className="mb-1 ms-14 inline-block rounded-full bg-leaf/25 px-2 py-0.5 text-[10px] font-bold text-forest">{M[1].split(' ')[0]} {Math.max(5, Math.round((dist / M[3]) * 60))} min · {dist.toFixed(1).replace('.', ',')} km</p>}
+                  <div className={`flex gap-3 rounded-2xl p-2.5 ${x.id ? 'bg-cream/70' : ''}`}>
+                    <div className="flex w-11 shrink-0 flex-col items-center"><span className="text-[11px] font-extrabold tabular-nums text-forest">{x.t}</span><span className={`mt-1 grid h-9 w-9 place-items-center rounded-xl text-xl ${x.id ? 'bg-surface shadow-soft' : ''}`}>{x.e}</span></div>
+                    <div className="min-w-0 flex-1"><p className="font-semibold leading-tight">{x.n}</p><p className="text-xs text-muted">{x.d}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]"><span className={`rounded-full px-2 py-0.5 font-bold ${x.p ? 'bg-surface' : 'bg-leaf/30 text-forest'}`}>{x.p ? `≈ ${money(x.p * people, 'fr')}` : 'Gratuit'}</span>
+                        {ac?.a && <a className="rounded-full bg-surface px-2 py-0.5 font-bold text-forest" href={`https://www.google.com/maps/search/${encodeURIComponent(ac.n + ' ' + ac.a + ' ' + city)}`} target="_blank" rel="noreferrer">📍 Itinéraire</a>}
+                        {x.id && <button className="rounded-full bg-surface px-2 py-0.5 font-bold active:scale-95" onClick={() => swap(k, ai)}>↻ Autre idée</button>}</div>
+                      {ac?.tl && <p className="mt-1 text-[11px] text-ink/70">{ac.tl.join(' → ')}</p>}</div>
+                  </div></li> })}
               </ol>
-              <div className="mt-3 space-y-1 rounded-2xl bg-cream p-3 text-xs"><p>🚕 <b>Y aller :</b> {FOOD[city].move}</p>{kindsHere.slice(0, 2).map((kk) => <p key={kk}>💡 <b>Conseil :</b> {TIP[kk]}</p>)}</div>
+              <div className="mt-3 flex gap-1.5 overflow-x-auto">{([['full', '☀️ Journée'], ['half', '🌤️ Après-midi'], ['eve', '🌇 Soirée']] as [Fmt, string][]).map(([fk, fl]) => <button key={fk} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${d.fmt === fk ? 'bg-forest text-white' : 'bg-cream text-muted'}`} onClick={() => setDayFmt(k, fk)}>{fl}</button>)}</div>
+              <div className="mt-3 space-y-1 rounded-2xl bg-cream p-3 text-xs"><p>🚕 {FOOD[city].move}</p>{kindsHere.slice(0, 1).map((kk) => <p key={kk}>💡 {TIP[kk]}</p>)}</div>
             </div>}
           </div>) })}
+        <p className="text-center text-[11px] text-muted">Pour {people} personne(s) · prix indicatifs{ctryName ? '' : ' en équivalent local'}, à vérifier sur place</p>
       </>)}
     </div>
   )

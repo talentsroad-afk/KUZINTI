@@ -10,6 +10,7 @@ import { composeSides, cuisineOf, CUISINES, FLAG, REGIONS, type Prefs } from './
 import { Dish, Sheet } from './ui'
 import { Controls, RecipeSheet, ReplaceSheet } from './Screens'
 import { useBasket } from './Flow'
+import { cname, countryOf } from './lib/countries'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
 const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
@@ -34,9 +35,9 @@ const when = (off: number, s: Meal, d: number, l: Lang) => {
 }
 
 /** Home, "Riad" direction: an editorial page built only from the household's real data. */
-export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list' | 'stores' | 'recipes') => void; makeHealthy: () => void }) {
+export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clear }: { clear: () => void; openCountry: () => void; compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list' | 'stores' | 'recipes') => void; makeHealthy: () => void }) {
   const { lang, me, house, patchMe, upHouse, toast } = useApp()
-  const [eat, setEat] = useState(false); const [ctry, setCtry] = useState(false); const [kc, setKc] = useState(false)
+  const [eat, setEat] = useState(false); const [kc, setKc] = useState(false)
   const kt = useRef<number | undefined>(undefined)
   const onKcal = (k: number) => { clearTimeout(kt.current); kt.current = window.setTimeout(() => recompose({ kcal: k }), 450) }
   const { items, total, spent, store, price } = useBasket()
@@ -68,7 +69,6 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
 
   const tg = (g: string) => { const on = !goals.includes(g); const ng = on ? [...goals.filter((x) => !(g === 'healthy' && x === 'gourmand')), g] : goals.filter((x) => x !== g); patchMe({ goals: ng }); if (g === 'healthy' && on && n) makeHealthy(); else recompose({ goals: ng }) }
   const veg = me!.diet.includes('vegetarian')
-  const setCountry = (c: string) => { if (c === me!.country) return; const cu = c === 'FR' ? 'fr' : 'ma'; patchMe({ country: c, cuisine: cu, region: 'all' }); upHouse((h) => { h.store = undefined }); recompose({ cuisine: cu, region: 'all' }); toast(c === 'FR' ? '🇫🇷 France · €' : '🇲🇦 Maroc · MAD') }
   const QUICK: [string, string, LucideIcon, boolean, () => void][] = [
     ['healthy', 'Healthy', Leaf, goals.includes('healthy'), () => tg('healthy')],
     ['veg', L(lang, 'Veggie', 'Végé', 'نباتي'), Carrot, veg, () => { const d = veg ? [] : ['vegetarian']; patchMe({ diet: d }); recompose({ diet: d }) }],
@@ -111,7 +111,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
       {/* Zone 1 — personal introduction */}
       <header className="rise pt-2 lg:col-span-12">
         <div className="flex items-center justify-between gap-3"><p className="text-[11px] font-bold uppercase tracking-[.18em] text-terracotta">{date}</p>
-          <button className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-sm font-bold shadow-soft active:scale-95" onClick={() => setCtry(true)} aria-label={L(lang, 'Change country', 'Changer de pays', 'تغيير البلد')}>{me!.country === 'FR' ? '🇫🇷 France · €' : '🇲🇦 Maroc · MAD'} <ChevronDown size={15} aria-hidden /></button></div>
+          <button className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-sm font-bold shadow-soft active:scale-95" onClick={openCountry} aria-label={L(lang, 'Change country', 'Changer de pays', 'تغيير البلد')}>{countryOf(me!.country).f} {cname(countryOf(me!.country), lang)} · {countryOf(me!.country).sym} <ChevronDown size={15} aria-hidden /></button></div>
         <h1 className="mt-1 font-serif text-[34px] font-semibold leading-[1.05] tracking-tight text-ink lg:text-[46px]">{greet}, <span className="italic text-forest">{firstName}</span>.</h1>
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted">{lead}</p>
         <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted"><Users size={14} aria-hidden /> {house!.name} · {house!.members.length} {L(lang, house!.members.length > 1 ? 'members' : 'member', house!.members.length > 1 ? 'membres' : 'membre', 'أعضاء')}</p>
@@ -231,15 +231,9 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
       <nav className="rise flex flex-wrap gap-x-6 gap-y-2 border-t border-line/70 pt-4 text-sm lg:col-span-12" aria-label={t('prefs', lang)}>
         <button className="inline-flex min-w-0 items-center gap-2 font-semibold text-ink" onClick={() => setPrefs(true)}><SlidersHorizontal size={16} className="text-forest" aria-hidden /> {t('prefs', lang)} <span className="truncate font-normal text-muted">{prefLine}</span></button>
         {n > 0 && <button className="inline-flex items-center gap-2 font-semibold text-ink" onClick={compose}><RefreshCw size={16} className="text-forest" aria-hidden /> {t('newWeek', lang)}</button>}
+        {n > 0 && <button className="inline-flex items-center gap-2 font-semibold text-danger" onClick={clear}>🗑 {L(lang, 'Clear the week', 'Vider la semaine', 'إفراغ الأسبوع')}</button>}
       </nav>
 
-      <Sheet open={ctry} onClose={() => setCtry(false)} title={L(lang, 'Your country', 'Votre pays', 'بلدك')}>
-        <div className="space-y-2">{([['MA', '🇲🇦', 'Maroc', 'MAD · Marjane, BIM, Carrefour, souk…', L(lang, 'Moroccan cuisine', 'Cuisine marocaine', 'المطبخ المغربي')], ['FR', '🇫🇷', 'France', '€ · Leclerc, Lidl, Carrefour, marché…', L(lang, 'French cuisine', 'Cuisine française', 'المطبخ الفرنسي')]] as const).map(([c, f, nm2, sub, cu]) => (
-          <button key={c} className={`flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-start transition active:scale-[.98] ${me!.country === c ? 'border-forest bg-leaf/15' : 'border-line'}`} onClick={() => { setCountry(c); setCtry(false) }}>
-            <span className="text-4xl">{f}</span><span className="min-w-0 flex-1"><b className="block font-display text-lg">{nm2}</b><span className="block text-xs text-muted">{sub}</span><span className="block text-xs text-muted">{cu}</span></span>{me!.country === c && <Check size={22} className="text-forest" aria-hidden />}
-          </button>))}</div>
-        <p className="mt-3 text-xs text-muted">{L(lang, 'Changes currency, stores and prices. Your week is recomposed with the local cuisine.', 'Change la devise, les magasins et les prix. Votre semaine est recomposée avec la cuisine locale.', 'يغيّر العملة والمتاجر والأسعار.')}</p>
-      </Sheet>
       <Sheet open={kc} onClose={() => setKc(false)} title={L(lang, 'Calories', 'Calories', 'السعرات')}>
         <KcalGoal onChange={onKcal} />
         <p className="mt-3 text-xs text-muted">{n ? L(lang, 'Your week adapts automatically.', 'Votre semaine s’adapte automatiquement.', 'يتكيف أسبوعك تلقائيًا.') : L(lang, 'Used when you compose your week.', 'Pris en compte quand vous composez la semaine.', 'يؤخذ بعين الاعتبار عند التركيب.')}</p>

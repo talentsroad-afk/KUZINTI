@@ -134,7 +134,7 @@ export function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => vo
 const STOP = new Set(['de', 'du', 'des', 'au', 'aux', 'à', 'la', 'le', 'les', 'et', 'with', 'and', 'the', 'of', 'en'])
 const short = (n: string) => n.replace(/\s*\(.*\)/, "").split(/[\s,]+/).filter((w) => w && !STOP.has(w.toLowerCase())).slice(0, 2).join(' ')
 
-export function WeekTab({ compose, makeHealthy, say }: { compose: () => void; makeHealthy: () => void; say: (m: string) => void }) {
+export function WeekTab({ compose, makeHealthy, say, clear }: { compose: () => void; makeHealthy: () => void; say: (m: string) => void; clear: () => void }) {
   const { lang, me, house, upHouse } = useApp()
   const p = usePrefs(); const plan = house!.plan
   const today = (new Date().getDay() + 6) % 7
@@ -169,7 +169,7 @@ export function WeekTab({ compose, makeHealthy, say }: { compose: () => void; ma
   return (
     <div className="space-y-3">
       {me!.showForme && <FormeCard plan={plan} />}
-      <div className="flex gap-2"><button className="btn btn-soft flex-1 !min-h-11" onClick={compose}><Shuffle size={16} className="inline -mt-0.5" aria-hidden /> {t('reshuffle', lang)}</button></div>
+      <div className="flex gap-2"><button className="btn btn-soft flex-1 !min-h-11" onClick={compose}><Shuffle size={16} className="inline -mt-0.5" aria-hidden /> {t('reshuffle', lang)}</button><button className="btn btn-soft !min-h-11 !px-4 text-danger" onClick={clear}>🗑 {lang === 'en' ? 'Clear' : lang === 'ar' ? 'إفراغ' : 'Vider'}</button></div>
       <div className="flex rounded-full bg-surface p-1 shadow-soft">{(['day', 'week', 'month'] as const).map((v) => <button key={v} className={`flex-1 rounded-full py-2 text-sm font-bold ${view === v ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setView(v)}>{t('v_' + v, lang)}</button>)}</div>
       {view === 'day' && <>
         <div className="grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => setDay(d)} className={`rounded-2xl py-2 text-center ${d === day ? 'bg-forest text-white' : 'bg-surface'}`}><span className="block text-[10px] font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span><span className="block text-base">{d === today ? '•' : ' '}</span></button>)}</div>

@@ -1,3 +1,4 @@
+import { countryOf, type Country } from './countries'
 export type Lang = 'fr' | 'en' | 'ar'
 type D = Record<string, [string, string, string]> // [en, fr, ar]
 const D: D = {
@@ -119,8 +120,10 @@ export const t = (k: string, l: Lang) => (D[k] ?? [k, k, k])[l === 'en' ? 0 : l 
 export const rname = (n: [string, string, string], l: Lang) => n[l === 'en' ? 0 : l === 'fr' ? 1 : 2]
 export const dayName = (i: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l, { weekday: 'long' }).format(new Date(2024, 0, 1 + i))
 // Amounts are stored in MAD; France shows an estimated euro equivalent (local price level, not a bank rate).
-let CUR: 'MAD' | 'EUR' = 'MAD'
-export const setCurrency = (c: string) => { CUR = c === 'FR' ? 'EUR' : 'MAD' }
-export const curRate = () => (CUR === 'EUR' ? 0.16 : 1)
-export const money2 = (n: number, l: Lang) => CUR === 'EUR' ? `${(n * 0.16).toFixed(2)} €` : `${n.toFixed(2)} ${l === 'ar' ? 'د.م.' : 'MAD'}`
-export const money = (n: number, l: Lang) => CUR === 'EUR' ? `${Math.round(n * 0.16)} €` : `${Math.round(n)} ${l === 'ar' ? 'د.م.' : 'MAD'}`
+let CUR: Country = countryOf('MA')
+export const setCurrency = (c: string) => { CUR = countryOf(c) }
+export const curRate = () => CUR.rate
+export const curSym = () => CUR.sym
+const fmt = (v: string, l: Lang) => CUR.id === 'MA' ? `${v} ${l === 'ar' ? 'د.م.' : 'MAD'}` : CUR.sym === '€' || CUR.sym === '£' || CUR.sym === '$' || CUR.sym === '₺' ? (CUR.sym === '€' ? `${v} €` : `${CUR.sym}${v}`) : `${v} ${CUR.sym}`
+export const money2 = (n: number, l: Lang) => fmt((n * CUR.rate).toFixed(CUR.dec), l)
+export const money = (n: number, l: Lang) => { const v = Math.round(n * CUR.rate); return fmt(v >= 10000 ? v.toLocaleString('fr-FR').replace(/\u202f/g, ' ') : String(v), l) }

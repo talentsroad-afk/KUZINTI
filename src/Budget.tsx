@@ -162,6 +162,26 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
   prog.push(['goal', m.goal?.n || L(lang, 'Your project', 'Votre projet', 'مشروعك'), m.goal?.target ? L(lang, `Put ${money(m.goal.monthly, lang)} a month towards ${money(m.goal.target, lang)}.`, `Versez ${money(m.goal.monthly, lang)} par mois pour atteindre ${money(m.goal.target, lang)}.`, `ادّخر ${money(m.goal.monthly, lang)} شهريًا.`) : L(lang, 'Choose a project (holidays, Aïd, car, home) and fund it monthly.', 'Choisissez un projet (vacances, Aïd, voiture, logement) et financez-le chaque mois.', 'اختر مشروعًا وموّله شهريًا.')])
   const steps = prog.slice(0, 6); const curStep = Math.min(steps.length - 1, Math.max(0, now - startM)); const doneN = steps.filter(([k]) => m.prog?.[k]).length
   const tick = (k: string) => save({ ...m, prog: { ...(m.prog ?? {}), [k]: !m.prog?.[k] } })
+  // Strengths and weak points, each weak point with a concrete action and its monthly gain.
+  const groc = m.env.food ?? 0
+  const SW: { k: string; ok: boolean; t: string; why: string; act?: string; gain?: number }[] = inc ? [
+    { k: 'save', ok: saveM >= inc * 0.15, t: L(lang, 'Savings', 'Épargne', 'الادخار'), why: L(lang, `${pct(saveM)}% of income put aside`, `${pct(saveM)} % des revenus mis de côté`, `${pct(saveM)}%`), act: L(lang, 'Automatic transfer on payday', 'Virement automatique le jour de la paie', 'تحويل تلقائي'), gain: Math.max(0, inc * 0.15 - saveM) },
+    { k: 'debt', ok: debt / inc <= 0.33, t: L(lang, 'Housing and loans', 'Logement et crédits', 'السكن والقروض'), why: `${pct(debt)} % ${L(lang, 'of income', 'des revenus', 'من الدخل')}`, act: L(lang, 'Renegotiate the rate or pay off the dearest loan first', 'Renégocier le taux ou solder le crédit le plus cher', 'إعادة التفاوض'), gain: Math.max(0, debt - inc * 0.33) },
+    { k: 'need', ok: need / inc <= 0.5, t: L(lang, 'Essentials', 'Dépenses essentielles', 'الحاجيات'), why: `${pct(need)} % / 50 %`, act: L(lang, 'Cheapest store with KUZINTI + phone/internet bundle', 'Magasin le moins cher avec KUZINTI + forfait téléphone/internet', 'أرخص متجر'), gain: Math.max(groc * 0.12, need - inc * 0.5) },
+    { k: 'want', ok: want / inc <= 0.3, t: L(lang, 'Wants and leisure', 'Envies et loisirs', 'الكماليات'), why: `${pct(want)} % / 30 %`, act: L(lang, 'One paid outing in two becomes a free one', 'Une sortie payante sur deux devient gratuite', 'نزهة مجانية'), gain: Math.max(0, want - inc * 0.3) },
+    { k: 'env', ok: !envs.length || kept === envs.length, t: L(lang, 'Envelopes', 'Enveloppes', 'الأظرفة'), why: `${kept}/${envs.length} ${L(lang, 'kept this month', 'tenues ce mois', 'محترمة')}`, act: L(lang, 'Check the envelope before each purchase', 'Regarder l’enveloppe avant chaque achat', 'راجع الظرف'), gain: VAR.reduce((a, k) => a + Math.max(0, (sp[k] ?? 0) - (m.env[k] ?? 0)), 0) },
+  ] : []
+  const strong = SW.filter((x) => x.ok); const weak = SW.filter((x) => !x.ok).sort((a, b) => (b.gain ?? 0) - (a.gain ?? 0))
+  const potential = weak.reduce((a, x) => a + (x.gain ?? 0), 0)
+  // Savings plan: the owner picks a monthly amount; we split it into 3 pockets and project it.
+  const [rate, setRate] = useState(() => Math.round(Math.min(30, Math.max(5, inc ? (saveM / inc) * 100 : 10))))
+  const amt = Math.round((inc * rate) / 100)
+  const cushionLeft = Math.max(0, essentials * 3 - (m.goal?.saved ?? 0))
+  const pockets: [string, string, number, string][] = cushionLeft > 0
+    ? [['🛟', L(lang, 'Safety cushion', 'Matelas de sécurité', 'احتياطي'), 0.6, C.need], ['🎯', m.goal?.n || L(lang, 'Project', 'Projet', 'مشروع'), 0.25, C.want], ['🎉', L(lang, 'Aïd, holidays, gifts', 'Aïd, vacances, cadeaux', 'العيد والعطل'), 0.15, C.save]]
+    : [['🎯', m.goal?.n || L(lang, 'Project', 'Projet', 'مشروع'), 0.55, C.want], ['📈', L(lang, 'Long-term savings', 'Épargne long terme', 'ادخار طويل'), 0.3, C.need], ['🎉', L(lang, 'Aïd, holidays, gifts', 'Aïd, vacances, cadeaux', 'العيد والعطل'), 0.15, C.save]]
+  const proj = [3, 6, 12, 24].map((n) => [n, (m.goal?.saved ?? 0) + amt * n] as [number, number]); const pmax = proj[3][1] || 1
+  const applyPlan = () => save({ ...m, goal: { n: m.goal?.n || L(lang, 'Savings', 'Épargne', 'ادخار'), target: m.goal?.target || Math.round(essentials * 3), saved: m.goal?.saved ?? 0, monthly: amt } })
   const delExp = (id: string) => save({ ...m, exp: m.exp.filter((e) => e.id !== id) })
   const list = m.exp.filter((e) => ym(e.t) === mon).sort((a, b) => b.t - a.t)
 
@@ -190,6 +210,26 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
           <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'Financial health', 'Santé financière', 'الصحة المالية')}</p><p className="font-serif text-[26px] font-semibold leading-tight">{grade[0]}</p><p className="text-xs text-muted">{L(lang, 'Score out of 100, updated live', 'Note sur 100, mise à jour en direct', 'من 100')}</p></div>
         </div>
         <ul className="mt-3 space-y-1.5">{crit.map(([l, v, max, info]) => <li key={l} className="text-sm"><div className="flex items-center gap-2"><span className="flex-1">{l} <span className="text-xs text-muted">· {info}</span></span><b className="tabular-nums">{Math.round(v)}/{max}</b></div><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${(v / max) * 100}%`, background: v / max >= 0.7 ? C.need : v / max >= 0.4 ? C.save : 'rgb(var(--danger))' }} /></div></li>)}</ul>
+      </section>}
+
+      {inc > 0 && <section aria-label={L(lang, 'Strengths and weak points', 'Points forts et points faibles', 'نقاط القوة والضعف')}>
+        <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'Your check-up', 'Votre bilan', 'تشخيصك')}</h2>{potential > 0 && <span className="rounded-full bg-leaf/30 px-2.5 py-1 text-xs font-bold text-forest tabular-nums">{L(lang, 'up to', 'jusqu’à', 'حتى')} +{money(potential, lang)}/{L(lang, 'mo', 'mois', 'شهر')}</span>}</div>
+        {strong.length > 0 && <div className="mb-3 flex flex-wrap gap-2">{strong.map((x) => <span key={x.k} className="inline-flex items-center gap-1.5 rounded-full bg-leaf/25 px-3 py-1.5 text-sm font-semibold text-forest"><Check size={15} aria-hidden /> {x.t} <span className="text-xs font-normal opacity-80">· {x.why}</span></span>)}</div>}
+        {weak.length ? <div className="space-y-2">{weak.map((x, i) => <div key={x.k} className="flex items-stretch overflow-hidden rounded-[20px] bg-surface shadow-soft">
+          <span className="w-1.5 shrink-0" style={{ background: i === 0 ? 'rgb(var(--danger))' : C.save }} />
+          <div className="min-w-0 flex-1 p-3">{i === 0 && <span className="mb-1 inline-block rounded-full bg-danger/10 px-2 py-0.5 text-[10px] font-extrabold uppercase text-danger">{L(lang, 'Priority', 'Priorité', 'أولوية')}</span>}<p className="text-sm font-bold leading-tight">{x.t}</p><p className="text-xs text-muted">{x.why}</p><p className="mt-0.5 text-sm text-ink/80">→ {x.act}</p></div>
+          {(x.gain ?? 0) > 0 && <div className="grid shrink-0 place-items-center px-3 text-end"><span><span className="block font-display text-lg font-extrabold tabular-nums text-forest">+{money(x.gain!, lang)}</span><span className="block text-[10px] text-muted">{L(lang, 'per month', 'par mois', 'شهريًا')}</span></span></div>}
+        </div>)}</div> : <p className="rounded-2xl bg-leaf/20 p-3 text-sm font-semibold text-forest">🌟 {L(lang, 'No weak point: keep it up and raise your savings.', 'Aucun point faible : continuez et augmentez votre épargne.', 'لا نقاط ضعف')}</p>}
+      </section>}
+
+      {inc > 0 && <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+        <div className="flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'Savings plan', 'Plan d’épargne', 'خطة الادخار')}</h2><b className="font-display text-xl tabular-nums" style={{ color: C.save }}>{money(amt, lang)}<span className="text-xs font-semibold text-muted">/{L(lang, 'mo', 'mois', 'شهر')}</span></b></div>
+        <div className="mt-2 flex items-center gap-3"><span className="w-10 text-xs font-bold tabular-nums text-muted">{rate} %</span><input type="range" min={5} max={30} value={rate} onChange={(e) => setRate(+e.target.value)} className="flex-1 accent-[#D97A1E]" aria-label={L(lang, 'Share of income saved', 'Part des revenus épargnée', 'نسبة الادخار')} /></div>
+        <div className="mt-3 flex h-3 overflow-hidden rounded-full">{pockets.map(([e, n, w, c]) => <span key={n} style={{ width: `${w * 100}%`, background: c }} title={`${e} ${n}`} />)}</div>
+        <ul className="mt-2 space-y-1 text-sm">{pockets.map(([e, n, w, c]) => <li key={n} className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ background: c }} /><span className="flex-1">{e} {n}</span><b className="tabular-nums">{money(amt * w, lang)}</b></li>)}</ul>
+        <div className="mt-4 grid grid-cols-4 items-end gap-2" style={{ height: 110 }}>{proj.map(([n, v]) => <div key={n} className="flex h-full flex-col items-center justify-end gap-1"><span className="text-[10px] font-bold tabular-nums">{money(v, lang)}</span><span className="w-full rounded-t-lg transition-all duration-700" style={{ height: `${Math.max(6, (v / pmax) * 70)}%`, background: C.save, opacity: 0.45 + (n / 24) * 0.55 }} /><span className="text-[10px] text-muted">{n} {L(lang, 'mo', 'mois', 'ش')}</span></div>)}</div>
+        <p className="mt-2 text-xs text-muted">{cushionLeft > 0 ? L(lang, `Safety cushion reached in about ${Math.ceil(cushionLeft / Math.max(1, amt * 0.6))} months.`, `Matelas de sécurité atteint dans environ ${Math.ceil(cushionLeft / Math.max(1, amt * 0.6))} mois.`, `الاحتياطي خلال ${Math.ceil(cushionLeft / Math.max(1, amt * 0.6))} أشهر`) : L(lang, 'Your safety cushion is complete.', 'Votre matelas de sécurité est complet.', 'احتياطيك مكتمل')} {L(lang, 'Without interest.', 'Sans intérêts.', '')}</p>
+        <button className="btn btn-warm mt-3 w-full" onClick={applyPlan} disabled={amt === saveM}>{amt === saveM ? `✓ ${L(lang, 'Plan in place', 'Plan en place', 'الخطة مفعلة')}` : L(lang, `Apply: save ${money(amt, lang)} a month`, `Appliquer : épargner ${money(amt, lang)} par mois`, 'تطبيق')}</button>
       </section>}
 
       {inc > 0 && <section>

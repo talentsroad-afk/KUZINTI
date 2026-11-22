@@ -6,7 +6,8 @@ import { RECIPES } from './data/recipes'
 import { Controls, usePrefs, WeekTab } from './Screens'
 import { HomeTab } from './Home'
 import { ProfileScreen } from './ListScreen'
-import { CoursesTab, StoresStep, useBasket } from './Flow'
+import { CoursesTab, StoresStep, useBasket, useCart } from './Flow'
+import { CartMode } from './Cart'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
@@ -15,6 +16,8 @@ import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore, setStoreCountry } from './lib/stores'
+import { CountrySheet } from './Country'
+import { cname, COUNTRIES, countryOf } from './lib/countries'
 import { Logo, Sheet } from './ui'
 import { FoodTile } from './ui'
 
@@ -99,11 +102,11 @@ function Onboarding() {
         <div className="h-1.5 rounded-full bg-line"><div className="h-full rounded-full bg-forest transition-all" style={{ width: step === 1 ? '50%' : '100%' }} /></div>
         {step === 1 ? (<>
           <div className="grid grid-cols-2 gap-3">
-            <div><label htmlFor="co" className="mb-1 block text-sm font-semibold">{t('country', lang)}</label><select id="co" className="input" value={me!.country} onChange={(e) => patchMe({ country: e.target.value, cuisine: e.target.value === 'FR' ? 'fr' : 'ma' })}><option value="MA">Maroc · MAD</option><option value="FR">France · EUR</option></select></div>
+            <div><label htmlFor="co" className="mb-1 block text-sm font-semibold">{t('country', lang)}</label><select id="co" className="input" value={me!.country} onChange={(e) => { const k = countryOf(e.target.value); patchMe({ country: k.id, cuisine: k.cuisine, city: k.cities?.[0] ?? me!.city }) }}>{COUNTRIES.map((c) => <option key={c.id} value={c.id}>{c.f} {cname(c, lang)} · {c.sym}</option>)}</select></div>
             <div><label htmlFor="ci" className="mb-1 block text-sm font-semibold">{t('city', lang)}</label><input id="ci" className="input" value={me!.city} onChange={(e) => patchMe({ city: e.target.value })} /></div>
           </div>
           <div><span className="mb-1 block text-sm font-semibold">{t('size', lang)}</span><div className="flex gap-2">{[1, 2, 3, 4, 5, 6].map((n) => <button key={n} className="chip" aria-pressed={me!.size === n} onClick={() => patchMe({ size: n })}>{n}</button>)}</div></div>
-          <div><label htmlFor="bu" className="mb-1 flex justify-between text-sm font-semibold"><span>{t('budget', lang)}</span><span>{me!.budget} MAD</span></label><input id="bu" type="range" min={200} max={3000} step={50} value={me!.budget} onChange={(e) => patchMe({ budget: +e.target.value })} className="w-full accent-[#245B43]" /></div>
+          <div><label htmlFor="bu" className="mb-1 flex justify-between text-sm font-semibold"><span>{t('budget', lang)}</span><span>{money(me!.budget, lang)}</span></label><input id="bu" type="range" min={200} max={3000} step={50} value={me!.budget} onChange={(e) => patchMe({ budget: +e.target.value })} className="w-full accent-[#245B43]" /></div>
           <div className="flex gap-3"><button className="btn btn-soft flex-1" onClick={() => { patchMe({ onboarded: true }); setStep(2) }}>{t('skip', lang)}</button><button className="btn btn-primary flex-1" onClick={() => { patchMe({ onboarded: true }); setStep(2) }}>{t('go', lang)}</button></div>
         </>) : (<>
           <div><label htmlFor="hn" className="mb-1 block text-sm font-semibold">{t('hhName', lang)}</label><input id="hn" className="input" value={hh} onChange={(e) => setHh(e.target.value)} placeholder={`${me!.name} & co`} autoFocus /></div>
@@ -165,7 +168,16 @@ function Shell() {
     upHouse((x) => { x.plan = next; x.qty = {} }, `budget ${b}`)
     say(c <= b ? `✅ ${t('fitB', lang)} ${money(b, lang)} · ${money(b - c, lang)} ${t('margin', lang)}` : `⚠️ ${t('minB', lang)} ${money(c, lang)} (+${money(c - b, lang)}). ${t('minHint', lang)}`, u)
   }
+  const clearWeek = () => { const u = snap(lang === 'en' ? 'Clear' : 'Vider'); upHouse((x) => { x.plan = {}; x.qty = {}; x.checked = {}; x.store = undefined }, '🗑 semaine vidée'); say(lang === 'en' ? '🗑 Week cleared. Compose a new one when you like.' : '🗑 Semaine vidée. Composez-en une nouvelle quand vous voulez.', u); go('home') }
   const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
+  const [ctry, setCtry] = useState(false)
+  const { cart, finish: endTrip, left: cartLeft } = useCart(); const [caddie, setCaddie] = useState(false)
+  const setCountry = (c: string) => {
+    if (c === me!.country) return; const k = countryOf(c)
+    patchMe({ country: c, cuisine: k.cuisine, region: 'all', city: k.cities?.[0] ?? me!.city }); upHouse((x) => { x.store = undefined }, `${k.f} ${k.cur}`)
+    setCurrency(c); setStoreCountry(c)
+    if (hasPlan) composeWith({ cuisine: k.cuisine, region: 'all' }, true); else say(`${k.f} ${cname(k, lang)} · ${k.sym}`)
+  }
   const [up, setUp] = useState(false); const space: 'food' | 'out' = tab === 'sorties' || tab === 'budget' ? 'out' : 'food'
   useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
   const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { try { history.pushState({ kz: k }, '') } catch { /* sandboxed */ } setTab(k); scrollTo(0, 0) } }
@@ -204,10 +216,11 @@ function Shell() {
     <div className="calm min-h-screen">
       <Confetti run={boom} />
       <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.88)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className={`mx-auto flex max-w-2xl items-center gap-3 px-4 py-2.5 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
+        <div className={`mx-auto flex max-w-2xl items-center gap-2 px-4 py-2.5 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
           <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button>{tab !== 'home' && <span className="min-w-0 truncate font-display text-lg font-extrabold">{title}</span>}
-          {space === 'food' && <button className="ms-auto grid h-10 w-10 shrink-0 place-items-center rounded-full bg-surface shadow-soft active:scale-90" onClick={() => go('recipes')} aria-label={lang === 'en' ? 'Search recipes' : 'Chercher une recette'}><Search size={18} aria-hidden /></button>}
-          {space === 'food' && <button data-tour="budget" className=" min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
+          <span className="flex-1" /><button className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xl shadow-soft active:scale-90 ${tab === 'home' ? 'hidden' : ''}`} onClick={() => setCtry(true)} aria-label={cname(countryOf(me!.country), lang)}>{countryOf(me!.country).f}</button>
+          {space === 'food' && <button className={`${tab === 'home' ? 'grid' : 'hidden sm:grid'} h-10 w-10 shrink-0 place-items-center rounded-full bg-surface shadow-soft active:scale-90`} onClick={() => go('recipes')} aria-label={lang === 'en' ? 'Search recipes' : 'Chercher une recette'}><Search size={18} aria-hidden /></button>}
+          {space === 'food' && <button data-tour="budget" className="min-w-[8rem] shrink-0 rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
             <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
             <span className={`block text-[10px] font-semibold tabular-nums ${over ? 'text-danger' : 'text-muted'}`}>{t('solde', lang)} {over ? '−' : ''}{money(Math.abs(budget - total), lang)} · {t('taken', lang)} {money(spent, lang)}</span>
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
@@ -222,13 +235,13 @@ function Shell() {
       <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
         {tab !== 'home' && <Hint tab={tab} />}
         {space === 'out' ? <div key={tab} className="fade-up">{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className="fade-up">
-          {tab === 'home' && <HomeTab compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
+          {tab === 'home' && <HomeTab clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
           {tab === 'week' && <button className="mb-3 flex w-full items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm font-bold text-forest shadow-soft" onClick={() => go('recipes')}><BookOpen size={18} aria-hidden /> {t('tRecipes', lang)} · {lang === 'en' ? 'browse & favorites' : 'parcourir et favoris'} <span className="ms-auto">›</span></button>}
-          {tab === 'week' && <WeekTab compose={compose} makeHealthy={makeHealthy} say={say} />}
+          {tab === 'week' && <WeekTab clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
           {tab === 'recipes' && <RecipesTab say={say} />}
-          {tab === 'profile' && <ProfileScreen celebrate={celebrate} />}
+          {tab === 'profile' && <ProfileScreen celebrate={celebrate} openCountry={() => setCtry(true)} />}
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
       </main>
@@ -237,10 +250,15 @@ function Shell() {
       </div>
       <Assistant open={assist} onClose={() => setAssist(false)} tab={tab} next={help} more={more} undo={undo} onTour={() => setTour(true)} go={go} />
       <Tour run={tour} onEnd={() => setTour(false)} />
-      {up && <button className="fixed bottom-[5.5rem] end-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
+      {cart.length > 0 && !caddie && <button data-tour="caddie" className="caddie-fab fixed bottom-[5.5rem] end-4 z-40 flex h-14 items-center gap-2 rounded-full bg-forest ps-4 pe-5 font-bold text-white shadow-lift active:scale-95" onClick={() => setCaddie(true)} aria-label={lang === 'en' ? 'Store mode' : 'Mode caddie'}>
+        <span className="relative"><ShoppingCart size={22} aria-hidden />{cartLeft > 0 && <span className="absolute -end-2.5 -top-2 grid h-5 min-w-5 place-items-center rounded-full bg-apricot px-1 text-[10px] font-extrabold text-ink tabular-nums">{cartLeft}</span>}</span>
+        <span className="text-sm">{cartLeft ? (lang === 'en' ? 'Shop' : 'Caddie') : '✓'}</span></button>}
+      <CartMode open={caddie} onClose={() => setCaddie(false)} items={cart} onFinish={() => endTrip(celebrate)} />
+      {up && <button className="fixed bottom-[9.5rem] end-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
       <nav data-tour="tabs" className="tabbar" aria-label="Main">
         {TABS.map(([k, Icon, key]) => { const on = tab === k || (k === 'list' && tab === 'stores') || (k === 'week' && tab === 'recipes'); return <button key={k} onClick={() => go(k)} aria-current={on ? 'page' : undefined} className={`tab ${on ? 'tab-on' : ''}`}><Icon size={22} strokeWidth={on ? 2.4 : 1.8} className={on ? 'pop' : ''} aria-hidden /><span>{t(key, lang)}</span></button> })}
       </nav></>
+      <CountrySheet open={ctry} onClose={() => setCtry(false)} onPick={setCountry} />
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>
         <Controls setBudget={setBudget} />
         <p className="mt-3 text-center text-sm text-muted tabular-nums">{money(total, lang)} / {money(budget, lang)} · {over ? t('overBy', lang) : t('left', lang)} {money(Math.abs(budget - total), lang)}</p>
