@@ -1,4 +1,4 @@
-import { Share2 } from 'lucide-react'
+import { Share2, Pencil, Minus, Plus } from 'lucide-react'
 import { Ic } from './Ic'
 import { Camera, History, ShoppingCart, Store } from './icons'
 import { E3 } from './E3'
@@ -71,13 +71,13 @@ export function useCart() {
 }
 
 /** Shopping: live budget (planned / spent / left), big checkboxes, tap a price to enter what you really paid. */
-export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => void; goStores: () => void; compose: () => void }) {
+export function CoursesTab({ celebrate, goStores, compose, setBudget, clear }: { celebrate: () => void; goStores: () => void; compose: () => void; setBudget: (b: number) => void; clear: () => void }) {
   const [sure, setSure] = useState(false)
   const { lang, me, house, upHouse, award, toast } = useApp()
   const { lines, homeRows, custom, store, mul, price, total, spent, items } = useBasket()
   const [edit, setEdit] = useState<{ key: string; name: string; est: number; line?: Line } | null>(null)
   const [val, setVal] = useState('')
-  const [homeOpen, setHomeOpen] = useState(false); const [adding, setAdding] = useState(false)
+  const [openA, setOpenA] = useState<Record<string, boolean>>({}); const [homeOpen, setHomeOpen] = useState(false); const [adding, setAdding] = useState(false)
   const [f, setF] = useState({ name: '', qty: '', price: '', note: '' })
   const [q, setQ] = useState(''); const [free, setFree] = useState(false)
   // Search over everyday products + the recipe ingredient catalog, accent-insensitive.
@@ -151,11 +151,20 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
           <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cream text-forest active:scale-90" onClick={share} aria-label={t('shareList', lang)}><Share2 size={17} aria-hidden /></button>
         </div>
         <div className="relative mt-3 h-2 overflow-hidden rounded-full bg-cream"><div className="absolute inset-y-0 start-0 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (pace / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></div>
+        <div className="mt-3 flex items-center gap-2 rounded-2xl bg-cream px-2 py-1.5">
+          <button className="grid h-9 w-9 place-items-center rounded-full bg-surface active:scale-90" onClick={() => setBudget(Math.max(100, budget - 50))} aria-label="−50"><Minus size={16} aria-hidden /></button>
+          <label className="flex min-w-0 flex-1 flex-col items-center text-center"><span className="text-[11px] font-semibold text-muted">{lang === 'en' ? 'My groceries budget' : 'Mon budget courses'} <Pencil size={11} className="inline -mt-0.5" aria-hidden /></span>
+            <input inputMode="numeric" className="w-full bg-transparent text-center font-display text-xl font-extrabold tabular-nums text-forest outline-none" aria-label={lang === 'en' ? 'Groceries budget' : 'Budget courses'} defaultValue={budget} key={budget} onBlur={(e) => { const v = Math.round(+e.target.value.replace(',', '.')); if (v >= 50 && v !== budget) setBudget(Math.min(20000, v)) }} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} /></label>
+          <button className="grid h-9 w-9 place-items-center rounded-full bg-surface active:scale-90" onClick={() => setBudget(Math.min(20000, budget + 50))} aria-label="+50"><Plus size={16} aria-hidden /></button>
+        </div>
+        <p className="mt-1 text-center text-[11px] text-muted">{lang === 'en' ? 'Change it: meals and quantities adjust automatically.' : 'Modifiez-le : les repas et quantités s’adaptent automatiquement.'}</p>
         {cart.length > 0 && <button className="btn btn-primary mt-3 w-full !min-h-12" onClick={() => setCartOpen(true)}><ShoppingCart size={18} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'Start shopping' : 'Je fais mes courses'} · {cart.filter((x) => !chk[x.key]).length}</button>}
       </div>
       <CartMode open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onFinish={finish} />
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1">
         <div className="flex shrink-0 rounded-full bg-surface p-1 shadow-soft">{([[-1, t('lWeek', lang)], [TODAY, lang === 'en' ? 'Today' : 'Aujourd’hui'], [(TODAY + 1) % 7, lang === 'en' ? 'Tomorrow' : 'Demain']] as [number, string][]).map(([d, l]) => <button key={l} className={`rounded-full px-3 py-1.5 text-xs font-bold ${day === d ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{l}</button>)}</div>
+        {groups.length > 0 && <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setOpenA(groups.every(([k]) => openA[k]) ? {} : Object.fromEntries(groups.map(([k]) => [k, true])))}>{groups.every(([k]) => openA[k]) ? (lang === 'en' ? 'Collapse all' : 'Tout replier') : (lang === 'en' ? 'Expand all' : 'Tout déplier')}</button>}
+        {Object.keys(house!.plan).length > 0 && <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-danger shadow-soft" onClick={clear}><Ic e="🗑" /> {lang === 'en' ? 'Clear week' : 'Vider la semaine'}</button>}
         <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={saveList}><Ic e="📌" /> {lang === 'en' ? 'Save list' : 'Enregistrer'}</button>
         <button className="shrink-0 rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white shadow-soft" onClick={() => setAdding(true)}>＋ {lang === 'en' ? 'Product' : 'Produit'}</button>
         <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setHistOpen(true)}><History size={14} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'My lists' : 'Mes listes'}</button>
@@ -167,8 +176,8 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       <p className="px-1 text-xs text-muted">{done}/{items.length} · {lang === 'en' ? 'Tap to tick · 🗑 to remove' : lang === 'ar' ? 'المس للتأشير · 🗑 للحذف' : 'Touchez pour cocher · 🗑 pour retirer (annulable)'}</p>
       {gone && <div className="toast fixed inset-x-0 bottom-28 z-40 mx-auto flex w-[min(92vw,420px)] items-center gap-2 rounded-2xl bg-ink px-4 py-2.5 text-sm font-semibold text-white shadow-lift" role="status"><span className="flex-1 truncate"><Ic e="🗑" /> {gone.n}</span><button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={() => { gone.undo(); setGone(null) }}>↩ {t('undo', lang)}</button></div>}
       {groups.map(([a, rows]) => (
-        <div key={a} className="card px-4 py-2"><h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>
-          <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} q={fmtQty(l.buy, l.ing.base)} sub={`${unitP(l, mul(a))} · ${l.uses.map((u) => useName(u, lang)).join(', ')}`} est={l.cost * mul(a)} line={l} e={iconOf(l.id, a)} />)}</div></div>
+        <div key={a} className="card px-4 py-2"><button className="flex w-full items-center justify-between py-1.5" aria-expanded={!!openA[a]} onClick={() => setOpenA((o) => ({ ...o, [a]: !o[a] }))}><h3 className="text-xs font-bold uppercase tracking-wider text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]} · {rows.length}</h3><span className="flex items-center gap-2 text-xs font-bold tabular-nums text-forest">{money(rows.reduce((x, l) => x + l.cost * mul(a), 0), lang)}<span className="text-sm">{openA[a] ? '−' : '＋'}</span></span></button>
+          {openA[a] && <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} q={fmtQty(l.buy, l.ing.base)} sub={`${unitP(l, mul(a))} · ${l.uses.map((u) => useName(u, lang)).join(', ')}`} est={l.cost * mul(a)} line={l} e={iconOf(l.id, a)} />)}</div>}</div>
       ))}
       <div className="card px-4 py-2">
         <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted"><Ic e="🏠" /> {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>
