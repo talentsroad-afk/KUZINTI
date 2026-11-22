@@ -6,10 +6,11 @@ import { dayName, money, rname, t, type Lang } from './lib/i18n'
 import { REC, RECIPES, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { entryCost, parseIng, recipeCost } from './lib/engine'
-import { composeSides, cuisineOf, CUISINES, FLAG, REGIONS, type Prefs } from './lib/plan'
+import { composeSides, cuisineOf, inCuisine, CUISINES, FLAG, REGIONS, type Prefs } from './lib/plan'
 import { Dish, Sheet } from './ui'
 import { Controls, RecipeSheet, ReplaceSheet } from './Screens'
 import { useBasket } from './Flow'
+import { Welcome } from './Welcome'
 import { cname, countryOf } from './lib/countries'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
@@ -35,9 +36,9 @@ const when = (off: number, s: Meal, d: number, l: Lang) => {
 }
 
 /** Home, "Riad" direction: an editorial page built only from the household's real data. */
-export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clear }: { clear: () => void; openCountry: () => void; compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list' | 'stores' | 'recipes') => void; makeHealthy: () => void }) {
+export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clear, composeFor }: { composeFor: (o: Partial<Prefs>) => void; clear: () => void; openCountry: () => void; compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list' | 'stores' | 'recipes') => void; makeHealthy: () => void }) {
   const { lang, me, house, patchMe, upHouse, toast } = useApp()
-  const [eat, setEat] = useState(false); const [kc, setKc] = useState(false)
+  const [eat, setEat] = useState(false); const [wel, setWel] = useState(false); const [kc, setKc] = useState(false)
   const kt = useRef<number | undefined>(undefined)
   const onKcal = (k: number) => { clearTimeout(kt.current); kt.current = window.setTimeout(() => recompose({ kcal: k }), 450) }
   const { items, total, spent, store, price } = useBasket()
@@ -57,7 +58,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
   // Suggestions from real data only: pantry matches, then favourites, then quick dishes of the chosen cuisine.
   const sugg = useMemo(() => {
     const inPlan = new Set(Object.values(plan).map((e) => e.r)); const pantry = house!.pantry
-    const ok = (r: Recipe) => (r.m.includes('l') || r.m.includes('d')) && !inPlan.has(r.id) && (cuisine === 'mix' || cuisineOf(r) === cuisine || cuisine === 'healthy') && !(me!.diet.includes('vegetarian') && !r.tags.includes('vegetarian'))
+    const ok = (r: Recipe) => (r.m.includes('l') || r.m.includes('d')) && !inPlan.has(r.id) && (cuisine === 'healthy' || inCuisine(r, cuisine)) && !(me!.diet.includes('vegetarian') && !r.tags.includes('vegetarian'))
     const out: { r: Recipe; why: string }[] = []; const seen = new Set<string>()
     const push = (r: Recipe, why: string) => { if (out.length < 3 && !seen.has(r.id)) { seen.add(r.id); out.push({ r, why }) } }
     const have = RECIPES.filter(ok).map((r) => ({ r, hit: r.ing.map((s) => parseIng(s).id).filter((id) => (pantry[id] ?? 0) > 0 && ['produce', 'meat', 'dairy'].includes(ING[id]?.aisle)) })).filter((x) => x.hit.length >= 2).sort((a, b) => b.hit.length - a.hit.length)
@@ -86,7 +87,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
   const [shift, setShift] = useState(0)
   const ideas = useMemo(() => {
     const pantry = house!.pantry
-    const ok = (r: Recipe) => (r.m.includes('l') || r.m.includes('d')) && (cuisine === 'mix' || cuisineOf(r) === cuisine || cuisine === 'healthy') && !(veg && !r.tags.includes('vegetarian'))
+    const ok = (r: Recipe) => (r.m.includes('l') || r.m.includes('d')) && (cuisine === 'healthy' || inCuisine(r, cuisine)) && !(veg && !r.tags.includes('vegetarian'))
     return RECIPES.filter(ok).map((r) => { const ids = r.ing.map((x) => parseIng(x).id); const fresh = ids.filter((id) => ['produce', 'meat', 'dairy'].includes(ING[id]?.aisle)); const hit = fresh.filter((id) => (pantry[id] ?? 0) > 0); return { r, hit, of: fresh.length, score: hit.length * 3 - (fresh.length - hit.length) * 0.5 + (r.t <= 35 ? 2 : 0) - r.t / 60 } })
       .sort((a, b) => b.score - a.score || a.r.t - b.r.t)
   }, [house, cuisine, veg])
@@ -94,18 +95,31 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
   const shown = ideas.slice(shift % Math.max(1, ideas.length - 3), (shift % Math.max(1, ideas.length - 3)) + 3)
   const slotNow: Meal = now.getHours() < 15 ? 'l' : 'd'
   const putToday = (r: Recipe) => { upHouse((h) => { h.plan[`${today}-${slotNow}`] = { r: r.id, n: me!.size, x: composeSides(r.id, slotNow) } }, `+ ${rname(r.n, lang)}`); toast(`✅ ${rname(r.n, lang)} · ${t(slotNow, lang)}`); setEat(false) }
-  const prefLine = [`${FLAG[cuisine]} ${t('c_' + cuisine, lang)}`, cuisine === 'ma' && region !== 'all' ? t('r_' + region, lang) : '', ...goals.filter((g) => ['cheap', 'quick', 'varied'].includes(g)).map((g) => t('g_' + g, lang)), `${me!.size} ${t('people', lang).toLowerCase()}`, money(me!.budget, lang)].filter(Boolean).join(' · ')
+  const prefLine = [cuisine.split(',').map((c) => `${FLAG[c] ?? ''} ${t('c_' + c, lang)}`).join(', '), cuisine === 'ma' && region !== 'all' ? t('r_' + region, lang) : '', ...goals.filter((g) => ['cheap', 'quick', 'varied'].includes(g)).map((g) => t('g_' + g, lang)), `${me!.size} ${t('people', lang).toLowerCase()}`, money(me!.budget, lang)].filter(Boolean).join(' · ')
   const nr = nm ? REC[nm.e.r] : null
   // Real catalog only: one dish of the day (changes every day) and three short shelves.
-  const pool = RECIPES.filter((r) => (r.m.includes('l') || r.m.includes('d')) && (cuisine === 'mix' || cuisineOf(r) === cuisine) && !(veg && !r.tags.includes('vegetarian')))
+  const pool = RECIPES.filter((r) => (r.m.includes('l') || r.m.includes('d')) && inCuisine(r, cuisine) && !(veg && !r.tags.includes('vegetarian')))
   const doy = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 864e5)
   const daily = pool.length ? pool[doy % pool.length] : null
   const shelves: [string, Recipe[]][] = [
     [L(lang, 'Ready in 30 min', 'Prêt en 30 min', 'جاهز في 30 دقيقة'), pool.filter((r) => r.t <= 30 && r !== daily).slice(0, 10)],
-    [L(lang, 'Vegetarian', 'Végétarien', 'نباتي'), RECIPES.filter((r) => r.tags.includes('vegetarian') && (r.m.includes('l') || r.m.includes('d')) && (cuisine === 'mix' || cuisineOf(r) === cuisine)).slice(0, 10)],
+    [L(lang, 'Vegetarian', 'Végétarien', 'نباتي'), RECIPES.filter((r) => r.tags.includes('vegetarian') && (r.m.includes('l') || r.m.includes('d')) && inCuisine(r, cuisine)).slice(0, 10)],
     [cuisine === 'ma' ? L(lang, 'Moroccan family classics', 'Les classiques de la famille', 'كلاسيكيات العائلة') : L(lang, 'From around the world', 'Cuisine du monde', 'من مطابخ العالم'), (cuisine === 'ma' ? pool.filter((r) => r.tags.includes('family')) : RECIPES.filter((r) => cuisineOf(r) !== 'ma' && r.m.length)).slice(0, 10)],
   ]
 
+  const TUNE = (
+      <section className={`rise space-y-3 lg:col-span-12 ${n ? 'rounded-[24px] bg-surface/70 p-4 shadow-soft' : ''}`}>
+      {n > 0 && <h2 className="font-serif text-[20px] font-semibold">{L(lang, 'Tune my week', 'Ajuster ma semaine', 'ضبط أسبوعي')}</h2>}
+      <button className={`btn w-full lg:w-auto lg:px-10 ${n ? 'btn-soft !min-h-12' : 'btn-primary !min-h-14 text-[17px]'}`} onClick={compose}>{n ? <RefreshCw size={20} aria-hidden /> : <Sparkles size={20} aria-hidden />} {n ? L(lang, 'Recompose my week', 'Recomposer ma semaine', 'إعادة تركيب أسبوعي') : t('composeAuto', lang)}</button>
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0" data-noswipe>
+        <button className="chip shrink-0" onClick={() => setKc(true)}><Flame size={15} className="me-1.5 text-terracotta" aria-hidden />{me!.kcal ?? 2100} kcal</button>
+        {QUICK.map(([k, l, I, on, f]) => <button key={k} className="chip shrink-0" aria-pressed={on} onClick={f}><I size={15} className="me-1.5" aria-hidden />{l}</button>)}
+        <button className="chip shrink-0" onClick={() => setPrefs(true)}><Wallet size={15} className="me-1.5" aria-hidden />{money(me!.budget, lang)} · {me!.size} {L(lang, 'pers.', 'pers.', 'أشخاص')}</button>
+        <button className="chip shrink-0" onClick={() => setPrefs(true)}><SlidersHorizontal size={15} className="me-1.5" aria-hidden />{L(lang, 'More', 'Plus', 'المزيد')}</button>
+      </div>
+      </section>
+  )
+  if (!me!.known || wel) return <Welcome onDone={(o) => { setWel(false); if (o) composeFor(o) }} />
   return (
     <div className="riad pb-4">
       {/* Zone 1 — personal introduction */}
@@ -114,20 +128,11 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
           <button className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-sm font-bold shadow-soft active:scale-95" onClick={openCountry} aria-label={L(lang, 'Change country', 'Changer de pays', 'تغيير البلد')}>{countryOf(me!.country).f} {cname(countryOf(me!.country), lang)} · {countryOf(me!.country).sym} <ChevronDown size={15} aria-hidden /></button></div>
         <h1 className="mt-1 font-serif text-[34px] font-semibold leading-[1.05] tracking-tight text-ink lg:text-[46px]">{greet}, <span className="italic text-forest">{firstName}</span>.</h1>
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted">{lead}</p>
+        <button className="mt-3 flex max-w-full items-center gap-2 rounded-full bg-surface py-1.5 pe-3 ps-1.5 text-start text-xs font-semibold shadow-soft active:scale-[.98]" onClick={() => setWel(true)}><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-leaf/30 text-sm">🍽️</span><span className="truncate">{prefLine}</span><span className="shrink-0 font-bold text-forest">{L(lang, 'Edit', 'Modifier', 'تعديل')}</span></button>
         <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted"><Users size={14} aria-hidden /> {house!.name} · {house!.members.length} {L(lang, house!.members.length > 1 ? 'members' : 'member', house!.members.length > 1 ? 'membres' : 'membre', 'أعضاء')}</p>
       </header>
 
-      {/* 2 — the main action and quick settings */}
-      <section className="rise space-y-3 lg:col-span-12">
-      <button className="btn btn-primary w-full !min-h-14 text-[17px] lg:w-auto lg:px-10" onClick={compose}>{n ? <RefreshCw size={20} aria-hidden /> : <Sparkles size={20} aria-hidden />} {n ? L(lang, 'Recompose my week', 'Recomposer ma semaine', 'إعادة تركيب أسبوعي') : t('composeAuto', lang)}</button>
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0" data-noswipe>
-        <button className="chip shrink-0" onClick={() => setKc(true)}><Flame size={15} className="me-1.5 text-terracotta" aria-hidden />{me!.kcal ?? 2100} kcal</button>
-        {QUICK.map(([k, l, I, on, f]) => <button key={k} className="chip shrink-0" aria-pressed={on} onClick={f}><I size={15} className="me-1.5" aria-hidden />{l}</button>)}
-        <button className="chip shrink-0" onClick={() => setPrefs(true)}><Wallet size={15} className="me-1.5" aria-hidden />{money(me!.budget, lang)} · {me!.size} {L(lang, 'pers.', 'pers.', 'أشخاص')}</button>
-        <button className="chip shrink-0" onClick={() => setPrefs(true)}><SlidersHorizontal size={15} className="me-1.5" aria-hidden />{L(lang, 'More', 'Plus', 'المزيد')}</button>
-      </div>
-      </section>
-
+      {n === 0 && TUNE}
       {/* 3 — today */}
       <section className="rise space-y-3 lg:col-span-7">
         <h2 className="mb-3 font-serif text-[22px] font-semibold">{L(lang, 'Today', 'Aujourd’hui', 'اليوم')}</h2>
@@ -192,6 +197,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
         </section>
       )}
 
+      {n > 0 && TUNE}
       {/* 6 — ideas and recipes */}
       <section className="rise lg:col-span-12">
         <h2 className="mb-3 font-serif text-[22px] font-semibold">{L(lang, 'Ideas & recipes', 'Idées et recettes', 'أفكار ووصفات')}</h2>

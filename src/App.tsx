@@ -146,10 +146,10 @@ function Shell() {
     // otherwise the same dishes would show an empty list (pantry still holding last trip).
     const pantry = { ...h.pantry }
     if (!stay && hasPlan) for (const l of buildList(h.plan, {}, {}, {})) if (pantry[l.id]) pantry[l.id] = Math.max(0, pantry[l.id] - l.need)
-    const next = composeWeek({ ...p, ...o, budget: Math.max(0, budget - extraCost) }, pantry, h.extras ?? {})
+    const next = composeWeek({ ...p, ...o, budget: Math.max(0, (o.budget ?? budget) - extraCost) }, pantry, h.extras ?? {})
     upHouse((x) => { x.plan = next; x.qty = {}; if (!stay) { x.pantry = Object.fromEntries(Object.entries(pantry).filter(([, v]) => v > 0)); x.checked = {} } }, 'composed the week'); award(15, '✨'); celebrate()
-    const c = listCost(next, pantry, h.extras ?? {}) + extraCost
-    say(c <= budget ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); if (!stay) go('week')
+    const c = listCost(next, pantry, h.extras ?? {}) + extraCost; const B = o.budget ?? budget
+    say(c <= B ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(B - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); if (!stay) go('week')
   }
   const adapt = (b = budget) => {
     const u = snap(t('h_budget', lang))
@@ -236,7 +236,7 @@ function Shell() {
       <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
         {tab !== 'home' && <Hint tab={tab} />}
         {space === 'out' ? <div key={tab} className="fade-up">{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className="fade-up">
-          {tab === 'home' && <HomeTab clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
+          {tab === 'home' && <HomeTab composeFor={(o) => composeWith(o)} clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
           {tab === 'week' && <button className="mb-3 flex w-full items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm font-bold text-forest shadow-soft" onClick={() => go('recipes')}><BookOpen size={18} aria-hidden /> {t('tRecipes', lang)} · {lang === 'en' ? 'browse & favorites' : 'parcourir et favoris'} <span className="ms-auto">›</span></button>}
           {tab === 'week' && <WeekTab clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}

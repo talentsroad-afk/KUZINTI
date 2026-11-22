@@ -3,10 +3,10 @@ import { useApp } from './lib/store'
 import { money } from './lib/i18n'
 
 // Real places, approximate price per person in MAD (0 = free), duration in hours. Prices are indicative only.
-type Kind = 'famille' | 'couple' | 'sport' | 'culture' | 'nature'
-interface Act { id: string; e: string; n: string; d: string; p: number; h: number; k: Kind[]; a?: string; tl?: string[] }
+import { WORLD_CITIES, WORLD_COUNTRY_CITIES, WORLD_FOOD, type Act, type Kind } from './data/outings'
+import { COUNTRIES, cname, countryOf } from './lib/countries'
 const A = (id: string, e: string, n: string, d: string, p: number, h: number, k: string, a?: string, tl?: string): Act => ({ id, e, n, d, p, h, k: k.split(' ') as Kind[], a, tl: tl?.split('|') })
-export const CITIES: Record<string, Act[]> = {
+const CITIES0: Record<string, Act[]> = {
   Casablanca: [
     A('hassan2', '🕌', 'Mosquée Hassan II', 'Visite guidée de l’intérieur, face à l’océan', 130, 2, 'culture famille', 'Bd Sidi Mohammed Ben Abdallah', 'Arrivée par l’esplanade|Visite guidée (salle de prière, hammams)|Photos sur le parvis face à la mer'),
     A('corniche', '🌊', 'Corniche d’Aïn Diab', 'Marche au coucher du soleil, glace en route', 0, 2, 'couple famille nature', 'Bd de la Corniche, Aïn Diab', 'Départ au phare d’El Hank|Marche jusqu’à Aïn Diab|Glace et coucher de soleil'),
@@ -131,12 +131,13 @@ export const CITIES: Record<string, Act[]> = {
     A('catalans', '🏖️', 'Plage des Catalans et corniche Kennedy', 'Baignade et balade face aux îles', 0, 3, 'famille nature'),
   ],
 }
-export const COUNTRY_CITIES: Record<string, string[]> = { MA: ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Chefchaouen'], FR: ['Paris', 'Lyon', 'Marseille'] }
-type Mode = 'day' | 'week' | 'month'
+export const COUNTRY_CITIES: Record<string, string[]> = { ...WORLD_COUNTRY_CITIES, MA: ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Chefchaouen'], FR: ['Paris', 'Lyon', 'Marseille'] }
+type Mode = 'day' | 'eve' | 'we' | 'week'
+export const CITIES: Record<string, Act[]> = { ...CITIES0, ...WORLD_CITIES }
 type Fmt = 'full' | 'half' | 'eve' | 'night'
 const FMT: [Fmt, string, string, number][] = [['full', '☀️ Journée entière', '10h → 21h', 3], ['half', '🌤️ Demi-journée', '14h → 19h', 2], ['eve', '🌇 Fin de journée', '17h → 20h', 1], ['night', '🌙 Soirée', '19h → 23h', 1]]
 // Where to eat and how to move, per city (real, well-known spots; prices indicative per person).
-const FOOD: Record<string, { lunch: [string, number][]; cafe: [string, number][]; dinner: [string, number][]; move: string }> = {
+const FOOD0: Record<string, { lunch: [string, number][]; cafe: [string, number][]; dinner: [string, number][]; move: string }> = {
   Casablanca: { lunch: [['Grillades du Marché Central', 80], ['Snack au quartier Maârif', 60], ['Poissons au port (Le Port de Pêche)', 120]], cafe: [['Café de la Corniche face à l’océan', 30], ['Pâtisserie Bennis aux Habous', 25]], dinner: [['Rick’s Café (dîner)', 350], ['Restaurant à La Corniche', 200], ['Tajine en médina', 90]], move: 'Tramway T1/T2 (8 MAD) ou petit taxi rouge (15–30 MAD).' },
   Rabat: { lunch: [['Poissons à la marina du Bouregreg', 120], ['Snack de l’avenue Mohammed V', 60]], cafe: [['Café Maure des Oudayas', 25], ['Salon de thé de l’Agdal', 30]], dinner: [['Dîner sur la marina du Bouregreg', 200], ['Tajine en médina', 90]], move: 'Tramway Rabat–Salé (6 MAD) ou petit taxi bleu (10–25 MAD).' },
   Marrakech: { lunch: [['Méchoui de la rue Mechouia', 90], ['Terrasse d’un riad en médina', 120]], cafe: [['Café des Épices (place Rahba Kedima)', 35], ['Terrasse sur Jemaa el-Fna', 30]], dinner: [['Stands de Jemaa el-Fna', 70], ['Tanjia en médina', 100], ['Dîner dans un riad', 300]], move: 'À pied en médina, petit taxi beige (20–40 MAD) en dehors.' },
@@ -148,17 +149,17 @@ const FOOD: Record<string, { lunch: [string, number][]; cafe: [string, number][]
   Lyon: { lunch: [['Bouchon lyonnais', 150], ['Halles Paul Bocuse', 120]], cafe: [['Café sur les quais', 25], ['Pâtisserie, tarte aux pralines', 30]], dinner: [['Bouchon du Vieux Lyon', 180], ['Pizzeria de la presqu’île', 110]], move: 'Métro, tram et funiculaire (ticket ~2 €) ; Vélo’v en libre-service.' },
   Marseille: { lunch: [['Panisse et poissons au Vieux-Port', 110], ['Snack du Panier', 70]], cafe: [['Café du Vieux-Port', 25], ['Navettes (biscuits) du four des Navettes', 20]], dinner: [['Bouillabaisse ou soupe de poissons', 250], ['Pizza au feu de bois', 110]], move: 'Métro, tram et navettes maritimes (ticket ~2 €).' },
 }
+const FOOD = { ...FOOD0, ...WORLD_FOOD }
 const TIP: Record<Kind, string> = { famille: 'Prévois de l’eau, des en-cas et une casquette pour les enfants.', couple: 'Vise l’heure du coucher du soleil pour les vues et les photos.', sport: 'Pars tôt, prends de l’eau et des chaussures adaptées.', culture: 'Évite le vendredi midi et prévois de la monnaie pour l’entrée.', nature: 'Vérifie la météo et pars avec une petite veste.' }
 type Step = { t: string; e: string; n: string; d: string; p: number; id?: string }
 type Day = { fmt: Fmt; acts: string[] }
 const fmtD = (d: Date, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('fr', o).format(d)
 function daysFor(mode: Mode): [string, string, Fmt][] {
   const now = new Date(); const we = (d: Date) => d.getDay() === 0 || d.getDay() === 6
-  if (mode === 'day') return [['d0', 'Aujourd’hui', we(now) ? 'full' : 'eve']]
-  if (mode === 'week') return Array.from({ length: 7 }, (_, i) => { const d = new Date(now); d.setDate(now.getDate() + i); return [`w${i}`, fmtD(d, { weekday: 'long', day: 'numeric' }), we(d) ? 'full' : 'eve'] })
-  const out: [string, string, Fmt][] = []; const end = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-  for (const d = new Date(now); d <= end; d.setDate(d.getDate() + 1)) if (we(d)) out.push([`m${d.getDate()}`, fmtD(d, { weekday: 'long', day: 'numeric', month: 'short' }), 'full'])
-  return out
+  if (mode === 'day') return [['d0', 'Aujourd’hui', 'full']]
+  if (mode === 'eve') return [['e0', 'Ce soir', 'night']]
+  if (mode === 'we') { const out: [string, string, Fmt][] = []; for (let i = 0; i < 7 && out.length < 2; i++) { const d = new Date(now); d.setDate(now.getDate() + i); if (we(d)) out.push([`s${i}`, fmtD(d, { weekday: 'long', day: 'numeric' }), 'full']) } return out }
+  return Array.from({ length: 7 }, (_, i) => { const d = new Date(now); d.setDate(now.getDate() + i); return [`w${i}`, fmtD(d, { weekday: 'long', day: 'numeric' }), we(d) ? 'full' : 'night'] })
 }
 const maxH: Record<Fmt, number> = { full: 6, half: 4, eve: 2, night: 2 }
 const pick = <T,>(x: T[]) => x[Math.floor(Math.random() * x.length)]
@@ -197,9 +198,11 @@ const KINDS: [Kind, string][] = [['famille', '👨‍👩‍👧 Famille'], ['co
 /** Outings space: compose a day, a week or the month's weekends of real activities, each with a ready-to-follow program. */
 export function SortiesTab() {
   const { me, house, upHouse, patchMe, award } = useApp()
-  const list = COUNTRY_CITIES[me!.country] ?? [...COUNTRY_CITIES.MA, ...COUNTRY_CITIES.FR]; const city = list.includes(me!.city) ? me!.city : list[0]; const acts = CITIES[city]; const people = me!.size
+  const ccOf = (c: string) => Object.keys(COUNTRY_CITIES).find((k) => COUNTRY_CITIES[k].includes(c))
+  const [cc, setCc] = useState(() => ccOf(me!.city) ?? (COUNTRY_CITIES[me!.country] ? me!.country : 'MA')); const [pickC, setPickC] = useState(false)
+  const list = COUNTRY_CITIES[cc] ?? COUNTRY_CITIES.MA; const city = list.includes(me!.city) ? me!.city : list[0]; const acts = CITIES[city]; const people = me!.size
   const [kinds, setKinds] = useState<Kind[]>([]); const [budget, setBudget] = useState(400); const [mode, setMode] = useState<Mode>('day')
-  const [mv, setMv] = useState<Move>('taxi'); const [fmt, setFmt] = useState<Fmt | 'auto'>('auto'); const [open, setOpen] = useState<string | null>('d0')
+  const [mv, setMv] = useState<Move>('taxi'); const fmt = 'auto' as Fmt | 'auto'; const [open, setOpen] = useState<string | null>('d0')
   type O = { outings2?: Partial<Record<Mode, Record<string, Day>>> }
   const plan = (house as unknown as O).outings2?.[mode] ?? {}
   const save = (w: Record<string, Day>, log: string, all = false) => upHouse((h) => { const x = h as unknown as O; x.outings2 = all ? {} : { ...(x.outings2 ?? {}), [mode]: w } }, log)
@@ -227,19 +230,19 @@ export function SortiesTab() {
   const ctryName = { MA: 'Maroc', FR: 'France' }[me!.country]
   return (
     <div className="stagger space-y-3">
-      {!COUNTRY_CITIES[me!.country] && <div className="rounded-2xl bg-apricot/25 p-3 text-sm">🧭 Les sorties détaillées arrivent bientôt dans votre pays. En attendant, voici nos villes au Maroc et en France.</div>}
       <div className="card space-y-3 p-4">
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">{list.map((c) => <button key={c} className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-bold transition active:scale-95 ${c === city ? 'bg-forest text-white shadow-lift' : 'bg-cream text-ink'}`} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>📍 {c}</button>)}</div>
-        <div className="flex rounded-full bg-cream p-1">{([['day', 'Aujourd’hui'], ['week', '7 jours'], ['month', 'Week-ends du mois']] as [Mode, string][]).map(([m, l]) => <button key={m} className={`flex-1 rounded-full py-2 text-[13px] font-bold transition ${mode === m ? 'bg-surface text-forest shadow-soft' : 'text-muted'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }}>{l}</button>)}</div>
-        <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {days.some(([k]) => plan[k]) ? 'Proposer autre chose' : mode === 'day' ? 'Que faire aujourd’hui ?' : mode === 'week' ? 'Planifier ma semaine' : 'Planifier mes week-ends'}</button>
+        <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1">
+          <button className={`flex shrink-0 items-center gap-1 rounded-2xl px-3 py-2 text-sm font-bold ${pickC ? 'bg-ink text-white' : 'bg-surface shadow-soft'}`} onClick={() => setPickC(!pickC)} aria-expanded={pickC} aria-label="Pays"><span className="text-lg leading-none">{countryOf(cc).f}</span> ▾</button>
+          {list.map((c) => <button key={c} className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-bold transition active:scale-95 ${c === city ? 'bg-forest text-white shadow-lift' : 'bg-cream text-ink'}`} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>{c}</button>)}</div>
+        {pickC && <div className="fade-up -mx-1 grid grid-cols-5 gap-1.5 rounded-2xl bg-cream/70 p-2">{COUNTRIES.filter((c) => COUNTRY_CITIES[c.id]).map((c) => <button key={c.id} className={`flex flex-col items-center rounded-xl py-1.5 text-[10px] font-bold ${c.id === cc ? 'bg-forest text-white' : 'bg-surface'}`} onClick={() => { setCc(c.id); setPickC(false); patchMe({ city: COUNTRY_CITIES[c.id][0] }); save({}, `${c.f} ${COUNTRY_CITIES[c.id][0]}`, true) }}><span className="text-xl leading-none">{c.f}</span><span className="w-full truncate px-0.5 text-center">{cname(c, 'fr')}</span></button>)}</div>}
+        <div className="grid grid-cols-4 gap-1.5">{([['day', '☀️', 'Journée'], ['eve', '🌙', 'Soirée'], ['we', '🏖️', 'Week-end'], ['week', '🗓️', '7 jours']] as [Mode, string, string][]).map(([m, e, l]) => <button key={m} className={`flex flex-col items-center rounded-2xl py-2 text-[12px] font-bold transition active:scale-95 ${mode === m ? 'bg-forest text-white shadow-lift' : 'bg-cream text-ink'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }} aria-pressed={mode === m}><span className="text-xl leading-none">{e}</span>{l}</button>)}</div>
+        <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {days.some(([k]) => plan[k]) ? 'Proposer autre chose' : mode === 'day' ? 'Ma journée idéale' : mode === 'eve' ? 'Ma soirée' : mode === 'we' ? 'Mon week-end' : 'Mes 7 jours'}</button>
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center justify-center gap-1 text-xs font-semibold text-muted"><span>Personnaliser · {kinds.length ? KINDS.filter(([k]) => kinds.includes(k)).map(([, l]) => l.split(' ')[0]).join(' ') : 'tout le monde'} · {money(budget, 'fr')}</span><span className="transition-transform group-open:rotate-90">›</span></summary>
           <div className="mt-3 space-y-3 rounded-2xl bg-cream/70 p-3">
         <div className="flex flex-wrap gap-2">{KINDS.map(([k, l]) => <button key={k} className="chip" aria-pressed={kinds.includes(k)} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])}>{l}</button>)}</div>
-        <div className="flex rounded-full bg-surface p-1">{([['auto', 'Auto'], ['full', '☀️ Journée'], ['half', '🌤️ Après-midi'], ['eve', '🌇 Soirée']] as [Fmt | 'auto', string][]).map(([k, l]) => <button key={k} className={`flex-1 rounded-full py-1.5 text-xs font-bold ${fmt === k ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setFmt(k)} aria-pressed={fmt === k}>{l}</button>)}</div>
         <div className="flex gap-2">{MOVES.map(([m, l]) => <button key={m} className="chip flex-1 justify-center" aria-pressed={mv === m} onClick={() => setMv(m)}>{l}</button>)}</div>
         <div className="flex items-center gap-3"><span className="text-xs font-bold text-muted">Budget</span><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-20 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
-        <p className="text-center text-[11px] text-muted">« Auto » : soirée en semaine, journée le week-end.</p>
           </div>
         </details>
       </div>
@@ -277,7 +280,7 @@ export function SortiesTab() {
                       {ac?.tl && <p className="mt-1 text-[11px] text-ink/70">{ac.tl.join(' → ')}</p>}</div>
                   </div></li> })}
               </ol>
-              <div className="mt-3 flex gap-1.5 overflow-x-auto">{([['full', '☀️ Journée'], ['half', '🌤️ Après-midi'], ['eve', '🌇 Soirée']] as [Fmt, string][]).map(([fk, fl]) => <button key={fk} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${d.fmt === fk ? 'bg-forest text-white' : 'bg-cream text-muted'}`} onClick={() => setDayFmt(k, fk)}>{fl}</button>)}</div>
+              <div className="mt-3 flex gap-1.5 overflow-x-auto">{([['full', '☀️ Journée'], ['half', '🌤️ Après-midi'], ['night', '🌙 Soirée']] as [Fmt, string][]).map(([fk, fl]) => <button key={fk} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ${d.fmt === fk ? 'bg-forest text-white' : 'bg-cream text-muted'}`} onClick={() => setDayFmt(k, fk)}>{fl}</button>)}</div>
               <div className="mt-3 space-y-1 rounded-2xl bg-cream p-3 text-xs"><p>🚕 {FOOD[city].move}</p>{kindsHere.slice(0, 1).map((kk) => <p key={kk}>💡 {TIP[kk]}</p>)}</div>
             </div>}
           </div>) })}
