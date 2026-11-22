@@ -111,3 +111,30 @@ export function Badge({ Icon, tone, size = 44, className = '' }: { Icon: Compone
     <span className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-b from-white/35 to-transparent opacity-60" style={{ height: '55%' }} />
     <Icon size={Math.round(size * 0.5)} strokeWidth={2.2} aria-hidden /></span>
 }
+
+/** A number that glides to its new value (ease-out), for prices and totals. */
+export function Num({ v, fmt }: { v: number; fmt: (n: number) => string }) {
+  const [shown, setShown] = useState(v); const from = useRef(v)
+  useEffect(() => {
+    const a = from.current, b = v; if (a === b) return; let raf = 0; const t0 = performance.now(); const D = 450
+    const tick = (t: number) => { const k = Math.min(1, (t - t0) / D); const e = 1 - Math.pow(1 - k, 3); const x = a + (b - a) * e; setShown(x); from.current = x; if (k < 1) raf = requestAnimationFrame(tick) }
+    raf = requestAnimationFrame(tick); return () => cancelAnimationFrame(raf)
+  }, [v])
+  return <span className="tabular-nums">{fmt(shown)}</span>
+}
+
+/** Price dial: big gliding number, a soft slider around the estimate, and quick presets. Values in local currency. */
+export function PriceDial({ value, est, onChange, fmt }: { value: number; est: number; onChange: (n: number) => void; fmt: (n: number) => string }) {
+  const max = Math.max(1, Math.ceil(est * 2.5)); const step = est >= 50 ? 1 : est >= 5 ? 0.5 : 0.1
+  const pct = Math.round(((value - est) / Math.max(0.01, est)) * 100)
+  return <div className="space-y-3">
+    <div className="text-center"><p className="font-display text-[44px] font-extrabold leading-none text-forest"><Num v={value} fmt={fmt} /></p>
+      <p className={`mt-1 text-xs font-bold transition-colors ${pct > 0 ? 'text-danger' : pct < 0 ? 'text-forest' : 'text-muted'}`}>{pct === 0 ? '= prix estimé' : `${pct > 0 ? '+' : ''}${pct} % vs estimé (${fmt(est)})`}</p></div>
+    <div className="flex items-center gap-3">
+      <button type="button" className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cream text-xl font-bold active:scale-90" onClick={() => onChange(Math.max(0, +(value - step).toFixed(2)))} aria-label="−">−</button>
+      <input type="range" min={0} max={max} step={step} value={value} onChange={(e) => onChange(+e.target.value)} className="dial flex-1" aria-label="Prix" style={{ ['--p' as string]: `${(value / max) * 100}%` }} />
+      <button type="button" className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-cream text-xl font-bold active:scale-90" onClick={() => onChange(+(value + step).toFixed(2))} aria-label="+">+</button>
+    </div>
+    <div className="grid grid-cols-4 gap-1.5">{[[-20, 'Promo −20 %'], [-10, '−10 %'], [0, 'Estimé'], [10, '+10 %']].map(([d, l]) => <button type="button" key={l} className={`rounded-full py-1.5 text-[11.5px] font-bold transition active:scale-95 ${Math.abs(value - est * (1 + (d as number) / 100)) < step / 2 ? 'bg-forest text-white' : 'bg-cream'}`} onClick={() => onChange(+(est * (1 + (d as number) / 100)).toFixed(2))}>{l}</button>)}</div>
+  </div>
+}

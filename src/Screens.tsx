@@ -1,5 +1,6 @@
 import { BookOpen, Coffee, Dices, Moon, RefreshCw, Shuffle, Sun, Sunrise, type LucideIcon } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { HEALTH as HP, NUT, healthOk, nutName, nutrientsOf, type Health } from './lib/nutri'
 import { useApp } from './lib/store'
 import { dayName, money, money2, rname, t, type Lang } from './lib/i18n'
@@ -32,23 +33,37 @@ function NutriBox({ r }: { r: Recipe }) {
   return <p className={`rounded-2xl p-3 text-sm ${ok ? 'bg-leaf/20' : 'bg-danger/10 text-danger'}`}>{HP[h][0]} <b>{HP[h][lang === 'en' ? 1 : lang === 'ar' ? 3 : 2]}</b> · {!ok ? (lang === 'en' ? 'Not advised (raw egg).' : 'Déconseillé (œuf cru).') : hit.length ? `${lang === 'en' ? 'Good source of' : 'Bonne source de'} ${hit.map((n) => nutName(n, lang).toLowerCase()).join(', ')}.` : (lang === 'en' ? 'Fine, pair it with a dish richer in what you need.' : 'Possible, à compléter avec un plat plus riche en ce dont vous avez besoin.')}</p>
 }
 
-/** The ingredients drop one by one into the pot, then it simmers. Replays on tap. */
-function Pot({ r }: { r: Recipe }) {
-  const [run, setRun] = useState(0)
-  const ems = [...new Set(r.ing.map((s) => { const p = parseIng(s); const ing = ING[p.id]; return ing && ing.aisle !== 'spices' ? iconOf(p.id, ing.aisle) : '' }).filter(Boolean))].slice(0, 7)
-  return (
-    <button key={run} className="pot relative mb-4 block h-36 w-full overflow-hidden rounded-[22px] bg-gradient-to-b from-cream to-leaf/25" onClick={() => setRun(run + 1)} aria-label="Animation">
-      {ems.map((e, i) => <span key={i} className="pot-ing absolute top-0 text-[26px]" style={{ left: `calc(50% + ${(i - (ems.length - 1) / 2) * 26}px - 13px)`, animationDelay: `${i * 0.22}s` }} aria-hidden>{e}</span>)}
-      <span className="pot-steam absolute left-1/2 top-[38px] -translate-x-1/2 text-xl opacity-0" style={{ animationDelay: `${ems.length * 0.22 + 0.5}s` }} aria-hidden>♨️</span>
-      <span className="pot-body absolute bottom-2 left-1/2 -translate-x-1/2 text-[64px] leading-none" style={{ animationDelay: `${ems.length * 0.22 + 0.4}s` }} aria-hidden>🍲</span>
-      <span className="absolute bottom-2 end-3 rounded-full bg-surface/80 px-2 py-0.5 text-[10px] font-bold text-muted">↻</span>
-    </button>)
+/** The recipe told as a story: ingredients come in, then each step full screen, auto-advancing. Tap left/right to move. */
+function CookStory({ r, onClose }: { r: Recipe; onClose: () => void }) {
+  const { lang } = useApp()
+  const steps = stepsOf(r, lang); const ings = r.ing.map((s) => { const p = parseIng(s); const ing = ING[p.id]; return ing && ing.aisle !== 'spices' ? { e: iconOf(p.id, ing.aisle), n: ing.n[li(lang)] } : null }).filter(Boolean) as { e: string; n: string }[]
+  const N = steps.length + 2; const [i, setI] = useState(0)
+  useEffect(() => { if (i >= N - 1) return; const id = setTimeout(() => setI(i + 1), i === 0 ? 4200 : 6000); return () => clearTimeout(id) }, [i, N])
+  const hue = r.h
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex flex-col text-white" style={{ background: `radial-gradient(120% 80% at 50% 0%, hsl(${hue} 45% 32%), #0c1611 70%)` }} role="dialog" aria-label={rname(r.n, lang)}>
+      <div className="flex gap-1 px-3 pt-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}>{Array.from({ length: N }, (_, k) => <span key={k} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20"><span key={i} className={`block h-full rounded-full bg-white ${k < i ? 'w-full' : k === i ? 'story-bar' : 'w-0'}`} style={k === i ? { animationDuration: i === 0 ? '4.2s' : '6s' } : undefined} /></span>)}</div>
+      <div className="flex items-center gap-3 px-4 py-3"><Dish r={r} w={120} className="h-9 w-9 rounded-full" /><b className="flex-1 truncate">{rname(r.n, lang)}</b><button className="grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close">✕</button></div>
+      <div className="relative flex-1">
+        <button className="absolute inset-y-0 start-0 z-10 w-1/3" onClick={() => setI(Math.max(0, i - 1))} aria-label="‹" />
+        <button className="absolute inset-y-0 end-0 z-10 w-2/3" onClick={() => (i < N - 1 ? setI(i + 1) : onClose())} aria-label="›" />
+        <div key={i} className="story-in flex h-full flex-col justify-center px-7">
+          {i === 0 && <><p className="text-[12px] font-bold uppercase tracking-[.2em] text-white/60">{lang === 'en' ? 'You need' : 'Il vous faut'}</p>
+            <div className="mt-4 grid grid-cols-3 gap-3">{ings.slice(0, 9).map((x, k) => <div key={k} className="story-pop flex flex-col items-center gap-1 rounded-2xl bg-white/10 p-3 text-center backdrop-blur" style={{ animationDelay: `${k * 110}ms` }}><span className="text-4xl">{x.e}</span><span className="line-clamp-2 text-[11px] font-semibold leading-tight">{x.n}</span></div>)}</div>
+            <p className="mt-5 text-sm text-white/70">⏱ {r.t} min · {ings.length} {lang === 'en' ? 'ingredients' : 'ingrédients'}</p></>}
+          {i > 0 && i <= steps.length && <><p className="font-display text-[88px] font-extrabold leading-none text-white/15">{i}</p>
+            <p className="-mt-6 font-display text-[26px] font-bold leading-snug">{steps[i - 1]}</p>
+            <p className="mt-6 text-sm text-white/60">{lang === 'en' ? 'Step' : 'Étape'} {i}/{steps.length} · {lang === 'en' ? 'tap to continue' : 'touchez pour continuer'}</p></>}
+          {i === N - 1 && <div className="text-center"><p className="story-pop text-7xl">🍽️</p><p className="mt-4 font-display text-3xl font-extrabold">{lang === 'en' ? 'Enjoy your meal!' : lang === 'ar' ? 'بالصحة والعافية' : 'Bon appétit !'}</p><p className="mt-2 text-white/70">{rname(r.n, lang)}</p></div>}
+        </div>
+      </div>
+    </div>, document.body)
 }
 
 export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | null; onClose: () => void; servings?: number; onServings?: (n: number) => void }) {
   const { lang, me, patchMe, award, upHouse, toast } = useApp()
   const [n, setN] = useState(servings ?? Math.max(2, me!.size))
-  const [day, setDay] = useState((new Date().getDay() + 6) % 7)
+  const [day, setDay] = useState((new Date().getDay() + 6) % 7); const [story, setStory] = useState(false)
   if (!r) return null
   const addToWeek = (slot: Meal) => { upHouse((h) => { h.plan[`${day}-${slot}`] = { r: r.id, n: sv, x: composeSides(r.id, slot) } }, `+ ${rname(r.n, lang)}`); award(5, '🛒'); toast(`✅ ${dayName(day, lang)} · ${t(slot, lang)} — ${lang === 'en' ? 'ingredients added to your list' : 'ingrédients ajoutés à tes courses'}`); onClose() }
   const sv = servings ?? n
@@ -62,7 +77,12 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
         <button className="ms-auto text-2xl" aria-pressed={fav} aria-label="favorite" onClick={() => { patchMe({ favs: fav ? me!.favs.filter((x) => x !== r.id) : [...me!.favs, r.id] }); if (!fav) award(2, '❤️') }}>{fav ? '❤️' : '🤍'}</button>
       </div>
       <NutriChips r={r} />
-      <Pot r={r} />
+      <button className="story-cta group relative mb-4 flex w-full items-center gap-3 overflow-hidden rounded-[22px] p-3 text-start text-white" style={{ background: `linear-gradient(120deg, hsl(${r.h} 45% 30%), #10221a)` }} onClick={() => setStory(true)}>
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/15 text-xl transition group-active:scale-90">▶</span>
+        <span className="min-w-0 flex-1"><b className="block">{lang === 'en' ? 'Cook it step by step' : 'Cuisiner pas à pas'}</b><span className="block text-xs text-white/75">{lang === 'en' ? 'Full-screen story, one step at a time' : 'En plein écran, une étape à la fois'}</span></span>
+        <span className="flex -space-x-2">{[...new Set(r.ing.slice(0, 4).map((s) => { const p = parseIng(s); return ING[p.id] ? iconOf(p.id, ING[p.id].aisle) : '' }))].map((e, k) => <span key={k} className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-base ring-2 ring-[#10221a]">{e}</span>)}</span>
+      </button>
+      {story && <CookStory r={r} onClose={() => setStory(false)} />}
       <div className="mb-3 flex items-center justify-between"><h3 className="font-bold">{t('ingredients', lang)}</h3><span className="flex items-center gap-2 text-sm"><Stepper v={sv} set={setSv} /> {t('servings', lang)}</span></div>
       <ul className="mb-5 space-y-1.5 text-sm">
         {r.ing.map((s) => {
@@ -163,7 +183,7 @@ export function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => vo
 const STOP = new Set(['de', 'du', 'des', 'au', 'aux', 'à', 'la', 'le', 'les', 'et', 'with', 'and', 'the', 'of', 'en'])
 const short = (n: string) => n.replace(/\s*\(.*\)/, "").split(/[\s,]+/).filter((w) => w && !STOP.has(w.toLowerCase())).slice(0, 2).join(' ')
 
-export function WeekTab({ compose, makeHealthy, say, clear }: { compose: () => void; makeHealthy: () => void; say: (m: string) => void; clear: () => void }) {
+export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compose: () => void; makeHealthy: () => void; say: (m: string) => void; clear: () => void; toBasket: () => void }) {
   const { lang, me, house, upHouse } = useApp()
   const p = usePrefs(); const plan = house!.plan
   const today = (new Date().getDay() + 6) % 7
@@ -199,7 +219,7 @@ export function WeekTab({ compose, makeHealthy, say, clear }: { compose: () => v
     <div className="space-y-3">
       {me!.showForme && <FormeCard plan={plan} />}
       <div className="flex gap-2"><button className="btn btn-soft flex-1 !min-h-11" onClick={compose}><Shuffle size={16} className="inline -mt-0.5" aria-hidden /> {t('reshuffle', lang)}</button><button className="btn btn-soft !min-h-11 !px-4 text-danger" onClick={clear}>🗑 {lang === 'en' ? 'Clear' : lang === 'ar' ? 'إفراغ' : 'Vider'}</button></div>
-      <div className="flex rounded-full bg-surface p-1 shadow-soft">{(['day', 'week', 'month'] as const).map((v) => <button key={v} className={`flex-1 rounded-full py-2 text-sm font-bold ${view === v ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setView(v)}>{t('v_' + v, lang)}</button>)}</div>
+      <div className="flex rounded-full bg-surface p-1 shadow-soft">{(['week', 'month'] as const).map((v) => <button key={v} className={`flex-1 rounded-full py-2 text-sm font-bold ${view === v ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setView(v)}>{t('v_' + v, lang)}</button>)}</div>
       {view === 'day' && <>
         <div className="grid grid-cols-7 gap-1">{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => setDay(d)} className={`rounded-2xl py-2 text-center ${d === day ? 'bg-forest text-white' : 'bg-surface'}`}><span className="block text-[10px] font-bold uppercase">{dayName(d, lang).slice(0, 3)}</span><span className="block text-base">{d === today ? '•' : ' '}</span></button>)}</div>
         <div className="flex items-center justify-between text-sm font-semibold"><button className="rounded-full bg-surface px-3 py-1.5 capitalize text-muted shadow-soft active:scale-95" onClick={() => goDay(-1)}>‹ {dayName((day + 6) % 7, lang)}</button><button className="rounded-full bg-surface px-3 py-1.5 capitalize text-muted shadow-soft active:scale-95" onClick={() => goDay(1)}>{dayName((day + 1) % 7, lang)} ›</button></div>
@@ -208,28 +228,28 @@ export function WeekTab({ compose, makeHealthy, say, clear }: { compose: () => v
           <div className="divide-y divide-line/70">{slots.map((s) => mealRow(`${day}-${s}`, s))}</div>
         </div>
       </>}
-      {view === 'week' && <div className="overflow-hidden rounded-[22px] bg-surface shadow-soft">
-        <div className="grid border-b border-line/60 bg-cream/60 text-center text-[10px] font-bold uppercase tracking-wide text-muted" style={{ gridTemplateColumns: `52px repeat(${slots.length}, minmax(0, 1fr))` }}>
-          <span />{slots.map((s) => <span key={s} className="py-1.5">{SLOT_E[s]} {t(s, lang)}</span>)}</div>
-        <div className="stagger divide-y divide-line/50">{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => (
-          <div key={d} className={`grid items-stretch ${d === today ? 'bg-leaf/15' : ''}`} style={{ gridTemplateColumns: `52px repeat(${slots.length}, minmax(0, 1fr))` }}>
-            <button className="flex flex-col items-center justify-center px-1 py-2 text-center" onClick={() => { setDay(d); setView('day') }} aria-label={dayName(d, lang)}>
-              <span className={`text-[12px] font-extrabold capitalize ${d === today ? 'text-forest' : ''}`}>{d === today ? (lang === 'en' ? 'Today' : lang === 'ar' ? 'اليوم' : 'Auj.') : dayName(d, lang).slice(0, 3)}</span>
-              <span className="text-[9.5px] tabular-nums text-muted">{money(dayCost(d), lang)}</span></button>
-            {slots.map((s) => { const k = `${d}-${s}`; const e = plan[k]; const r = e ? REC[e.r] : null; return (
-              <button key={s} className="flex min-w-0 flex-col items-center gap-1 p-1.5 text-center transition active:scale-95" onClick={() => setRep(k)} aria-label={r ? rname(r.n, lang) : t(s, lang)}>
-                {r ? <Dish r={r} w={160} className="h-11 w-11 rounded-xl" /> : <span className="grid h-11 w-11 place-items-center rounded-xl border-2 border-dashed border-line text-muted">＋</span>}
-                <span className="line-clamp-2 text-[10.5px] font-semibold leading-tight">{r ? rname(r.n, lang) : ''}</span></button>) })}
-          </div>))}</div>
-        <p className="py-2 text-center text-[11px] text-muted">{t('tapSwap', lang)}</p>
+      {view === 'week' && <div className="space-y-3">
+        <div className="rounded-[22px] bg-surface p-2 shadow-soft">
+          <div className="grid gap-1" style={{ gridTemplateColumns: `22px repeat(7, minmax(0, 1fr))` }}>
+            <span />{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => <button key={d} onClick={() => setDay(d)} className={`rounded-xl py-1 text-center text-[10px] font-extrabold uppercase transition ${d === day ? 'bg-forest text-white' : d === today ? 'text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 3)}</button>)}
+            {slots.map((s) => [<span key={s} className="grid place-items-center text-[13px]" title={t(s, lang)}>{SLOT_E[s]}</span>, ...Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => { const e = plan[`${d}-${s}`]; const r = e ? REC[e.r] : null; return (
+              <button key={s + d} onClick={() => setDay(d)} className={`aspect-square overflow-hidden rounded-xl transition active:scale-90 ${d === day ? 'ring-2 ring-forest ring-offset-1 ring-offset-surface' : ''}`} aria-label={r ? rname(r.n, lang) : t(s, lang)}>
+                {r ? <Dish r={r} w={120} className="h-full w-full" /> : <span className="grid h-full w-full place-items-center bg-cream text-muted">＋</span>}</button>) })])}
+          </div>
+        </div>
+        <div key={day} className="fade-up overflow-hidden rounded-[22px] bg-surface shadow-soft">
+          <div className="flex items-baseline justify-between px-4 pt-3"><span className="font-display text-lg font-extrabold capitalize">{day === today ? (lang === 'en' ? 'Today' : 'Aujourd’hui') : dayName(day, lang)}</span><span className="text-xs text-muted tabular-nums">{Math.round(dayKc(day))} kcal · {money(dayCost(day), lang)}</span></div>
+          <div className="divide-y divide-line/70">{slots.map((s) => mealRow(`${day}-${s}`, s))}</div>
+        </div>
       </div>}
       {view === 'month' && <div className="card p-3">
         <p className="mb-2 font-display font-extrabold capitalize">{new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang === 'zgh' ? 'fr' : lang, { month: 'long', year: 'numeric' }).format(new Date())}</p>
         <div className="grid grid-cols-7 gap-1 text-center">{Array.from({ length: 7 }, (_, d) => <span key={d} className="text-[10px] font-bold uppercase text-muted">{dayName(d, lang).slice(0, 2)}</span>)}
-          {monthCells.map((c, i) => c ? <button key={i} onClick={() => { setDay(c.wd); setView('day') }} className={`rounded-xl py-1 ${c.today ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-bold">{c.n}</span>{plan[`${c.wd}-l`] && <span className="block truncate px-0.5 text-[8.5px] font-semibold leading-tight">{REC[plan[`${c.wd}-l`].r].e} {short(rname(REC[plan[`${c.wd}-l`].r].n, lang)).split(' ')[0]}</span>}</button> : <span key={i} />)}
+          {monthCells.map((c, i) => c ? <button key={i} onClick={() => { setDay(c.wd); setView('week') }} className={`rounded-xl py-1 ${c.today ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-bold">{c.n}</span>{plan[`${c.wd}-l`] && <span className="block truncate px-0.5 text-[8.5px] font-semibold leading-tight">{REC[plan[`${c.wd}-l`].r].e} {short(rname(REC[plan[`${c.wd}-l`].r].n, lang)).split(' ')[0]}</span>}</button> : <span key={i} />)}
         </div>
         <p className="mt-2 text-center text-[11px] text-muted">{t('monthNote', lang)}</p>
       </div>}
+      <button className="cta-glow btn btn-primary sticky bottom-28 z-20 w-full !min-h-14 text-base shadow-lift" onClick={toBasket}>🛒 {lang === 'en' ? 'Done choosing → my basket' : lang === 'ar' ? 'انتهيت → سلتي' : 'J’ai fini mes choix → mon panier'}</button>
       {rep && <ReplaceSheet k={rep} onClose={() => setRep(null)} say={say} />}
       {rv && <RecipeSheet r={rv} onClose={() => setRv(null)} />}
       <p className="px-1 text-center text-xs text-muted">{me!.size} 👤 · {t('c_' + p.cuisine, lang)}</p>

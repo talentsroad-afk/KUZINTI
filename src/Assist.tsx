@@ -87,7 +87,6 @@ export function Assistant({ open, onClose, tab, next, more, undo, onTour, go }: 
 const TOUR: [string, string, string, string, string][] = [
   ['subtabs', 'Tes repas', 'Your meals', 'Dans Repas, tout est rangé en 4 onglets : Semaine, Recettes, Courses et Sport.', 'Meals has 4 tabs: Week, Recipes, Shopping and Sport.'],
   ['tabs', 'La barre du bas', 'The bottom bar', 'Les 3 thèmes à un geste : Repas, Sorties, Budget. Le Caddie au centre pour faire les courses en magasin.', 'The 3 themes one tap away: Meals, Outings, Budget. The Caddie in the middle for in-store shopping.'],
-  ['assist', 'Ton assistant', 'Your assistant', 'Il sait où tu es et te propose la prochaine action. Touche ✨ dès que tu hésites.', 'It knows where you are and suggests the next action. Tap ✨ whenever unsure.'],
 ]
 export const tourDone = () => ls.get('kz-tour') === '1'
 export function Tour({ run, onEnd }: { run: boolean; onEnd: () => void }) {

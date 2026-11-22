@@ -18,11 +18,12 @@ import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Nav } from './Nav'
 import { SportTab } from './Sport'
+import { BasketStory } from './Basket'
 import { setDietFilter } from './lib/plan'
-import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
+import { Assistant, Tour, tourDone, type Tab } from './Assist'
 import { bestStore, setStoreCountry } from './lib/stores'
 import { CountrySheet } from './Country'
-import { cname, COUNTRIES, countryOf } from './lib/countries'
+import { cname, countryOf } from './lib/countries'
 import { Logo, Sheet } from './ui'
 import { FoodTile } from './ui'
 
@@ -96,24 +97,14 @@ function Auth({ mode, setMode, close }: { mode: 'signup' | 'login'; setMode: (m:
 }
 
 function Onboarding() {
-  const { lang, me, patchMe, createHouse, joinHouse, toast, award } = useApp()
-  const [step, setStep] = useState(me!.onboarded ? 2 : 1)
-  const [hh, setHh] = useState(''); const [code, setCode] = useState('')
+  const { lang, me, createHouse, joinHouse, toast, award } = useApp()
+    const [hh, setHh] = useState(`${L3(lang, 'Home', 'Maison', 'بيت')} ${me!.name || ''}`.trim()); const [code, setCode] = useState('')
   const finish = () => { if (!hh.trim()) return; createHouse(hh.trim()); toast(t('welcome', lang) + ' 🌿') }
   return (
     <div className="calm grid min-h-screen place-items-center px-5 py-10">
       <div className="rise card w-full max-w-md space-y-5 p-7">
-        <div className="flex items-center justify-between"><Brand /><span className="text-xs font-semibold text-muted">{step}/2</span></div>
-        <div className="h-1.5 rounded-full bg-line"><div className="h-full rounded-full bg-forest transition-all" style={{ width: step === 1 ? '50%' : '100%' }} /></div>
-        {step === 1 ? (<>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label htmlFor="co" className="mb-1 block text-sm font-semibold">{t('country', lang)}</label><select id="co" className="input" value={me!.country} onChange={(e) => { const k = countryOf(e.target.value); patchMe({ country: k.id, cuisine: k.cuisine, city: k.cities?.[0] ?? me!.city }) }}>{COUNTRIES.map((c) => <option key={c.id} value={c.id}>{c.f} {cname(c, lang)} · {c.sym}</option>)}</select></div>
-            <div><label htmlFor="ci" className="mb-1 block text-sm font-semibold">{t('city', lang)}</label><input id="ci" className="input" value={me!.city} onChange={(e) => patchMe({ city: e.target.value })} /></div>
-          </div>
-          <div><span className="mb-1 block text-sm font-semibold">{t('size', lang)}</span><div className="flex gap-2">{[1, 2, 3, 4, 5, 6].map((n) => <button key={n} className="chip" aria-pressed={me!.size === n} onClick={() => patchMe({ size: n })}>{n}</button>)}</div></div>
-          <div><label htmlFor="bu" className="mb-1 flex justify-between text-sm font-semibold"><span>{t('budget', lang)}</span><span>{money(me!.budget, lang)}</span></label><input id="bu" type="range" min={200} max={3000} step={50} value={me!.budget} onChange={(e) => patchMe({ budget: +e.target.value })} className="w-full accent-[#245B43]" /></div>
-          <div className="flex gap-3"><button className="btn btn-soft flex-1" onClick={() => { patchMe({ onboarded: true }); setStep(2) }}>{t('skip', lang)}</button><button className="btn btn-primary flex-1" onClick={() => { patchMe({ onboarded: true }); setStep(2) }}>{t('go', lang)}</button></div>
-        </>) : (<>
+        <div className="flex items-center justify-between"><Brand /></div>
+        {(<>
           <div><label htmlFor="hn" className="mb-1 block text-sm font-semibold">{t('hhName', lang)}</label><input id="hn" className="input" value={hh} onChange={(e) => setHh(e.target.value)} placeholder={`${me!.name} & co`} autoFocus /></div>
           <button className="btn btn-primary w-full" onClick={finish} disabled={!hh.trim()} style={{ opacity: hh.trim() ? 1 : 0.5 }}>{t('create', lang)}</button>
           <div className="border-t border-line pt-4"><label htmlFor="cd" className="mb-1 block text-sm font-semibold">{t('hhJoin', lang)}</label><div className="flex gap-2"><input id="cd" className="input uppercase" value={code} onChange={(e) => setCode(e.target.value)} placeholder="KZ-XXXX" /><button className="btn btn-soft" onClick={async () => { if (await joinHouse(code)) award(20, t('welcome', lang)); else toast(t('badCode', lang)) }}>{t('join', lang)}</button></div></div>
@@ -199,6 +190,8 @@ function Shell() {
     setCurrency(c); setStoreCountry(c)
     if (hasPlan) composeWith({ cuisine: k.cuisine, region: 'all' }, true); else say(`${k.f} ${cname(k, lang)} · ${k.sym}`)
   }
+  const [bask, setBask] = useState(false)
+  useEffect(() => { const f = (e: Event) => go((e as CustomEvent).detail as Tab); addEventListener('kz-go', f); return () => removeEventListener('kz-go', f) })
   const [up, setUp] = useState(false); const space: 'food' | 'out' = tab === 'sorties' || tab === 'budget' ? 'out' : 'food'
   useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
   const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { const O: Partial<Record<Tab, number>> = { home: 0, week: 1, recipes: 1.5, stores: 2, list: 3, sorties: 4, budget: 5, profile: 6 }; const d = (O[k] ?? 0) - (O[tab] ?? 0); if (d) setWdir(Math.sign(d)); try { history.pushState({ kz: k }, '') } catch { /* sandboxed */ } setTab(k); scrollTo(0, 0) } }
@@ -247,10 +240,10 @@ function Shell() {
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
       <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`} onTouchStart={swStart} onTouchEnd={swEnd}>
-        {tab !== 'home' && <Hint tab={tab} />}
+
         {space === 'out' ? <div key={tab} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>
           {tab === 'home' && <HomeTab composeFor={(o) => composeWith(o)} clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
-          {tab === 'week' && <WeekTab clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
+          {tab === 'week' && <WeekTab toBasket={() => setBask(true)} clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
           {tab === 'recipes' && <RecipesTab say={say} />}
@@ -259,7 +252,7 @@ function Shell() {
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
       </main>
-      <><div data-tour="assist" style={space === 'out' || (tab === 'home' && !tour) ? { display: 'none' } : undefined} className="fixed bottom-[6.5rem] start-4 z-40 flex items-center rounded-full bg-ink/90 p-1 text-white shadow-lg backdrop-blur">
+      <><div data-tour="assist" style={space === 'out' || (tab === 'home' && !tour) ? { display: 'none' } : undefined} className="fixed bottom-[6.5rem] start-4 z-40 hidden items-center lg:flex rounded-full bg-ink/90 p-1 text-white shadow-lg backdrop-blur">
         <button className="grid h-11 w-11 place-items-center rounded-full text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}><Sparkles size={18} aria-hidden /></button>
       </div>
       <Assistant open={assist} onClose={() => setAssist(false)} tab={tab} next={help} more={more} undo={undo} onTour={() => setTour(true)} go={go} />
@@ -271,6 +264,7 @@ function Shell() {
         <span className="grid h-8 w-8 place-items-center rounded-full bg-forest text-white"><ShoppingCart size={16} aria-hidden /></span>
         <span className="min-w-0 flex-1 truncate text-[13px] font-bold">📌 {L3(lang, 'Shopping in progress', 'Courses en cours', 'تسوق جارٍ')} · {cart.length - cartLeft}/{cart.length}</span>
         <span className="text-[13px] font-extrabold text-forest">{L3(lang, 'Resume', 'Reprendre', 'متابعة')} ›</span></button>}
+      <BasketStory open={bask} lines={lines} onClose={() => setBask(false)} go={go} />
       <Nav tab={tab} go={go} left={cartLeft} hasCart={cart.length > 0} onCaddie={() => setCaddie(true)} openCountry={() => setCtry(true)} /></>
       <CountrySheet open={ctry} onClose={() => setCtry(false)} onPick={setCountry} />
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>
@@ -288,7 +282,7 @@ export default function App() {
   const [mode, setMode] = useState<'landing' | 'signup' | 'login'>('landing')
   let body
   if (!me) body = mode === 'landing' ? <Landing go={setMode} /> : <Auth mode={mode} setMode={setMode} close={() => setMode('landing')} />
-  else if (!me.onboarded || !house) body = <Onboarding />
+  else if (!house) body = <Onboarding />
   else body = <Shell />
   return <><Toasts />{body}</>
 }

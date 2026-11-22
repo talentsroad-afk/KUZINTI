@@ -1,5 +1,5 @@
 import { zf } from './lib/zgh'
-import { ArrowRight, BookOpen, Dumbbell, Ticket, Carrot, Flame, Clock, Dices, Heart, Leaf, Plus, RefreshCw, Shuffle, SlidersHorizontal, Sparkles, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from 'lucide-react'
+import { ArrowRight, BookOpen, Dumbbell, Ticket, Carrot, Flame, Clock, Dices, Leaf, Plus, RefreshCw, Shuffle, SlidersHorizontal, Sparkles, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { KcalGoal } from './Forme'
 import { useApp } from './lib/store'
@@ -53,17 +53,6 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
   const date = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA-u-nu-latn' : lang === 'zgh' ? 'fr' : lang, { weekday: 'long', day: 'numeric', month: 'long' }).format(now)
 
   // Suggestions from real data only: pantry matches, then favourites, then quick dishes of the chosen cuisine.
-  const sugg = useMemo(() => {
-    const inPlan = new Set(Object.values(plan).map((e) => e.r)); const pantry = house!.pantry
-    const ok = (r: Recipe) => (r.m.includes('l') || r.m.includes('d')) && !inPlan.has(r.id) && (cuisine === 'healthy' || inCuisine(r, cuisine)) && !(me!.diet.includes('vegetarian') && !r.tags.includes('vegetarian'))
-    const out: { r: Recipe; why: string }[] = []; const seen = new Set<string>()
-    const push = (r: Recipe, why: string) => { if (out.length < 3 && !seen.has(r.id)) { seen.add(r.id); out.push({ r, why }) } }
-    const have = RECIPES.filter(ok).map((r) => ({ r, hit: r.ing.map((s) => parseIng(s).id).filter((id) => (pantry[id] ?? 0) > 0 && ['produce', 'meat', 'dairy'].includes(ING[id]?.aisle)) })).filter((x) => x.hit.length >= 2).sort((a, b) => b.hit.length - a.hit.length)
-    for (const x of have.slice(0, 2)) push(x.r, L(lang, 'With what you have: ', 'Avec ce que vous avez : ', 'بما لديكم: ') + x.hit.slice(0, 2).map((id) => ING[id].n[li(lang)].toLowerCase()).join(', '))
-    for (const id of me!.favs) if (REC[id] && ok(REC[id])) push(REC[id], L(lang, 'In your favourites', 'Dans vos favoris', 'من مفضلاتكم'))
-    for (const r of RECIPES.filter(ok).filter((r) => r.t <= 30).sort((a, b) => a.t - b.t)) push(r, L(lang, `Ready in ${r.t} min`, `Prêt en ${r.t} min`, `جاهز في ${r.t} دقيقة`))
-    return out
-  }, [plan, house, me, cuisine, lang])
 
   const tg = (g: string) => { const on = !goals.includes(g); const ng = on ? [...goals.filter((x) => !(g === 'healthy' && x === 'gourmand')), g] : goals.filter((x) => x !== g); patchMe({ goals: ng }); if (g === 'healthy' && on && n) makeHealthy(); else recompose({ goals: ng }) }
   const veg = me!.diet.includes('vegetarian')
@@ -131,25 +120,25 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
   if (!me!.known || wel) return <Welcome onDone={(o) => { setWel(false); if (o) composeFor(o) }} />
   return (
     <div className="riad pb-4">
-      {/* Zone 1 — compact greeting */}
-      <header className="rise flex items-start justify-between gap-3 pt-1 lg:col-span-12">
-        <div className="min-w-0"><p className="text-[11px] font-bold uppercase tracking-[.18em] text-terracotta">{date}</p>
-          <h1 className="font-serif text-[28px] font-semibold leading-tight tracking-tight text-ink lg:text-[40px]">{greet}, <span className="italic text-forest">{firstName}</span></h1></div>
-      </header>
+      {/* Zone 1 — cinematic hero: greeting and the next meal over its photo */}
+      <section className="hero-cine rise relative -mx-4 overflow-hidden text-white sm:mx-0 sm:rounded-[30px] lg:col-span-12" style={{ minHeight: nr ? 300 : 170 }}>
+        {nr ? <Dish r={nr} w={1100} className="kenburns absolute inset-0 h-full w-full" /> : <span className="absolute inset-0 bg-gradient-to-br from-forest to-[#0c1611]" />}
+        <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/65 via-black/35 to-black/85" />
+        <span className="glow pointer-events-none absolute -bottom-24 -start-16 h-64 w-64 rounded-full bg-apricot/35 blur-3xl" aria-hidden />
+        <div className="relative flex h-full flex-col justify-between p-5" style={{ minHeight: nr ? 300 : 170 }}>
+          <div><p className="text-[11px] font-bold uppercase tracking-[.2em] text-white/70">{date}</p>
+            <h1 className="font-serif text-[30px] font-semibold leading-tight !text-white lg:text-[42px]">{greet}, <span className="italic text-apricot">{firstName}</span></h1></div>
+          {nr && nm ? <div>
+            <p className="text-[11px] font-bold uppercase tracking-[.18em] text-apricot">{when(nm.off, nm.s, nm.d, lang)}</p>
+            <button className="block text-start font-display text-[28px] font-extrabold leading-[1.05] drop-shadow" onClick={() => setRv(nr)}>{rname(nr.n, lang)}</button>
+            <p className="mt-1 text-[12.5px] text-white/80"><Clock size={12} className="-mt-0.5 inline" aria-hidden /> {nr.t} min · {money(entryCost(nm.e) / Math.max(1, nm.e.n), lang)} / {L(lang, 'pers.', 'pers.', 'شخص')}</p>
+            <div className="mt-3 flex gap-2"><button className="rounded-full bg-white px-4 py-2 text-sm font-extrabold text-ink active:scale-95" onClick={() => setRv(nr)}>▶ {L(lang, 'Cook it', 'Cuisiner', 'اطبخ')}</button><button className="rounded-full bg-white/15 px-4 py-2 text-sm font-bold backdrop-blur active:scale-95" onClick={() => setRep(nm.k)}><RefreshCw size={13} className="-mt-0.5 inline" aria-hidden /> {L(lang, 'Replace', 'Remplacer', 'تغيير')}</button></div>
+          </div> : <p className="text-sm text-white/80">{L(lang, 'Nothing planned yet: one tap below composes your week.', 'Rien de prévu : un geste ci-dessous compose votre semaine.', 'لا شيء بعد')}</p>}
+        </div>
+      </section>
       <button className="rise -mt-2 flex max-w-full items-center gap-2 rounded-full bg-surface py-1 pe-3 ps-1 text-start text-xs font-semibold shadow-soft active:scale-[.98] lg:col-span-12" onClick={() => setWel(true)}><span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-leaf/30 text-[12px]">🍽️</span><span className="truncate">{prefLine}</span><span className="shrink-0 font-bold text-forest">{L(lang, 'Edit', 'Modifier', 'تعديل')}</span></button>
 
       {n === 0 && TUNE}
-      {/* Zone 2 — next meal, compact */}
-      {nr && nm && <article className="rise flex items-center gap-3 rounded-[24px] bg-surface p-2.5 shadow-soft lg:col-span-12">
-        <button className="shrink-0" onClick={() => setRv(nr)} aria-label={rname(nr.n, lang)}><Dish r={nr} w={300} className="h-[84px] w-[84px] rounded-[18px]" /></button>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10.5px] font-bold uppercase tracking-[.14em] text-terracotta">{when(nm.off, nm.s, nm.d, lang)}</p>
-          <button className="block w-full truncate text-start font-display text-[17px] font-extrabold leading-tight" onClick={() => setRv(nr)}>{rname(nr.n, lang)}</button>
-          <p className="text-[11.5px] text-muted"><Clock size={12} className="-mt-0.5 inline" aria-hidden /> {nr.t} min · {money(entryCost(nm.e) / Math.max(1, nm.e.n), lang)} / {L(lang, 'pers.', 'pers.', 'شخص')}</p>
-          <div className="mt-1.5 flex gap-1.5"><button className="rounded-full bg-forest px-3 py-1 text-xs font-bold text-white active:scale-95" onClick={() => setRv(nr)}>{L(lang, 'Recipe', 'Recette', 'الوصفة')}</button><button className="rounded-full bg-cream px-3 py-1 text-xs font-bold text-forest active:scale-95" onClick={() => setRep(nm.k)}><RefreshCw size={12} className="-mt-0.5 inline" aria-hidden /> {L(lang, 'Replace', 'Remplacer', 'تغيير')}</button></div>
-        </div>
-      </article>}
-
       {/* Zone 3 — story line: for each theme, where I am and the one next step */}
       <section className="rise lg:col-span-12" aria-label={L(lang, 'My week at a glance', 'Ma semaine en un coup d’œil', 'أسبوعي بنظرة')}>
         <div className="mb-2 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'Where I am', 'Où j’en suis', 'أين وصلت')}</h2><span className="text-xs font-bold text-muted tabular-nums">{STORY.filter((x) => x.done >= x.steps.length).length}/{STORY.length} ✓</span></div>
@@ -171,7 +160,6 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
           <button key={l} className="dash-tile flex flex-col items-center gap-1.5 rounded-[20px] bg-surface p-2.5 text-center shadow-soft active:scale-95" onClick={f}><Badge Icon={I} tone={tone} size={34} /><span className="text-[11.5px] font-bold leading-tight">{l}</span></button>))}</div>
       </section>
 
-      {n > 0 && TUNE}
       {/* 6 — ideas and recipes */}
       <section className="rise lg:col-span-12">
         <h2 className="mb-3 font-serif text-[22px] font-semibold">{L(lang, 'Ideas & recipes', 'Idées et recettes', 'أفكار ووصفات')}</h2>
@@ -191,19 +179,6 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
               </button>))}</div>
           </div>))}
       </div>
-      <aside className="lg:col-span-5">
-        {sugg.length > 0 && (
-          <section className="rise">
-            <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[22px] font-semibold">{L(lang, 'For you', 'Pour vous', 'لكم')}</h2><button className="text-sm font-semibold text-forest" onClick={() => go('recipes')}>{L(lang, 'All recipes', 'Toutes les recettes', 'كل الوصفات')}</button></div>
-            <div className="space-y-3">{sugg.map(({ r, why }) => (
-              <button key={r.id} className="flex w-full items-center gap-3 text-start active:scale-[.99]" onClick={() => setRv(r)}>
-                <Dish r={r} w={240} className="h-[72px] w-[72px] shrink-0 rounded-2xl" />
-                <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{rname(r.n, lang)}</span><span className="block truncate text-xs text-muted">{me!.favs.includes(r.id) && <Heart size={11} className="-mt-0.5 me-1 inline fill-terracotta text-terracotta" aria-hidden />}{why}</span></span>
-                <Plus size={18} className="shrink-0 text-forest" aria-hidden />
-              </button>))}</div>
-          </section>
-        )}
-      </aside>
         </div>
       </section>
 

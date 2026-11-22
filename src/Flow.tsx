@@ -12,7 +12,7 @@ import { REC } from './data/recipes'
 import { SIDE } from './data/sides'
 import { HOME, HOME_BY } from './data/home'
 import { storesNow, splitTotal, storeTotal } from './lib/stores'
-import { Sheet, Swipe } from './ui'
+import { Num, PriceDial, Sheet, Swipe } from './ui'
 import { dayName } from './lib/i18n'
 import { FridgeSheet } from './Extra'
 
@@ -150,7 +150,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       <div className="card p-4">
         <div className="grid grid-cols-4 gap-1 text-center">
           {([[t('budgetW', lang), budget, 'ink'], [t('taken', lang), spent, 'forest'], [t('toTake', lang), pace - spent, 'ink'], [t('solde', lang), budget - pace, budget - pace < 0 ? 'danger' : 'forest']] as [string, number, string][]).map(([l, v, c]) => (
-            <div key={l} className="rounded-xl bg-cream/60 px-1 py-1.5"><p className="text-[10px] font-semibold uppercase leading-tight text-muted">{l}</p><p className="whitespace-nowrap font-display text-[13px] font-extrabold tabular-nums" style={{ color: `rgb(var(--${c}))` }}>{money(v, lang)}</p></div>))}
+            <div key={l} className="rounded-xl bg-cream/60 px-1 py-1.5"><p className="text-[10px] font-semibold uppercase leading-tight text-muted">{l}</p><p className="whitespace-nowrap font-display text-[13px] font-extrabold tabular-nums" style={{ color: `rgb(var(--${c}))` }}><Num v={v} fmt={(x) => money(x, lang)} /></p></div>))}
         </div>
         <div className="relative mt-3 h-3 overflow-hidden rounded-full bg-cream">
           <div className="absolute inset-y-0 start-0 rounded-full bg-leaf/50 transition-all duration-500" style={{ width: `${Math.min(100, (pace / budget) * 100)}%` }} />
@@ -214,7 +214,9 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       <Sheet open={!!edit} onClose={() => setEdit(null)} title={edit?.name ?? ''}>
         {edit && <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); savePaid() }}>
           {edit.line && <div className="flex items-center justify-between rounded-2xl bg-cream px-4 py-2"><span className="font-semibold">{fmtQty(edit.line.buy, edit.line.ing.base)}</span><span className="flex gap-2"><button type="button" className="btn btn-soft !min-h-9 !w-9 !px-0" onClick={() => { const l = edit.line!; upHouse((h) => { h.qty = { ...(h.qty ?? {}), [l.id]: Math.max(0, l.buy - stepOf(l)) } }); setEdit(null) }}>−</button><button type="button" className="btn btn-soft !min-h-9 !w-9 !px-0" onClick={() => { const l = edit.line!; upHouse((h) => { h.qty = { ...(h.qty ?? {}), [l.id]: l.buy + stepOf(l) } }); setEdit(null) }}>+</button></span></div>}
-          <div><label htmlFor="paid" className="mb-1 block text-sm font-semibold">{t('paid', lang)} ({curSym()})</label><input id="paid" inputMode="decimal" className="input text-lg" placeholder={edit.est.toFixed(2)} value={val} onChange={(e) => setVal(e.target.value)} autoFocus /><p className="mt-1 text-xs text-muted">{t('estimated', lang)}: {m2(edit.est, lang)}</p></div>
+          <div><p className="mb-2 text-sm font-semibold">{t('paid', lang)}</p>
+            <PriceDial value={parseFloat(val.replace(',', '.')) || (val === '0' ? 0 : Math.round(edit.est * curRate() * 100) / 100)} est={Math.round(edit.est * curRate() * 100) / 100} onChange={(n) => setVal(String(n))} fmt={(n) => m2(n / curRate(), lang)} />
+            <label htmlFor="paid" className="mt-3 flex items-center gap-2 text-xs text-muted">{lang === 'en' ? 'Or type it' : 'Ou tapez-le'} <input id="paid" inputMode="decimal" className="input !h-9 flex-1 !text-sm" placeholder={(edit.est * curRate()).toFixed(2)} value={val} onChange={(e) => setVal(e.target.value)} /> {curSym()}</label></div>
           <button className="btn btn-primary w-full">{t('save', lang)}</button>
         </form>}
       </Sheet>

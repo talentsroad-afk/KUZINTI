@@ -204,7 +204,8 @@ const KINDS: [Kind, string][] = [['loisirs', '🎬 Loisirs'], ['famille', '👨�
 
 /** Outings space: compose a day, a week or the month's weekends of real activities, each with a ready-to-follow program. */
 export function SortiesTab() {
-  const { me, house, upHouse, patchMe, award } = useApp()
+  const { me, house, upHouse, patchMe, award, toast } = useApp()
+  const [validated, setValidated] = useState(false)
   const ccOf = (c: string) => Object.keys(COUNTRY_CITIES).find((k) => COUNTRY_CITIES[k].includes(c))
   const [cc, setCc] = useState(() => ccOf(me!.city) ?? (COUNTRY_CITIES[me!.country] ? me!.country : 'MA')); const [pickC, setPickC] = useState(false)
   const list = COUNTRY_CITIES[cc] ?? COUNTRY_CITIES.MA; const city = list.includes(me!.city) ? me!.city : list[0]; const ovr = (house as unknown as { outPrice?: Record<string, number> }).outPrice ?? {}; const acts = CITIES[city].map((a) => (ovr[a.id] !== undefined ? { ...a, p: ovr[a.id], p0: a.p } : { ...a, p0: a.p })); const people = me!.size
@@ -225,10 +226,12 @@ export function SortiesTab() {
   const sum = days.reduce((s, [k]) => { if (!plan[k]) return s; const q = parts(plan[k]); return { a: s.a + q.a, m: s.m + q.m, tr: s.tr + q.tr } }, { a: 0, m: 0, tr: 0 })
   const total = sum.a + sum.m + sum.tr
   const compose = () => {
+    setValidated(false)
     const out: Record<string, Day> = {}; const used = new Set<string>(); let left = budget
     for (const [k, , def] of days) { const f = fmt === 'auto' ? def : fmt; const per = left / Math.max(1, days.length - Object.keys(out).length); const meals = parts({ fmt: f, acts: [] }).m; const a = pickActs(acts, kinds, f, Math.max(0, per - meals - 30), people, used, mv); a.forEach((x) => used.add(x)); out[k] = { fmt: f, acts: a }; left -= cost(out[k]) }
     save(out, `🎈 sorties ${city}`); setOpen(days[0][0]); award(10, '🎈')
   }
+  const validate = () => { const m = me!.money; if (m) patchMe({ money: { ...m, exp: [...m.exp, { id: Math.random().toString(36).slice(2, 8), t: Date.now(), c: 'outings', a: Math.round(total), n: `Sortie ${city}` }] } }); upHouse(() => { /* shared plan already synced */ }, `🎈 programme validé ${city}`); setValidated(true); toast(m ? `✓ ${M$(total)} ajoutés au budget sorties` : '✓ Programme validé et partagé avec le foyer'); award(5, '🎈') }
   const swap = (k: string, i: number) => { const d = plan[k]; const alt = pickActs(acts.filter((a) => !d.acts.includes(a.id)), kinds, d.fmt, budget, people, new Set(), mv, d.acts[i - 1] ?? d.acts[i + 1])[0]; if (!alt) return; const acts2 = [...d.acts]; acts2[i] = alt; save({ ...plan, [k]: { ...d, acts: acts2 } }, '↻ activité') }
   const setDayFmt = (k: string, f: Fmt) => save({ ...plan, [k]: { fmt: f, acts: pickActs(acts, kinds, f, budget, people, new Set(), mv) } }, 'format')
   const story = (d: Day) => KTONE[(acts.find((a) => a.id === d.acts[0])?.k[0]) ?? 'culture']
@@ -305,6 +308,13 @@ export function SortiesTab() {
               <div className="mt-3 space-y-1 rounded-2xl bg-cream p-3 text-xs"><p>🚕 {FOOD[city].move}</p>{kindsHere.slice(0, 1).map((kk) => <p key={kk}>💡 {TIP[kk]}</p>)}</div>
             </div>}
           </div>) })}
+        {/* Next step, so nobody has to think: validate → share with the household → note it in the budget. */}
+        <div className="rise rounded-[24px] bg-forest p-4 text-white shadow-lift">
+          <p className="text-[11px] font-bold uppercase tracking-[.16em] text-apricot">{validated ? '✓ Validé' : 'Étape suivante'}</p>
+          <p className="font-display text-lg font-extrabold">{validated ? 'Partagé avec le foyer et noté au budget' : 'Ce programme me plaît'}</p>
+          {!validated ? <button className="mt-3 w-full rounded-2xl bg-apricot py-3 text-[15px] font-extrabold text-ink active:scale-[.98]" onClick={validate}>✓ Valider · {M$(total)} au budget sorties</button>
+            : <div className="mt-3 grid grid-cols-2 gap-2"><button className="rounded-2xl bg-white/15 py-2.5 text-sm font-bold active:scale-95" onClick={() => window.open('https://wa.me/?text=' + encodeURIComponent(`🎈 Notre programme à ${city} : ` + days.filter(([k]) => plan[k]).map(([, l]) => l + ' · ' + plan[days.find((x) => x[1] === l)![0]].acts.map((id) => acts.find((a) => a.id === id)?.n).filter(Boolean).join(', ')).join(' / ')), '_blank')}>💬 Envoyer</button><button className="rounded-2xl bg-white py-2.5 text-sm font-bold text-forest active:scale-95" onClick={() => { location.hash = ''; window.dispatchEvent(new CustomEvent('kz-go', { detail: 'budget' })) }}>💰 Voir mon budget</button></div>}
+        </div>
         <p className="text-center text-[11px] text-muted">Pour {people} personne(s) · prix indicatifs{ctryName ? '' : ' en équivalent local'}, à vérifier sur place</p>
       </>)}
     </div>
