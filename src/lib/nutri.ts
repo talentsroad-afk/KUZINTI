@@ -23,15 +23,24 @@ export function nutrientsOf(r: Recipe): Nut[] {
   for (const x of r.ing) for (const n of S[parseIng(x).id] ?? []) c[n] = (c[n] ?? 0) + 1
   return (Object.entries(c) as [Nut, number][]).sort((a, b) => b[1] - a[1]).map(([n]) => n)
 }
-export type Health = 'none' | 'preg' | 'sport' | 'senior'
+export type Health = 'none' | 'preg' | 'sport' | 'senior' | 'diab' | 'hta' | 'nurse'
 export const HEALTH: Record<Health, [string, string, string, string, Nut[]]> = {
   none: ['🙂', 'Standard', 'Standard', 'عادي', []],
   preg: ['🤰', 'Pregnancy', 'Enceinte', 'حامل', ['B9', 'fer', 'ca', 'o3']],
   sport: ['🏋️', 'Sporty', 'Sportif', 'رياضي', ['prot', 'mg', 'K']],
   senior: ['👵', 'Senior', 'Senior', 'كبار السن', ['ca', 'vD', 'fib', 'prot']],
+  diab: ['🩸', 'Diabetes', 'Diabète', 'سكري', ['fib', 'prot', 'mg']],
+  hta: ['❤️', 'High blood pressure', 'Hypertension', 'ضغط الدم', ['K', 'mg', 'fib']],
+  nurse: ['🤱', 'Breastfeeding', 'Allaitement', 'رضاعة', ['ca', 'o3', 'prot', 'B12']],
 }
-// Dishes to avoid during pregnancy (raw egg).
+// Dishes to avoid per profile. Pregnancy and breastfeeding: raw egg. Diabetes: sweet dishes. High blood pressure: very salty ingredients.
 const NO_PREG = new Set(['tamago-gohan'])
-export const healthOk = (r: Recipe, h?: string) => !(h === 'preg' && NO_PREG.has(r.id))
+const SALTY = new Set(['plemon', 'olives', 'cheese', 'soy'])
+export function healthOk(r: Recipe, h?: string): boolean {
+  if ((h === 'preg' || h === 'nurse') && NO_PREG.has(r.id)) return false
+  if (h === 'diab' && r.tags.includes('sweet')) return false
+  if (h === 'hta' && r.ing.some((x) => SALTY.has(parseIng(x).id))) return false
+  return true
+}
 /** Composer weight: dishes rich in the nutrients a profile needs come up more often. */
 export const healthWeight = (r: Recipe, h?: string) => { if (!h || h === 'none') return 1; const need = HEALTH[h as Health]?.[4] ?? []; const have = nutrientsOf(r).slice(0, 5); return 1 + 0.5 * need.filter((n) => have.includes(n)).length }

@@ -56,8 +56,8 @@ export function CartMode({ open, onClose, items, onFinish }: { open: boolean; on
           {items.map((it) => { const on = !!chk[it.key]; const no = !!miss[it.key]; return (
             <button key={it.key} className={`relative rounded-2xl border-2 p-2 text-center transition active:scale-95 ${on ? 'border-forest bg-leaf/25' : no ? 'border-line bg-cream opacity-60' : 'border-line bg-surface'}`} onClick={() => toggle(it.key)} aria-pressed={on}>
               <span className={`block text-3xl ${on ? 'pop' : ''}`}>{it.e}</span>
-              <span className="mt-1 line-clamp-2 block text-[11px] font-semibold leading-tight">{it.name}</span>
-              <span className="block text-[10px] text-muted">{it.q}</span>
+              <span className="mt-1 line-clamp-2 block text-[12px] font-semibold leading-tight">{it.name}</span>
+              <span className="block text-[12px] text-muted">{it.q}</span>
               {on && <span className="pop absolute -end-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-forest text-white"><Check size={14} aria-hidden /></span>}
               {no && <span className="absolute -end-1.5 -top-1.5 grid h-6 w-6 place-items-center rounded-full bg-muted text-white"><X size={14} aria-hidden /></span>}
             </button>) })}
@@ -74,7 +74,7 @@ export function CartMode({ open, onClose, items, onFinish }: { open: boolean; on
             onPointerCancel={() => { start.current = null; setDx(0) }}>
             <span className="absolute start-5 top-5 rounded-full border-2 border-forest px-3 py-1 text-sm font-extrabold uppercase text-forest transition-opacity" style={{ opacity: Math.max(0, x / 90) }}>{L(lang, 'In the trolley', 'Dans le caddie', 'في العربة')}</span>
             <span className="absolute end-5 top-5 rounded-full border-2 border-muted px-3 py-1 text-sm font-extrabold uppercase text-muted transition-opacity" style={{ opacity: Math.max(0, -x / 90) }}>{L(lang, 'Not found', 'Pas trouvé', 'غير موجود')}</span>
-            <p className="mt-6 text-[11px] font-bold uppercase tracking-[.18em] text-muted">{cur.aisle}</p>
+            <p className="mt-6 text-[12px] font-bold uppercase tracking-[.18em] text-muted">{cur.aisle}</p>
             <div className="my-4 text-[88px] leading-none" aria-hidden>{cur.e}</div>
             <h2 className="font-serif text-[30px] font-semibold leading-tight">{cur.name}</h2>
             <p className="mt-2 font-display text-2xl font-extrabold text-forest">{cur.q}</p>
@@ -99,7 +99,7 @@ export function CartMode({ open, onClose, items, onFinish }: { open: boolean; on
         </div>
       )}
       {!grid && hist.length > 0 && (() => { const pk = hist[hist.length - 1]; const pv = items.find((i) => i.key === pk); if (!pv) return null; const yes = !!chk[pk]; return <button key={pk} className="fade-up mx-auto flex max-w-md items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-sm shadow-soft" onClick={undo}><span className="text-muted">{L(lang, 'Before', 'Avant', 'السابق')} :</span> <b>{pv.e} {pv.name}</b> <span className={yes ? 'text-forest' : 'text-muted'}>{yes ? '✓' : '✕'}</span><RotateCcw size={14} className="text-muted" aria-hidden /></button> })()}
-      {!grid && cur && next && <p className="fade-up pb-1 text-center text-sm" key={next.key}><span className="text-muted">{L(lang, 'Next', 'Ensuite', 'التالي')} :</span> <b>{next.e} {next.name}</b> <span className="text-muted">· {next.q}</span>{next.aisle !== cur.aisle && <span className="ms-1 rounded-full bg-apricot/40 px-2 py-0.5 text-[11px] font-bold">{L(lang, 'new aisle', 'nouveau rayon', 'قسم جديد')} : {next.aisle}</span>}</p>}
+      {!grid && cur && next && <p className="fade-up pb-1 text-center text-sm" key={next.key}><span className="text-muted">{L(lang, 'Next', 'Ensuite', 'التالي')} :</span> <b>{next.e} {next.name}</b> <span className="text-muted">· {next.q}</span>{next.aisle !== cur.aisle && <span className="ms-1 rounded-full bg-apricot/40 px-2 py-0.5 text-[12px] font-bold">{L(lang, 'new aisle', 'nouveau rayon', 'قسم جديد')} : {next.aisle}</span>}</p>}
       {!grid && cur && <p className="pb-4 text-center text-xs text-muted">{L(lang, 'Swipe right: in the trolley · left: not found', 'Glissez à droite : dans le caddie · à gauche : pas trouvé', 'اسحب يمينًا: في العربة · يسارًا: غير موجود')}</p>}
     </div>, document.body)
 }

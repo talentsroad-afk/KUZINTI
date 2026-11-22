@@ -5,7 +5,7 @@ import { buildList, entryCost, kcalPerServing, recipeCost, type PlanEntry } from
 
 export type Mode = 'light' | 'balanced' | 'gourmet'
 type Plan = Record<string, PlanEntry>
-export interface Prefs { size: number; diet: string[]; cuisine: string; region: string; goals: string[]; meals: Meal[]; budget: number; kcal?: number; health?: string }
+export interface Prefs { size: number; diet: string[]; cuisine: string; region: string; goals: string[]; meals: Meal[]; budget: number; kcal?: number; health?: string; ramadan?: boolean }
 // Share of the daily calorie target per meal; sides (bread, drink, salad) add roughly 150 kcal to main meals.
 const SHARE: Record<Meal, number> = { b: 0.25, l: 0.37, d: 0.28, g: 0.1 }
 const kcalFit = (kc: number, slot: Meal, target: number) => { const want = Math.max(150, target * SHARE[slot] - (slot === 'g' ? 0 : 150)); const z = (kc - want) / (0.3 * want); return Math.exp(-z * z) + 0.02 }
@@ -39,7 +39,8 @@ function weight(r: Recipe, slot: Meal, p: Prefs, used: Record<string, number>) {
   // The main cuisine leads: secondary cuisines (Mediterranean, etc.) stay a minority, and never at breakfast.
   const primary = p.cuisine.split(',')[0]
   const lead = (primary === 'ma' || WORLD.includes(primary)) && p.cuisine !== primary && cuisineOf(r) !== primary ? (slot === 'b' ? 0.05 : 0.25) : 1
-  return lead * (1 / (1 + (used[r.id] ?? 0) * (g.includes('varied') ? 10 : 4))) * (p.kcal ? kcalFit(kcalPerServing(r.id), slot, p.kcal) : modeWeight(modeOf(g), kcalPerServing(r.id)))
+  const ftour = p.ramadan && slot === 'd' && r.tags.includes('ftour') ? 4 : 1 // Ramadan: ftour dishes first
+  return lead * ftour * (1 / (1 + (used[r.id] ?? 0) * (g.includes('varied') ? 10 : 4))) * (p.kcal ? kcalFit(kcalPerServing(r.id), slot, p.kcal) : modeWeight(modeOf(g), kcalPerServing(r.id)))
     * (g.includes('cheap') ? 8 / (2 + recipeCost(r.id) / r.s) : 1) * (g.includes('quick') ? (r.t <= 35 ? 3 : 0.4) : 1)
     * (p.region !== 'all' && REGION_DISHES[p.region]?.includes(r.id) ? 2.5 : 1) * (r.tags.includes('sweet') && slot !== 'g' && slot !== 'b' ? 0.1 : 1) * healthWeight(r, p.health)
 }
@@ -61,7 +62,9 @@ let DIET: string[] = []
 /** The household's allergies, so side dishes (bread, cheese…) also respect them. */
 export const setDietFilter = (d: string[]) => { DIET = d }
 const sideOk = (sid: string) => { const sd = SIDE[sid]; if (!sd) return true; const bad = DIET.filter((d) => ALL_BY[d]); return !bad.some((d) => sd.ing.some((s) => ALL_BY[d].has(parseIdLoose(s)))) }
-export function composeSides(rid: string, slot: Meal, rnd = Math.random): string[] { return composeSides0(rid, slot, rnd).filter(sideOk) }
+let RAM = false
+export const setRamadanSides = (v: boolean) => { RAM = v }
+export function composeSides(rid: string, slot: Meal, rnd = Math.random): string[] { const x = composeSides0(rid, slot, rnd).filter(sideOk); return RAM && slot === 'd' && SIDE['x-dattes'] && sideOk('x-dattes') && !x.includes('x-dattes') ? ['x-dattes', ...x] : x }
 function composeSides0(rid: string, slot: Meal, rnd = Math.random): string[] {
   const r = REC[rid]; const c = cuisineOf(r)
   if (slot === 'g') return rid === 'the-dattes' ? [] : c === 'ma' ? ['x-the'] : ['x-cafe']

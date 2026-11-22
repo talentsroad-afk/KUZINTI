@@ -130,10 +130,10 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
         <span className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/55" />
         <span className="glow pointer-events-none absolute -bottom-24 -start-16 h-64 w-64 rounded-full bg-apricot/35 blur-3xl" aria-hidden />
         <div className="relative flex h-full flex-col justify-between p-5" style={{ minHeight: nr ? 300 : 170 }}>
-          <div><p className="text-[11px] font-bold uppercase tracking-[.2em] text-white/70">{date}</p>
+          <div><p className="text-[12px] font-bold uppercase tracking-[.2em] text-white/70">{date}</p>
             <h1 className="font-serif text-[30px] font-semibold leading-tight !text-white lg:text-[42px]">{greet}, <span className="italic text-apricot">{firstName}</span> <span className="wave inline-block text-[26px]"><E3 e={now.getHours() >= 18 || now.getHours() < 4 ? "🌙" : "👋"} /></span></h1></div>
           {nr && nm ? <div>
-            <p className="text-[11px] font-bold uppercase tracking-[.18em] text-apricot">{when(nm.off, nm.s, nm.d, lang)}</p>
+            <p className="text-[12px] font-bold uppercase tracking-[.18em] text-apricot">{when(nm.off, nm.s, nm.d, lang)}</p>
             <button className="block text-start font-display text-[28px] font-extrabold leading-[1.05] drop-shadow" onClick={() => setRv(nr)}>{rname(nr.n, lang)}</button>
             <p className="mt-1 text-[12.5px] text-white/80"><Clock size={12} className="-mt-0.5 inline" aria-hidden /> {nr.t} min · {money(entryCost(nm.e) / Math.max(1, nm.e.n), lang)} / {L(lang, 'pers.', 'pers.', 'شخص')}</p>
             <div className="mt-3 flex gap-2"><button className="rounded-full bg-white px-4 py-2 text-sm font-extrabold text-ink active:scale-95" onClick={() => setRv(nr)}>▶ {L(lang, 'Cook it', 'Cuisiner', 'اطبخ')}</button><button className="rounded-full bg-white/15 px-4 py-2 text-sm font-bold backdrop-blur active:scale-95" onClick={() => setRep(nm.k)}><RefreshCw size={13} className="-mt-0.5 inline" aria-hidden /> {L(lang, 'Replace', 'Remplacer', 'تغيير')}</button></div>
@@ -151,10 +151,10 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
           {STORY.map((x, i) => { const complete = x.done >= x.steps.length; return (
             <li key={x.k} className="rise relative" style={{ animationDelay: `${i * 70}ms` }}>
               <div className={`flex items-center gap-3 rounded-[22px] bg-surface p-3 shadow-soft ${!complete && i === STORY.findIndex((y) => y.done < y.steps.length) ? 'ring-2 ring-apricot/70' : ''}`}>
-                <span className="relative"><Badge Icon={x.I} tone={x.tone} size={44} />{complete && <span className="pop absolute -bottom-1 -end-1 grid h-5 w-5 place-items-center rounded-full bg-forest text-[10px] font-bold text-white ring-2 ring-surface">✓</span>}</span>
+                <span className="relative"><Badge Icon={x.I} tone={x.tone} size={44} />{complete && <span className="pop absolute -bottom-1 -end-1 grid h-5 w-5 place-items-center rounded-full bg-forest text-[12px] font-bold text-white ring-2 ring-surface">✓</span>}</span>
                 <button className="min-w-0 flex-1 text-start" onClick={x.go}>
                   <span className="flex items-center gap-1.5"><b className="text-[15px]">{x.t}</b><span className="truncate text-[11.5px] text-muted">· {x.status}</span></span>
-                  <span className="mt-1 flex items-center gap-1" aria-label={`${x.done}/${x.steps.length}`}>{x.steps.map((st, j) => <span key={st} className={`flex items-center gap-1 text-[10px] font-bold ${j < x.done ? 'text-forest' : j === x.done ? 'text-ink' : 'text-muted/70'}`}><span className={`grid h-4 w-4 place-items-center rounded-full text-[9px] ${j < x.done ? 'bg-forest text-white' : j === x.done ? 'bg-apricot text-ink' : 'bg-cream'}`}>{j < x.done ? '✓' : j + 1}</span><span className="hidden min-[400px]:inline">{st}</span>{j < x.steps.length - 1 && <span className={`h-0.5 w-2 rounded ${j < x.done ? 'bg-forest' : 'bg-line'}`} />}</span>)}</span>
+                  <span className="mt-1 flex items-center gap-1" aria-label={`${x.done}/${x.steps.length}`}>{x.steps.map((st, j) => <span key={st} className={`flex items-center gap-1 text-[12px] font-bold ${j < x.done ? 'text-forest' : j === x.done ? 'text-ink' : 'text-muted/70'}`}><span className={`grid h-4 w-4 place-items-center rounded-full text-[12px] ${j < x.done ? 'bg-forest text-white' : j === x.done ? 'bg-apricot text-ink' : 'bg-cream'}`}>{j < x.done ? '✓' : j + 1}</span><span className="hidden min-[400px]:inline">{st}</span>{j < x.steps.length - 1 && <span className={`h-0.5 w-2 rounded ${j < x.done ? 'bg-forest' : 'bg-line'}`} />}</span>)}</span>
                 </button>
                 <button className={`shrink-0 rounded-full px-3 py-2 text-[12px] font-extrabold transition active:scale-95 ${complete ? 'bg-cream text-forest' : 'bg-forest text-white shadow-soft'}`} onClick={x.go}>{x.cta} ›</button>
               </div>
@@ -171,7 +171,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
       <div className="space-y-6 lg:col-span-7">
         {daily && <button className="group relative block w-full overflow-hidden rounded-[28px] bg-surface text-start shadow-soft active:scale-[.99]" onClick={() => setRv(daily)}>
           <div className="grid grid-cols-[42%_1fr] lg:grid-cols-[320px_1fr]"><Dish r={daily} w={500} className="h-full min-h-[170px]" />
-            <div className="p-4 lg:p-6"><p className="text-[11px] font-bold uppercase tracking-[.18em] text-terracotta">{L(lang, 'Recipe of the day', 'Recette du jour', 'وصفة اليوم')}</p><h3 className="mt-1 font-serif text-[24px] font-semibold leading-tight lg:text-[30px]">{rname(daily.n, lang)}</h3><p className="mt-2 flex flex-wrap gap-x-3 text-xs text-muted"><span><Ic e="⏱" /> {daily.t} min</span><span>{'●'.repeat(daily.d)}{'○'.repeat(3 - daily.d)}</span><span>{money(recipeCost(daily.id) / daily.s, lang)} / {L(lang, 'serving', 'pers.', 'للفرد')}</span></p><span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-forest">{L(lang, 'See the recipe', 'Voir la recette', 'عرض الوصفة')} <ArrowRight size={15} className="transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden /></span></div></div>
+            <div className="p-4 lg:p-6"><p className="text-[12px] font-bold uppercase tracking-[.18em] text-terracotta">{L(lang, 'Recipe of the day', 'Recette du jour', 'وصفة اليوم')}</p><h3 className="mt-1 font-serif text-[24px] font-semibold leading-tight lg:text-[30px]">{rname(daily.n, lang)}</h3><p className="mt-2 flex flex-wrap gap-x-3 text-xs text-muted"><span><Ic e="⏱" /> {daily.t} min</span><span>{'●'.repeat(daily.d)}{'○'.repeat(3 - daily.d)}</span><span>{money(recipeCost(daily.id) / daily.s, lang)} / {L(lang, 'serving', 'pers.', 'للفرد')}</span></p><span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-forest">{L(lang, 'See the recipe', 'Voir la recette', 'عرض الوصفة')} <ArrowRight size={15} className="transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden /></span></div></div>
         </button>}
         {shelves.slice(0, 1).map(([title, list]) => list.length > 0 && (
           <div key={title}>
@@ -179,7 +179,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
             <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0" data-noswipe>{list.map((r) => (
               <button key={r.id} className="w-[132px] shrink-0 snap-start text-start active:scale-[.97]" onClick={() => setRv(r)}>
                 <Dish r={r} w={300} className="h-[104px] w-full rounded-[18px]" />
-                <span className="mt-1.5 line-clamp-2 block text-sm font-semibold leading-snug">{rname(r.n, lang)}</span><span className="text-[11px] text-muted"><Ic e="⏱" /> {r.t} min</span>
+                <span className="mt-1.5 line-clamp-2 block text-sm font-semibold leading-snug">{rname(r.n, lang)}</span><span className="text-[12px] text-muted"><Ic e="⏱" /> {r.t} min</span>
               </button>))}</div>
           </div>))}
       </div>
@@ -207,7 +207,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
             <button className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-white shadow-lg active:scale-90" onClick={() => putToday(r)} aria-label={L(lang, 'Add to today', 'Ajouter à aujourd’hui', 'أضف لليوم')}><Plus size={20} aria-hidden /></button>
           </div>))}</div>
         <button className="btn btn-soft mt-3 w-full" onClick={() => setShift(shift + 3)}><Dices size={17} aria-hidden /> {L(lang, 'Other ideas', 'D’autres idées', 'أفكار أخرى')}</button>
-        <p className="mt-2 text-center text-[11px] text-muted">{L(lang, 'Adds the dish to today’s', 'Ajoute le plat au', 'يضيف الطبق إلى')} {t(slotNow, lang).toLowerCase()} · {L(lang, 'your list updates', 'la liste se met à jour', 'تتحدث اللائحة')}</p>
+        <p className="mt-2 text-center text-[12px] text-muted">{L(lang, 'Adds the dish to today’s', 'Ajoute le plat au', 'يضيف الطبق إلى')} {t(slotNow, lang).toLowerCase()} · {L(lang, 'your list updates', 'la liste se met à jour', 'تتحدث اللائحة')}</p>
       </Sheet>
       <Sheet open={prefs} onClose={() => setPrefs(false)} title={t('prefs', lang)}>
         <div className="space-y-4">

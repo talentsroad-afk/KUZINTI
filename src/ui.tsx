@@ -86,7 +86,7 @@ export function Swipe({ onDelete, label, rtl, children }: { onDelete: () => void
       onTouchStart={(e) => start(e.touches[0].clientX, e.touches[0].clientY)} onTouchMove={(e) => move(e.touches[0].clientX, e.touches[0].clientY, e)} onTouchEnd={end}
       onMouseDown={(e) => start(e.clientX, e.clientY)} onMouseMove={(e) => s.current && move(e.clientX, e.clientY)} onMouseUp={end} onMouseLeave={() => s.current && end()}>
       <button aria-label={label} onClick={() => { setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} className={`absolute inset-y-0 ${rtl ? 'start-0' : 'end-0'} flex w-full items-center justify-end bg-[#e5484d] px-3 font-semibold text-white`} style={{ justifyContent: rtl ? 'flex-start' : 'flex-end', opacity: dx ? 1 : 0 }} tabIndex={dx ? 0 : -1}>
-        <span className="flex w-[64px] flex-col items-center gap-0.5"><Trash2 size={20} strokeWidth={2} aria-hidden /><span className="text-[11px]">{label}</span></span>
+        <span className="flex w-[64px] flex-col items-center gap-0.5"><Trash2 size={20} strokeWidth={2} aria-hidden /><span className="text-[12px]">{label}</span></span>
       </button>
       <div className="relative bg-surface" style={{ transform: `translateX(${dx}px)`, transition: drag ? 'none' : 'transform .32s cubic-bezier(.2,.9,.25,1)' }}>{children}
         <button className="del-h absolute end-0 top-1/2 h-10 w-10 -translate-y-1/2 place-items-center rounded-full text-muted transition hover:bg-[#e5484d]/10 hover:text-[#e5484d] active:scale-90 active:bg-[#e5484d]/15 active:text-[#e5484d]" onClick={(e) => { e.stopPropagation(); setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} aria-label={label} title={label}>
