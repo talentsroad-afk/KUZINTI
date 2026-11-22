@@ -101,7 +101,7 @@ export function surpriseOne(key: string, plan: Plan, p: Prefs): PlanEntry {
 export function alternatives(key: string, plan: Plan, p: Prefs, f: string): Recipe[] {
   const slot = key.split('-')[1] as Meal; const cur = plan[key]; const curR = cur ? REC[cur.r] : null
   let list = RECIPES.filter((r) => r.m.includes(slot) && r.id !== cur?.r && (!p.diet.includes('vegetarian') || r.tags.includes('vegetarian')))
-  if (f === 'same') list = list.filter((r) => inCuisine(r, p.cuisine === 'mix' && curR ? cuisineOf(curR) : p.cuisine))
+  if (f !== 'all') list = list.filter((r) => inCuisine(r, p.cuisine === 'mix' && curR ? cuisineOf(curR) : p.cuisine))
   if (f === 'veg') list = list.filter((r) => r.tags.includes('vegetarian'))
   if (f === 'cheaper' && curR) list = list.filter((r) => recipeCost(r.id) / r.s < recipeCost(curR.id) / curR.s)
   if (f === 'healthier' && curR) list = list.filter((r) => kcalPerServing(r.id) < kcalPerServing(curR.id))
