@@ -1,0 +1,111 @@
+// Recipe quantities are written per `s` servings. Ingredient format: "id:qty:unit" (unit defaults to the ingredient's base unit).
+export type Meal = 'b' | 'l' | 'd'
+export interface Recipe {
+  id: string
+  e: string // illustration emoji (swap for Higgsfield / licensed photography)
+  h: number // hue for the card gradient
+  n: [string, string, string] // en, fr, ar
+  t: number // total minutes
+  d: 1 | 2 | 3 // difficulty
+  m: Meal[]
+  tags: string[]
+  s: number
+  ing: string[]
+  st: string // steps (EN for the POC), separated by |
+}
+const R = (id: string, e: string, h: number, n: Recipe['n'], t: number, d: 1 | 2 | 3, m: string, tags: string, s: number, ing: string, st: string): Recipe =>
+  ({ id, e, h, n, t, d, m: m.split('') as Meal[], tags: tags.split(' '), s, ing: ing.split(' '), st })
+
+export const RECIPES: Recipe[] = [
+  R('tajine-poulet', '🍗', 38, ['Chicken tagine with preserved lemon', 'Tajine de poulet au citron confit', 'طاجين الدجاج بالليمون المخلل'], 75, 2, 'ld', 'moroccan family protein', 4,
+    'chicken:1000 onion:2:pc plemon:1 olives:100 coriander:1:bunch garlic:3:clove turmeric:1:tsp ginger:1:tsp oil:3:tbsp salt:1:pinch',
+    'Brown the chicken with onion, garlic, spices and oil.|Add a glass of water, cover and simmer 45 min.|Add lemon and olives, reduce the sauce, finish with coriander.'),
+  R('tajine-kefta', '🍳', 18, ['Kefta tagine with eggs', 'Tajine de kefta aux œufs', 'طاجين الكفتة بالبيض'], 40, 2, 'ld', 'moroccan family protein budget', 4,
+    'beef:600 onion:1:pc tomato:600 egg:4 parsley:1:bunch cumin:1:tsp paprika:1:tsp oil:2:tbsp garlic:2:clove',
+    'Mix beef, onion, parsley and spices; shape small balls.|Cook tomatoes with garlic and oil, add the kefta.|Crack the eggs on top, cover 5 min.'),
+  R('couscous-7', '🥘', 45, ['Seven-vegetable couscous', 'Couscous aux sept légumes', 'كسكس بسبع خضار'], 120, 3, 'l', 'moroccan family', 4,
+    'couscous:400 lamb:600 carrot:300 zucchini:300 pumpkin:300 chickpeas:150 onion:2:pc tomato:300 butter:30 cinnamon:1:tsp',
+    'Simmer lamb with onion, tomato and chickpeas.|Add the vegetables in order of hardness.|Steam the couscous twice with butter and serve with the broth.'),
+  R('harira', '🍲', 12, ['Harira soup', 'Harira', 'حريرة'], 70, 2, 'd', 'moroccan budget healthy', 4,
+    'lentils:100 chickpeas:100 tomato:500 onion:1:pc beef:150 flour:2:tbsp coriander:1:bunch parsley:1:bunch ginger:1:tsp cinnamon:1:pinch',
+    'Simmer meat, lentils, chickpeas, onion and spices.|Add blended tomatoes and herbs.|Thicken with a flour slurry and cook 10 min.'),
+  R('bissara', '🥣', 85, ['Bissara', 'Bissara', 'بصارة'], 60, 1, 'bd', 'moroccan vegetarian budget healthy', 4,
+    'fava:300 garlic:3:clove oil:3:tbsp cumin:1:tsp paprika:1:tsp salt:1:tsp lemon:1',
+    'Soak the beans overnight, then boil with garlic until soft.|Blend smooth with salt.|Serve with oil, cumin, paprika and lemon.'),
+  R('zaalouk', '🍆', 280, ['Zaalouk', 'Zaalouk', 'زعلوك'], 40, 1, 'ld', 'moroccan vegetarian healthy budget', 4,
+    'eggplant:800 tomato:500 garlic:3:clove coriander:1:bunch parsley:1:bunch paprika:1:tsp cumin:1:tsp oil:3:tbsp lemon:0.5',
+    'Roast or steam the eggplant, then mash.|Cook tomatoes with garlic and spices.|Fold in the eggplant and herbs, finish with lemon.'),
+  R('taktouka', '🫑', 8, ['Taktouka', 'Taktouka', 'طكطوكة'], 35, 1, 'ld', 'moroccan vegetarian healthy', 4,
+    'pepper:600 tomato:600 garlic:3:clove oil:3:tbsp paprika:1:tsp cumin:1:tsp parsley:1:bunch',
+    'Grill and peel the peppers.|Cook tomatoes down with garlic and spices.|Add peppers and parsley, simmer until jammy.'),
+  R('sardines', '🐟', 200, ['Sardines chermoula', 'Sardines à la chermoula', 'سردين بالشرمولة'], 35, 2, 'ld', 'moroccan protein healthy budget', 4,
+    'sardine:800 garlic:4:clove coriander:1:bunch parsley:1:bunch cumin:1:tsp paprika:2:tsp lemon:1 oil:4:tbsp',
+    'Blend herbs, garlic, spices, lemon and oil into chermoula.|Marinate the sardines 20 min.|Bake or pan-fry 4 min per side.'),
+  R('msemen', '🫓', 40, ['Msemen', 'Msemen', 'مسمن'], 50, 2, 'b', 'moroccan vegetarian', 4,
+    'flour:400 semolina:100 butter:60 oil:4:tbsp salt:1:tsp',
+    'Knead flour, semolina, salt and water into a soft dough.|Rest balls in oil, stretch thin, fold into squares.|Cook on a hot pan with butter until golden.'),
+  R('baghrir', '🥞', 48, ['Baghrir', 'Baghrir', 'بغرير'], 30, 2, 'b', 'moroccan vegetarian', 4,
+    'semolina:250 flour:50 sugar:2:tbsp honey:60 salt:1:pinch',
+    'Blend semolina, flour, sugar, salt and warm water; rest 20 min.|Pour in a hot non-stick pan, cook one side only until bubbles form.|Serve with honey and butter.'),
+  R('shakshuka', '🍅', 6, ['Shakshuka', 'Chakchouka', 'شكشوكة'], 30, 1, 'bld', 'vegetarian quick budget', 4,
+    'egg:6 tomato:700 pepper:200 onion:1:pc garlic:2:clove cumin:1:tsp paprika:1:tsp oil:2:tbsp parsley:1:bunch',
+    'Soften onion, pepper and garlic in oil.|Add tomatoes and spices, simmer 15 min.|Crack in the eggs and cover until set.'),
+  R('omelette', '🧀', 50, ['Tomato cheese omelette', 'Omelette tomate fromage', 'عجة بالطماطم والجبن'], 12, 1, 'bl', 'vegetarian quick', 2,
+    'egg:4 cheese:80 tomato:200 butter:10 parsley:0.5:bunch',
+    'Beat the eggs with salt.|Melt butter, add diced tomato for 2 min.|Pour eggs, add cheese and fold.'),
+  R('soupe-lentilles', '🥕', 30, ['Lentil soup', 'Soupe de lentilles', 'شوربة العدس'], 35, 1, 'd', 'vegetarian healthy budget', 4,
+    'lentils:250 carrot:200 onion:1:pc cumin:1:tsp oil:2:tbsp lemon:1',
+    'Sauté onion and carrot in oil.|Add lentils, cumin and 1.2 L water; simmer 25 min.|Blend partly, finish with lemon.'),
+  R('salade-thon', '🥗', 140, ['Moroccan tuna salad', 'Salade marocaine au thon', 'سلطة التونة المغربية'], 15, 1, 'l', 'quick healthy protein', 4,
+    'tuna:2 tomato:300 pepper:150 egg:2 olives:60 oil:2:tbsp lemon:1',
+    'Boil the eggs 9 min.|Dice tomato and pepper, add tuna and olives.|Dress with oil and lemon, top with eggs.'),
+  R('pates-tomate', '🍝', 10, ['Tomato pasta', 'Pâtes à la tomate', 'معكرونة بالطماطم'], 20, 1, 'ld', 'vegetarian quick budget family', 4,
+    'pasta:400 tomato:600 garlic:2:clove oil:3:tbsp cheese:50',
+    'Simmer tomatoes with garlic and oil 12 min.|Boil the pasta.|Toss together and top with cheese.'),
+  R('pates-thon', '🍜', 195, ['Tuna pasta', 'Pâtes au thon', 'معكرونة بالتونة'], 20, 1, 'ld', 'quick budget protein', 4,
+    'pasta:400 tuna:2 tomato:400 onion:1:pc garlic:1:clove oil:2:tbsp',
+    'Soften onion and garlic.|Add tomato and tuna, simmer 8 min.|Toss with the cooked pasta.'),
+  R('riz-poulet', '🍚', 44, ['Chicken rice pilaf', 'Riz pilaf au poulet', 'أرز بالدجاج'], 50, 2, 'ld', 'family protein', 4,
+    'chicken:600 rice:300 onion:1:pc carrot:150 turmeric:1:tsp oil:2:tbsp',
+    'Brown the chicken with onion and turmeric.|Add carrot and rice, cover with twice the volume of water.|Cook covered 18 min, rest 5 min.'),
+  R('tajine-agneau', '🍯', 36, ['Lamb tagine with almonds and honey', "Tajine d'agneau, amandes et miel", 'طاجين الغنمي باللوز والعسل'], 110, 3, 'd', 'moroccan family protein', 4,
+    'lamb:800 onion:2:pc honey:2:tbsp almonds:60 cinnamon:1:tsp ginger:1:tsp oil:2:tbsp',
+    'Brown lamb and onions with spices.|Simmer covered for 90 min with a little water.|Glaze with honey and top with toasted almonds.'),
+  R('tajine-legumes', '🥦', 110, ['Vegetable tagine', 'Tajine de légumes', 'طاجين الخضار'], 60, 1, 'ld', 'moroccan vegetarian healthy', 4,
+    'potato:400 carrot:300 zucchini:300 pepper:150 tomato:300 onion:1:pc olives:80 coriander:1:bunch turmeric:1:tsp oil:3:tbsp',
+    'Layer onion, tomato and the vegetables in the pot.|Add oil, turmeric and half a glass of water.|Cover and simmer 40 min, top with olives and coriander.'),
+  R('tortilla', '🥔', 52, ['Potato omelette', 'Tortilla de pommes de terre', 'عجة البطاطس'], 35, 1, 'ld', 'vegetarian budget quick', 4,
+    'potato:500 egg:6 onion:1:pc oil:4:tbsp',
+    'Fry sliced potato and onion in oil until tender.|Mix with beaten eggs.|Cook in a pan, flip once, serve warm.'),
+  R('porridge', '🥣', 60, ['Banana overnight oats', 'Porridge banane (overnight)', 'شوفان بالموز'], 5, 1, 'b', 'vegetarian quick healthy', 2,
+    'oats:80 milk:200 banana:1 honey:1:tbsp',
+    'Mix oats and milk, refrigerate overnight.|Top with sliced banana and honey.'),
+  R('yaourt-dattes', '🍯', 34, ['Yogurt, dates and almonds', 'Yaourt, dattes et amandes', 'زبادي بالتمر واللوز'], 5, 1, 'b', 'vegetarian quick healthy', 2,
+    'yogurt:2 dates:60 almonds:30 honey:1:tbsp',
+    'Chop dates and almonds.|Spoon over the yogurt and drizzle with honey.'),
+  R('brochettes', '🍢', 22, ['Chicken skewers', 'Brochettes de poulet', 'شواء الدجاج'], 40, 1, 'ld', 'family protein', 4,
+    'chicken:700 onion:1:pc paprika:1:tsp cumin:1:tsp lemon:1 oil:2:tbsp bread:4',
+    'Cube the chicken and marinate with spices, lemon and oil for 30 min.|Thread on skewers.|Grill 12 min, serve with khobz.'),
+  R('sandwich-kefta', '🥙', 16, ['Kefta sandwich', 'Sandwich kefta', 'ساندويتش الكفتة'], 25, 1, 'l', 'quick protein budget', 4,
+    'beef:500 onion:1:pc parsley:1:bunch cumin:1:tsp paprika:1:tsp bread:4 tomato:200',
+    'Mix the beef with onion, parsley and spices.|Shape and pan-grill 8 min.|Stuff into khobz with tomato.'),
+  R('couscous-grille', '🍽️', 95, ['Grilled vegetable couscous', 'Couscous aux légumes grillés', 'كسكس بالخضار المشوية'], 35, 1, 'ld', 'vegetarian healthy', 4,
+    'couscous:300 zucchini:300 eggplant:300 pepper:200 oil:3:tbsp mint:1:bunch lemon:1',
+    'Grill the vegetables with oil.|Steam the couscous.|Combine with mint and lemon.'),
+  R('tajine-pois-chiches', '🫘', 42, ['Chickpea tagine', 'Tajine de pois chiches', 'طاجين الحمص'], 50, 1, 'ld', 'moroccan vegetarian budget healthy', 4,
+    'chickpeas:250 tomato:400 onion:1:pc carrot:200 cumin:1:tsp ginger:1:tsp turmeric:1:tsp coriander:1:bunch oil:2:tbsp',
+    'Soak chickpeas overnight and boil 40 min.|Cook onion, carrot, tomato and spices.|Add chickpeas, simmer 15 min, finish with coriander.'),
+  R('veloute-potiron', '🎃', 28, ['Pumpkin soup', 'Velouté de potiron', 'حساء القرع'], 35, 1, 'd', 'vegetarian healthy budget', 4,
+    'pumpkin:800 onion:1:pc potato:200 milk:200 cumin:1:tsp oil:1:tbsp',
+    'Sweat onion in oil, add pumpkin, potato and water.|Simmer 20 min and blend.|Stir in milk and cumin.'),
+  R('poulet-citron', '🍋', 55, ['Lemon chicken and potatoes', 'Poulet citron et pommes de terre', 'دجاج بالليمون والبطاطس'], 65, 1, 'd', 'family protein', 4,
+    'chicken:900 potato:700 lemon:2 garlic:4:clove oil:3:tbsp paprika:1:tsp',
+    'Coat chicken and potato wedges with oil, lemon, garlic and paprika.|Roast at 200°C for 50 min, turning once.'),
+  R('mechouia', '🌶️', 14, ['Mechouia salad', 'Salade mechouia', 'سلطة مشوية'], 30, 1, 'l', 'moroccan vegetarian healthy', 4,
+    'pepper:400 tomato:400 garlic:2:clove oil:2:tbsp lemon:0.5',
+    'Grill peppers and tomatoes, peel them.|Chop and mix with garlic, oil and lemon.'),
+  R('salade-lentilles', '🥬', 100, ['Lentil salad', 'Salade de lentilles', 'سلطة العدس'], 30, 1, 'l', 'vegetarian healthy budget', 4,
+    'lentils:250 tomato:200 onion:1:pc parsley:1:bunch oil:3:tbsp lemon:1',
+    'Boil the lentils 20 min and cool.|Mix with diced tomato, onion and parsley.|Dress with oil and lemon.'),
+]
+export const REC: Record<string, Recipe> = Object.fromEntries(RECIPES.map((r) => [r.id, r]))
