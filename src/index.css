@@ -322,3 +322,12 @@ button:hover > .ico3d, a:hover > .ico3d { transform: scale(1.15) rotate(-6deg); 
 .onoma { animation: onoma .45s ease-out both; }
 @keyframes onoma { from { transform: translateY(6px) scale(.6); opacity: 0; } 40% { opacity: 1; transform: scale(1.15); } to { transform: translateY(-8px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .scene-svg * { animation: none !important; } }
+.fountain { opacity: 0; } .mood-cry .fountain { opacity: 1; }
+.jet { stroke-dasharray: 8 6; animation: jet .4s linear infinite; }
+@keyframes jet { to { stroke-dashoffset: -28; } }
+.mood-surprise .brows { transform: translateY(-4px); transition: transform .2s; } .mood-surprise .mouth-happy { opacity: 0; } .mood-surprise .mouth-o { opacity: 1; }
+.mood-surprise .chef-head { transform-box: view-box; transform-origin: 160px 118px; transform: translateY(-3px) rotate(4deg); transition: transform .25s; }
+.flop { transform-origin: 50% 100%; animation: flop .7s cubic-bezier(.3,1.5,.5,1) infinite; }
+@keyframes flop { 0%,100% { transform: none; } 30% { transform: translateY(-16px) rotate(-25deg); } 60% { transform: translateY(-6px) rotate(18deg); } }
+.lid { animation: lidPop 2.4s ease-in-out infinite !important; }
+@keyframes lidPop { 0%,55%,100% { transform: none; } 62% { transform: translateY(-14px) rotate(-12deg); } 70% { transform: translateY(-4px) rotate(8deg); } 76% { transform: translateY(-8px) rotate(-4deg); } 84% { transform: none; } }

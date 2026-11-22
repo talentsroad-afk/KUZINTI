@@ -44,7 +44,7 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
   // Every ingredient with its real quantity for the chosen servings (grams, ml, pieces or kitchen units).
   const ings = r.ing.map((s) => { const p = parseIng(s); const ing = ING[p.id]; if (!ing || ing.aisle === 'spices') return null; const q = (p.qty * sv) / r.s
     return { e: iconOf(p.id, ing.aisle), c: ing.aisle === 'produce' || ing.aisle === 'meat', n: ing.n[li(lang)], q: p.unit && p.unit !== ing.base && UNIT[p.unit] ? `${r1(q)} ${UNIT[p.unit][li(lang)]}` : fmtQty(toBase(ing, q, p.unit), ing.base) } }).filter(Boolean) as { e: string; c: boolean; n: string; q: string }[]
-  const sceneIngs = r.ing.map((x) => { const p = parseIng(x); const ing = ING[p.id]; if (!ing) return null; return { e: iconOf(p.id, ing.aisle), n: ing.n[li(lang)], c: ing.aisle === 'produce' || ing.aisle === 'meat', l: ing.base === 'ml', s: ing.aisle === 'spices' } }).filter(Boolean) as { e: string; n: string; c: boolean; l: boolean; s: boolean }[]
+  const sceneIngs = r.ing.map((x) => { const p = parseIng(x); const ing = ING[p.id]; if (!ing) return null; return { e: iconOf(p.id, ing.aisle), id: p.id, n: ing.n[li(lang)], c: ing.aisle === 'produce' || ing.aisle === 'meat', l: ing.base === 'ml', s: ing.aisle === 'spices' } }).filter(Boolean) as { e: string; id: string; n: string; c: boolean; l: boolean; s: boolean }[]
   const N = steps.length + 2; const [i, setI] = useState(0); const [dir, setDir] = useState(1)
   const go = (k: number) => { setDir(k > i ? 1 : -1); setI(k) }
   const dur = i === 0 ? 2600 + ings.length * 260 : 8000

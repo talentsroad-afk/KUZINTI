@@ -17,40 +17,67 @@ export const ACT_LABEL: Record<Act, [string, string, string]> = {
   oven: ['Bake', 'Au four', 'في الفرن'], serve: ['Serve', 'Servir', 'قدّم'], rest: ['Rest', 'Laisser reposer', 'اترك'], add: ['Add', 'Ajouter', 'أضف'], prep: ['Prepare', 'Préparer', 'حضّر'],
 }
 
-export type SceneIng = { e: string; c?: boolean; l?: boolean; s?: boolean; n?: string }
+export type SceneIng = { e: string; id?: string; c?: boolean; l?: boolean; s?: boolean; n?: string }
 const LIQ: [RegExp, string, string][] = [[/huile|oil|زيت/i, '🫒', '#e3b21c'], [/\beau\b|water|ماء/i, '💧', '#79c6ff'], [/lait|milk|حليب/i, '🥛', '#fffaf0'], [/bouillon|stock|broth/i, '🍵', '#c9853a'], [/crème|cream/i, '🥛', '#fff3d6'], [/vinaigre|vinegar/i, '🍷', '#a33'], [/sauce soja|soy/i, '🍶', '#3b2312'], [/citron|lemon|ليمون/i, '🍋', '#f7e35a']]
 const SPICE = /épice|epice|sel\b|poivre|cumin|paprika|curcuma|gingembre|cannelle|ras el|herbes|persil|coriandre|spice|salt|pepper|herb|توابل|ملح/i
 const DOT = ['#d9472b', '#e0a526', '#7a4a21', '#2f7d32', '#f5f5f5']
 
-/** Drawn ingredient: shape and colours guessed from the ingredient's emoji (no emoji in the scene itself). */
-type Shape = { k: 'round' | 'long' | 'meat' | 'fish' | 'leaf' | 'bulb' | 'grain' | 'egg'; c: string; d: string }
-const SH: [RegExp, Shape][] = [
-  [/🍅|🍎|🍒/u, { k: 'round', c: '#e5483b', d: '#b72f25' }], [/🧅/u, { k: 'bulb', c: '#c58ac9', d: '#8d4f93' }], [/🧄/u, { k: 'bulb', c: '#f3efe4', d: '#cfc6b0' }],
-  [/🥕/u, { k: 'long', c: '#f28a24', d: '#c8650d' }], [/🍆/u, { k: 'long', c: '#6b3f9c', d: '#47266e' }], [/🥒|🥬|🫛/u, { k: 'long', c: '#5fa548', d: '#3c7a2c' }],
-  [/🫑|🌶/u, { k: 'round', c: '#3fa34d', d: '#26752f' }], [/🥔|🍠/u, { k: 'round', c: '#c9a066', d: '#9c773f' }], [/🍋|🍊|🍑/u, { k: 'round', c: '#f4cf3a', d: '#c9a313' }],
-  [/🥩|🍖|🥓/u, { k: 'meat', c: '#d4676d', d: '#a53e44' }], [/🍗|🐔/u, { k: 'meat', c: '#f0b27a', d: '#c9814a' }], [/🐟|🐠|🦐|🦑|🐙/u, { k: 'fish', c: '#9fbad0', d: '#6c8ba6' }],
-  [/🌿|🥗|🍃|🌱/u, { k: 'leaf', c: '#4f9a46', d: '#2f6b29' }], [/🥚/u, { k: 'egg', c: '#fff7e6', d: '#f2c14e' }], [/🍚|🍝|🌾|🫘|🥜|🌰|🧀|🧈/u, { k: 'grain', c: '#f1d79a', d: '#c9a85f' }],
-]
-const shapeOf = (e: string): Shape => SH.find(([r]) => r.test(e))?.[1] ?? { k: 'round', c: '#8fc46a', d: '#5e9440' }
-function Food({ s, x, y, sc = 1 }: { s: Shape; x: number; y: number; sc?: number }) {
-  const t = `translate(${x} ${y}) scale(${sc})`
-  if (s.k === 'long') return <g transform={t}><rect x={-22} y={-7} width={44} height={14} rx={7} fill={s.c} /><rect x={-22} y={-7} width={44} height={5} rx={3} fill="#fff" opacity=".25" /><path d="M22 -2 l8 -6 M22 0 l9 0 M22 2 l8 6" stroke="#4f9a46" strokeWidth="3" strokeLinecap="round" /></g>
-  if (s.k === 'meat') return <g transform={t}><path d="M-20 4 C-24 -12 4 -18 18 -8 C26 -2 20 12 4 12 C-8 12 -18 12 -20 4Z" fill={s.c} /><path d="M-12 -2 C-4 -8 8 -6 12 0" stroke="#fff" strokeWidth="3" fill="none" opacity=".7" strokeLinecap="round" /></g>
-  if (s.k === 'fish') return <g transform={t}><ellipse rx={20} ry={10} fill={s.c} /><path d="M18 0 l12 -9 v18z" fill={s.d} /><circle cx={-11} cy={-2} r={2.2} fill="#1d2a33" /></g>
-  if (s.k === 'leaf') return <g transform={t}><path d="M-14 8 C-16 -10 6 -16 16 -12 C14 0 4 12 -14 8Z" fill={s.c} /><path d="M-12 6 L12 -10" stroke={s.d} strokeWidth="1.6" /></g>
-  if (s.k === 'bulb') return <g transform={t}><path d="M0 -18 C6 -10 16 -4 15 6 C14 14 7 16 0 16 C-7 16 -14 14 -15 6 C-16 -4 -6 -10 0 -18Z" fill={s.c} /><path d="M0 -18 v-6" stroke="#6f8f3a" strokeWidth="3" strokeLinecap="round" /><path d="M-6 -6 C-8 2 -7 10 -4 14 M6 -6 C8 2 7 10 4 14" stroke={s.d} strokeWidth="1.4" fill="none" opacity=".6" /></g>
-  if (s.k === 'grain') return <g transform={t}>{[[-8, 2], [0, -4], [8, 2], [-3, 6], [5, 7], [-10, -4], [10, -5]].map(([a, b], i) => <ellipse key={i} cx={a} cy={b} rx={3.5} ry={2.2} fill={i % 2 ? s.c : s.d} />)}</g>
-  if (s.k === 'egg') return <g transform={t}><ellipse rx={12} ry={15} fill={s.c} stroke="#e8dcc0" /></g>
-  return <g transform={t}><circle r={16} fill={s.c} /><circle cx={-5} cy={-6} r={5} fill="#fff" opacity=".35" /><path d="M-3 -16 q3 -6 8 -4" stroke="#4f9a46" strokeWidth="3" fill="none" strokeLinecap="round" /></g>
+/** Each real ingredient drawn by hand (SVG), whole and cut, so you recognise what goes in the pot. */
+const KIND: Record<string, string> = { chicken: 'chicken', beef: 'steak', lamb: 'steak', sardine: 'fish', tuna: 'fish', fish: 'fish', egg: 'egg', onion: 'onion', tomato: 'tomato', potato: 'potato', carrot: 'carrot', zucchini: 'zucchini', eggplant: 'eggplant', pumpkin: 'pumpkin', pepper: 'pepper', garlic: 'garlic', lemon: 'lemon', plemon: 'lemon', olives: 'olives', coriander: 'herb', parsley: 'herb', mint: 'herb', bread: 'bread', cheese: 'cheese', rice: 'grain', couscous: 'grain', semolina: 'grain', pasta: 'pasta', vermicelli: 'pasta', lentils: 'beans', chickpeas: 'beans', fava: 'beans', whitebeans: 'beans', almonds: 'beans', apple: 'apple', orange: 'orange', banana: 'banana', dates: 'beans', raisins: 'beans', prunes: 'beans', butter: 'cheese' }
+const GRAIN: Record<string, string> = { rice: '#f7f3e8', couscous: '#f0d27a', semolina: '#ecd08a', lentils: '#c8692f', chickpeas: '#e3c48a', fava: '#9bbf5a', whitebeans: '#f2ede0', almonds: '#c08a55', dates: '#7a3e1d', raisins: '#5a2a3a', prunes: '#3d1f2b' }
+export const kindOf = (id?: string, e?: string) => (id && KIND[id]) || (e && /🍅/u.test(e) ? 'tomato' : e && /🥕/u.test(e) ? 'carrot' : e && /🧅/u.test(e) ? 'onion' : e && /🐟|🐠/u.test(e) ? 'fish' : e && /🥩|🍖/u.test(e) ? 'steak' : e && /🍗/u.test(e) ? 'chicken' : 'veg')
+function Food({ id, k, x, y }: { id?: string; k: string; x: number; y: number }) {
+  const T = `translate(${x} ${y})`
+  switch (k) {
+    case 'tomato': return <g transform={T}><circle r="16" fill="url(#gTom)" /><ellipse cx="-6" cy="-6" rx="5" ry="3.5" fill="#fff" opacity=".45" /><path d="M0 -15 l3 -5 l2 5 l5 -2 l-3 4 l5 2 l-6 1 l-2 4 l-2 -4 l-6 -1 l5 -2 l-3 -4 l5 2z" fill="#3e8e2f" /></g>
+    case 'onion': return <g transform={T}><path d="M0 -20 C8 -10 18 -4 17 7 C16 16 8 18 0 18 C-8 18 -16 16 -17 7 C-18 -4 -8 -10 0 -20Z" fill="url(#gOnion)" /><path d="M-7 -8 C-10 2 -9 12 -5 17 M7 -8 C10 2 9 12 5 17 M0 -16 V18" stroke="#8b5a1f" strokeWidth="1.1" fill="none" opacity=".55" /><path d="M0 -20 l-2 -7 M0 -20 l3 -6" stroke="#8a9a3a" strokeWidth="2.4" strokeLinecap="round" /><path d="M-4 18 l-2 4 M0 18 v5 M4 18 l2 4" stroke="#d9c8a0" strokeWidth="1.2" /></g>
+    case 'garlic': return <g transform={T}><path d="M0 -16 C10 -8 16 0 14 8 C12 15 6 16 0 16 C-6 16 -12 15 -14 8 C-16 0 -10 -8 0 -16Z" fill="#f6f1e6" stroke="#d8ccb3" /><path d="M-5 -8 C-8 2 -6 12 -3 15 M5 -8 C8 2 6 12 3 15" stroke="#cbb9d6" strokeWidth="1.4" fill="none" /><path d="M0 -16 v-6" stroke="#e6dcc2" strokeWidth="3" strokeLinecap="round" /></g>
+    case 'carrot': return <g transform={`${T} rotate(-12)`}><path d="M-26 -6 C-10 -9 12 -6 20 0 C12 6 -10 9 -26 6 Z" fill="url(#gCar)" /><path d="M-18 -4 l4 2 M-8 -5 l3 2 M2 -4 l3 2 M-14 4 l4 -2 M-3 5 l3 -2" stroke="#c45d0e" strokeWidth="1" /><path d="M-26 0 l-10 -9 M-26 0 l-12 -2 M-26 0 l-9 8" stroke="#3e8e2f" strokeWidth="3" strokeLinecap="round" /></g>
+    case 'potato': return <g transform={T}><path d="M-18 2 C-19 -10 -4 -14 8 -12 C18 -10 20 0 16 8 C10 15 -14 14 -18 2Z" fill="url(#gPot)" /><circle cx="-8" cy="-3" r="1.3" fill="#7a5426" /><circle cx="5" cy="4" r="1.3" fill="#7a5426" /><circle cx="10" cy="-5" r="1.1" fill="#7a5426" /></g>
+    case 'zucchini': return <g transform={`${T} rotate(-8)`}><rect x="-26" y="-7" width="50" height="14" rx="7" fill="#2f6b2a" /><path d="M-22 -3 H20 M-22 2 H20" stroke="#6fa75a" strokeWidth="1.6" opacity=".8" /><rect x="22" y="-3" width="7" height="6" rx="2" fill="#8a9a3a" /></g>
+    case 'eggplant': return <g transform={`${T} rotate(-15)`}><path d="M-24 2 C-26 -10 -6 -10 8 -7 C18 -5 20 6 10 9 C-4 13 -22 12 -24 2Z" fill="url(#gEgg)" /><path d="M8 -8 C14 -12 20 -8 22 -4 C18 -2 12 -2 8 -8Z" fill="#4f8a35" /><path d="M20 -6 l7 -3" stroke="#4f8a35" strokeWidth="3" strokeLinecap="round" /><ellipse cx="-10" cy="-3" rx="6" ry="2" fill="#fff" opacity=".25" /></g>
+    case 'pepper': return <g transform={T}><path d="M-14 -8 C-18 4 -12 16 -4 15 C0 18 4 18 6 15 C14 16 18 4 14 -8 C8 -13 -8 -13 -14 -8Z" fill="#3fa34d" /><path d="M-2 -12 C-2 -18 4 -20 6 -18" stroke="#2c6b2a" strokeWidth="3" fill="none" strokeLinecap="round" /><path d="M-4 -6 V12 M5 -6 V12" stroke="#2f8a3b" strokeWidth="1.2" /><ellipse cx="-8" cy="-2" rx="3" ry="6" fill="#fff" opacity=".3" /></g>
+    case 'pumpkin': return <g transform={T}><ellipse rx="19" ry="14" fill="#f08a24" /><path d="M-7 -13 C-11 0 -11 6 -7 13 M7 -13 C11 0 11 6 7 13 M0 -14 V14" stroke="#c8650d" strokeWidth="1.4" fill="none" /><rect x="-2" y="-19" width="4" height="7" rx="1.5" fill="#6b8a35" /></g>
+    case 'lemon': return <g transform={T}><path d="M-19 0 C-15 -12 15 -12 19 0 C15 12 -15 12 -19 0Z" fill="#f4d23c" /><circle cx="-19" cy="0" r="2" fill="#e0b81a" /><circle cx="19" cy="0" r="2" fill="#e0b81a" /><ellipse cx="-5" cy="-5" rx="6" ry="2.4" fill="#fff" opacity=".45" /></g>
+    case 'olives': return <g transform={T}>{[[-9, 2], [0, -4], [9, 3], [-2, 7]].map(([a, b], i) => <ellipse key={i} cx={a} cy={b} rx="6" ry="4.5" fill={i % 2 ? '#2b2b1f' : '#6c7a2b'} />)}</g>
+    case 'herb': return <g transform={T}>{[-10, -3, 4, 11].map((dx, i) => <g key={i}><path d={`M${dx / 2} 16 L${dx} -6`} stroke="#3e7a2e" strokeWidth="1.6" /><ellipse cx={dx} cy={-9 + (i % 2) * 4} rx="6" ry="4.5" fill={i % 2 ? '#4f9a46' : '#5fb04f'} /></g>)}<rect x="-4" y="9" width="8" height="4" rx="1" fill="#c9783a" /></g>
+    case 'chicken': return <g transform={`${T} rotate(-20)`}><path d="M-6 -12 C10 -16 20 -4 14 6 C9 14 -4 14 -10 6 C-14 0 -14 -9 -6 -12Z" fill="url(#gChk)" /><rect x="-22" y="3" width="16" height="5" rx="2.5" fill="#f5efe3" transform="rotate(30 -14 5)" /><circle cx="-23" cy="0" r="3.5" fill="#f5efe3" /><circle cx="-21" cy="-4" r="3.2" fill="#f5efe3" /></g>
+    case 'steak': return <g transform={T}><path d="M-20 4 C-24 -12 4 -18 18 -8 C26 -2 20 12 4 12 C-8 12 -18 12 -20 4Z" fill="#f3e3d6" /><path d="M-17 3 C-20 -9 3 -14 15 -6 C21 -1 17 9 4 9 C-6 9 -15 9 -17 3Z" fill="url(#gMeat)" /><path d="M-10 -1 C-4 -6 6 -5 10 0 M-6 4 C-2 2 4 2 7 5" stroke="#f3e3d6" strokeWidth="1.6" fill="none" opacity=".8" /></g>
+    case 'fish': return <g transform={T}><path d="M-22 0 C-14 -12 10 -12 18 0 C10 12 -14 12 -22 0Z" fill="url(#gFish)" /><path d="M16 0 L28 -9 L26 0 L28 9Z" fill="#6c8ba6" /><path d="M-4 -9 L2 -14 L6 -8Z" fill="#6c8ba6" /><circle cx="-14" cy="-2" r="2.6" fill="#fff" /><circle cx="-14" cy="-2" r="1.4" fill="#1d2a33" /><path d="M-8 -5 C-6 0 -6 3 -8 6" stroke="#6c8ba6" strokeWidth="1.2" fill="none" /></g>
+    case 'egg': return <g transform={T}><ellipse rx="12" ry="15" fill="#fbf4e6" stroke="#e8dcc0" /><ellipse cx="-4" cy="-6" rx="3" ry="5" fill="#fff" /></g>
+    case 'bread': return <g transform={T}><ellipse rx="22" ry="12" fill="#d79a4e" /><ellipse cx="0" cy="-3" rx="19" ry="8" fill="#e8b46a" /><path d="M-10 -6 l5 6 M-1 -7 l5 6 M8 -6 l5 6" stroke="#b8732f" strokeWidth="2" strokeLinecap="round" /></g>
+    case 'cheese': return <g transform={T}><path d="M-18 10 L18 10 L18 -4 L-18 -10Z" fill="#f7cd4e" /><path d="M-18 -10 L18 -4 L10 -12Z" fill="#fbe08a" /><circle cx="-6" cy="2" r="2.6" fill="#e0a92a" /><circle cx="8" cy="5" r="2" fill="#e0a92a" /></g>
+    case 'grain': case 'beans': case 'pasta': { const c = GRAIN[id ?? ''] ?? (k === 'pasta' ? '#f3d58b' : '#e9d9a8'); return <g transform={T}><path d="M-20 12 C-18 -2 -8 -10 0 -10 C8 -10 18 -2 20 12Z" fill={c} />{Array.from({ length: 12 }, (_, i) => k === 'pasta' ? <path key={i} d={`M${-14 + (i % 6) * 5} ${2 + Math.floor(i / 6) * 5} q2 -3 4 0`} stroke="#d8b25c" strokeWidth="1.4" fill="none" /> : <ellipse key={i} cx={-13 + (i % 6) * 5.2} cy={1 + Math.floor(i / 6) * 5} rx={k === 'beans' ? 2.6 : 1.8} ry={k === 'beans' ? 2.2 : 1.2} fill="#000" opacity=".13" />)}</g> }
+    case 'apple': return <g transform={T}><circle r="15" fill="#d83a35" /><path d="M0 -14 v-6" stroke="#6b4428" strokeWidth="2.4" /><path d="M1 -18 c6 -4 10 -2 10 2 c-5 1 -8 0 -10 -2z" fill="#4f9a46" /><ellipse cx="-5" cy="-5" rx="4" ry="3" fill="#fff" opacity=".4" /></g>
+    case 'orange': return <g transform={T}><circle r="15" fill="#f59a22" /><circle cx="-5" cy="-5" r="4" fill="#fff" opacity=".35" /><circle cx="0" cy="-14" r="2" fill="#6b8a35" /></g>
+    case 'banana': return <g transform={T}><path d="M-22 -6 C-12 10 12 10 22 -6 C14 4 -14 4 -22 -6Z" fill="#f4d23c" stroke="#c9a313" /></g>
+    default: return <g transform={T}><circle r="15" fill="#8fc46a" /><circle cx="-5" cy="-5" r="4" fill="#fff" opacity=".35" /></g>
+  }
 }
-function Slices({ s, x, y }: { s: Shape; x: number; y: number }) {
-  return <g>{[-14, 0, 14].map((dx, i) => <g key={i} className="slice-pop" style={{ animationDelay: `${i * 50}ms` }}><g transform={`translate(${x + dx} ${y + (i % 2) * 3}) rotate(${(i - 1) * 18})`}>
-    {s.k === 'long' || s.k === 'round' || s.k === 'bulb' ? <><ellipse rx={7.5} ry={6.5} fill={s.c} /><ellipse rx={4.5} ry={3.8} fill="#fff" opacity=".35" /></> : <rect x={-6} y={-5} width={12} height={10} rx={3} fill={s.c} />}
-  </g></g>)}</g>
+function Slices({ k, x, y }: { k: string; x: number; y: number }) {
+  const piece = (i: number) => {
+    switch (k) {
+      case 'tomato': return <><circle r="7" fill="#e5483b" /><circle r="5" fill="#f37a62" />{[0, 1, 2, 3].map((j) => <circle key={j} cx={Math.cos(j * 1.57) * 2.6} cy={Math.sin(j * 1.57) * 2.6} r=".9" fill="#ffe3a8" />)}</>
+      case 'onion': return <>{[7, 5, 3].map((r, j) => <circle key={j} r={r} fill="none" stroke={j % 2 ? '#e9d3ef' : '#c58ac9'} strokeWidth="1.6" />)}</>
+      case 'carrot': return <><circle r="6.5" fill="#f28a24" /><circle r="3" fill="#f8b260" /></>
+      case 'zucchini': return <><circle r="6.5" fill="#2f6b2a" /><circle r="5.3" fill="#e4f0c8" /><circle r="1.8" fill="#cfe0a0" /></>
+      case 'eggplant': return <><circle r="6.5" fill="#4b2b6e" /><circle r="5.4" fill="#f3ead2" /></>
+      case 'lemon': return <><circle r="7" fill="#f4d23c" /><circle r="5.6" fill="#fbe98a" />{[0, 1, 2, 3, 4, 5].map((j) => <path key={j} d={`M0 0 L${Math.cos(j) * 5.4} ${Math.sin(j) * 5.4}`} stroke="#f4d23c" strokeWidth=".8" />)}</>
+      case 'garlic': return <ellipse rx="4" ry="3" fill="#f6f1e6" stroke="#d8ccb3" />
+      case 'herb': return <>{[0, 1, 2].map((j) => <ellipse key={j} cx={(j - 1) * 4} cy={(j % 2) * 3} rx="2.4" ry="1.6" fill="#4f9a46" />)}</>
+      case 'fish': return <rect x="-6" y="-5" width="12" height="10" rx="3" fill="#f4d8cf" stroke="#d9b3a6" />
+      case 'chicken': return <rect x="-6" y="-5" width="12" height="10" rx="3" fill="#f6c9b0" />
+      case 'steak': return <rect x="-6" y="-5" width="12" height="10" rx="2.5" fill="#c64a52" />
+      case 'potato': case 'pumpkin': return <rect x="-5.5" y="-5" width="11" height="10" rx="2" fill={k === 'potato' ? '#f3dea0' : '#f6a54a'} />
+      case 'pepper': return <rect x="-8" y="-2" width="16" height="4" rx="2" fill="#3fa34d" transform={`rotate(${i * 30})`} />
+      default: return <circle r="6" fill="#8fc46a" />
+    }
+  }
+  return <g>{[-14, 0, 14].map((dx, i) => <g key={i} className="slice-pop" style={{ animationDelay: `${i * 50}ms` }}><g transform={`translate(${x + dx} ${y + (i % 2) * 3}) rotate(${(i - 1) * 18})`}>{piece(i)}</g></g>)}</g>
 }
 
 /** The chef, drawn in SVG: he chops, cries over onions, pours, stirs, sweats at the pan and blows a kiss at the end. */
-function Chef({ mood, arm, hand }: { mood: 'happy' | 'cry' | 'sweat' | 'proud' | 'focus'; arm: 'chop' | 'idle'; hand: 'pour' | 'stir' | 'shake' | 'kiss' | 'idle' }) {
+function Chef({ mood, arm, hand }: { mood: 'happy' | 'cry' | 'sweat' | 'proud' | 'focus' | 'surprise'; arm: 'chop' | 'idle'; hand: 'pour' | 'stir' | 'shake' | 'kiss' | 'idle' }) {
   return (
     <g className={`chef mood-${mood}`}>
       <g className="chef-sway">
@@ -76,6 +103,7 @@ function Chef({ mood, arm, hand }: { mood: 'happy' | 'cry' | 'sweat' | 'proud' |
           <ellipse className="mouth-o" cx="160" cy="112" rx="4" ry="5" fill="#7a2e2a" />
           {/* tears & sweat */}
           <g className="tears">{[0, 1, 2].map((k) => <path key={k} className="tear" style={{ animationDelay: `${k * 0.28}s` }} d="M148 94 q-6 10 0 14 q6 -4 0 -14Z" fill="#6fc3ff" stroke="#fff" strokeWidth=".8" />)}{[0, 1, 2].map((k) => <path key={'r' + k} className="tear" style={{ animationDelay: `${k * 0.28 + 0.14}s` }} d="M172 94 q-6 10 0 14 q6 -4 0 -14Z" fill="#6fc3ff" stroke="#fff" strokeWidth=".8" />)}</g>
+          <g className="fountain"><path className="jet" d="M146 92 C132 84 120 96 112 116" stroke="#8fd3ff" strokeWidth="4" fill="none" strokeLinecap="round" /><path className="jet" style={{ animationDelay: '.2s' }} d="M174 92 C188 84 200 96 208 116" stroke="#8fd3ff" strokeWidth="4" fill="none" strokeLinecap="round" /></g>
           <path className="sweat" d="M188 74 q-5 8 0 11 q5 -3 0 -11Z" fill="#9ad8ff" />
         </g>
         {/* left arm (screen left): knife over the board */}
@@ -110,9 +138,9 @@ export function StepScene({ text, ings }: { text: string; ings: SceneIng[] }) {
   const fly = t >= n + 1; const cook = t > COOK; const pourK = t >= P0 && t < S0 ? t - P0 : -1; const shaking = spice && t === S0
   const order = its.map((_, i) => cut.slice(0, i + 1).filter(Boolean).length)
   const chopping = n > 0 && t < n; const cur = its.findIndex((_, i) => cut[i] && order[i] === t + 1)
-  const onion = chopping && cur >= 0 && /🧅/u.test(its[cur].e)
+  const onion = chopping && cur >= 0 && kindOf(its[cur].id, its[cur].e) === 'onion'; const fishy = !fly && its.some((x) => kindOf(x.id, x.e) === 'fish')
   const X = [34, 74, 114]; const knifeX = cur >= 0 ? X[cur] : 74
-  const mood = onion ? 'cry' : a === 'fry' && cook ? 'sweat' : cook && a === 'serve' ? 'proud' : chopping ? 'focus' : 'happy'
+  const mood = onion ? 'cry' : fishy && !chopping ? 'surprise' : a === 'fry' && cook ? 'sweat' : cook && a === 'serve' ? 'proud' : chopping ? 'focus' : 'happy'
   const hand = pourK >= 0 ? 'pour' : shaking ? 'shake' : cook && a === 'mix' ? 'stir' : cook && a === 'serve' ? 'kiss' : 'idle'
   const pan = a === 'fry'; const bowl = a === 'mix' || a === 'chop'; const plate = a === 'serve'
   const liquid = pourK >= 0 ? pours[pourK][2] : null
@@ -123,6 +151,14 @@ export function StepScene({ text, ings }: { text: string; ings: SceneIng[] }) {
       <svg viewBox="0 0 320 240" className="scene-svg block w-full">
         <defs><linearGradient id="wood" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#d9a46d" /><stop offset="1" stopColor="#9b6634" /></linearGradient>
           <linearGradient id="steel" x1="0" x2="1"><stop offset="0" stopColor="#5d6770" /><stop offset=".5" stopColor="#9aa6b0" /><stop offset="1" stopColor="#4d565e" /></linearGradient>
+          <radialGradient id="gTom" cx=".35" cy=".3"><stop offset="0" stopColor="#ff7a5c" /><stop offset="1" stopColor="#c62d22" /></radialGradient>
+          <radialGradient id="gOnion" cx=".35" cy=".35"><stop offset="0" stopColor="#f0c27a" /><stop offset="1" stopColor="#b5772c" /></radialGradient>
+          <linearGradient id="gCar" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#ffa94a" /><stop offset="1" stopColor="#e0700f" /></linearGradient>
+          <radialGradient id="gPot" cx=".35" cy=".35"><stop offset="0" stopColor="#e0bc84" /><stop offset="1" stopColor="#a8783e" /></radialGradient>
+          <radialGradient id="gEgg" cx=".3" cy=".3"><stop offset="0" stopColor="#8a5bbd" /><stop offset="1" stopColor="#3e1f63" /></radialGradient>
+          <radialGradient id="gChk" cx=".4" cy=".35"><stop offset="0" stopColor="#f7c48c" /><stop offset="1" stopColor="#c47a3c" /></radialGradient>
+          <radialGradient id="gMeat" cx=".4" cy=".4"><stop offset="0" stopColor="#e0656b" /><stop offset="1" stopColor="#a3333b" /></radialGradient>
+          <linearGradient id="gFish" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor="#6f90ad" /><stop offset=".55" stopColor="#c6d8e6" /><stop offset="1" stopColor="#eef4f8" /></linearGradient>
           <radialGradient id="fire" cx=".5" cy="1" r="1"><stop offset="0" stopColor="#ffe08a" /><stop offset=".5" stopColor="#ff8a2a" /><stop offset="1" stopColor="#ff5a1f" stopOpacity="0" /></radialGradient></defs>
         <Chef mood={mood} arm={chopping ? 'chop' : 'idle'} hand={hand} />
         {/* counter */}
@@ -140,9 +176,10 @@ export function StepScene({ text, ings }: { text: string; ings: SceneIng[] }) {
               {cook && (a === 'boil' || a === 'add' || a === 'rest' || a === 'prep' || a === 'oven') && <g className="lid"><ellipse cx="258" cy="122" rx="38" ry="7" fill="#7c8891" /><rect x="252" y="110" width="12" height="7" rx="3" fill="#3c444b" /></g>}</>}
         </g>
         {/* ingredients */}
-        {its.map((x, i) => { const s = shapeOf(x.e); const chopped = cut[i] && t >= order[i]; const dx = 258 - X[i]
+        {its.map((x, i) => { const k = kindOf(x.id, x.e); const chopped = cut[i] && t >= order[i]; const dx = 258 - X[i]
           return <g key={i} className={fly ? 'to-pot' : 'drop-board'} style={{ ['--dx' as string]: `${dx}px`, ['--dy' as string]: `${(plate ? 0 : pan ? -8 : -40)}px`, animationDelay: fly ? `${i * 110}ms` : `${i * 120}ms` }}>
-            {chopped ? <Slices s={s} x={X[i]} y={164} /> : <Food s={s} x={X[i]} y={156} />}</g> })}
+            <g className={!chopped && !fly && k === 'fish' ? 'flop' : ''}>{chopped ? <Slices k={k} x={X[i]} y={164} /> : <Food id={x.id} k={k} x={X[i]} y={154} />}</g>
+            {!fly && <text x={X[i]} y={198} textAnchor="middle" fontSize="8.5" fontWeight="800" fill="#f4f1e8" opacity=".9">{(x.n ?? '').split(/[ (,]/)[0].slice(0, 10)}</text>}</g> })}
         {/* knife chop sound */}
         {chopping && <text key={'tk' + t} x={knifeX - 6} y={140} className="onoma" fontSize="13" fontWeight="800" fill="#fff">tac!</text>}
         {onion && <text key={'sn' + t} x={186} y={70} className="onoma" fontSize="14" fontWeight="800" fill="#9ad8ff">snif…</text>}

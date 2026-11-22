@@ -13,14 +13,14 @@ import { CartMode } from './Cart'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
-import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, Wallet, Dumbbell, type LucideIcon } from './icons'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Wallet, Dumbbell, type LucideIcon } from './icons'
 import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Nav } from './Nav'
 import { SportTab } from './Sport'
 import { BasketStory } from './Basket'
 import { setDietFilter } from './lib/plan'
-import { Assistant, Tour, tourDone, type Tab } from './Assist'
+import { Tour, tourDone, type Tab } from './Assist'
 import { bestStore, setStoreCountry } from './lib/stores'
 import { CountrySheet } from './Country'
 import { cname, countryOf } from './lib/countries'
@@ -136,7 +136,7 @@ function Shell() {
   const budget = me!.budget; const over = total > budget
   const celebrate = () => setBoom((b) => b + 1)
   const [undo, setUndo] = useState<[string, () => void] | null>(null)
-  const [assist, setAssist] = useState(false); const [tour, setTour] = useState(() => !tourDone())
+  const [tour, setTour] = useState(() => !tourDone())
   const say = (m: string, u?: [string, () => void]) => { setNote(m); if (u) setUndo(u); setTimeout(() => setNote((x) => (x === m ? null : x)), u ? 8000 : 5000) }
   const snap = (label: string): [string, () => void] => { const prev = JSON.parse(JSON.stringify(h.plan)); const store = h.store; return [label, () => { upHouse((x) => { x.plan = prev; x.store = store }, '↩ ' + label); setUndo(null); setNote(null) }] }
 
@@ -214,13 +214,14 @@ function Shell() {
     : tab === 'list' && !h.store ? [t('h_store', lang), pickBest]
     : tab === 'stores' ? [t('h_store', lang), pickBest]
     : [t('h_shop', lang), () => go('list')]
-  const more: [string, () => void][] = [
+  const more: [string, () => void][] = [ // kept for the tour
     ...(hasPlan && tab !== 'week' ? [[`🗓️ ${t('tWeek', lang)}`, () => go('week')] as [string, () => void]] : []),
     ...(hasPlan && tab !== 'list' ? [[`🛒 ${t('list', lang)}`, () => go('list')] as [string, () => void]] : []),
     ...(hasPlan && tab !== 'stores' ? [[`🏬 ${t('compareStores', lang)}`, () => go('stores')] as [string, () => void]] : []),
     ...(over ? [[`💰 ${t('h_budget', lang)}`, () => adapt()] as [string, () => void]] : []),
     [`⚙️ ${t('adjustB', lang)}`, () => setSheet(true)],
   ].filter((x) => x[0] !== help[0]) as [string, () => void][]
+  void more
   const title = t(tab === 'stores' ? 'tStores' : tab === 'recipes' ? 'tRecipes' : TABS.find((x) => x[0] === tab)![2], lang)
 
   return (
@@ -252,10 +253,7 @@ function Shell() {
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
       </main>
-      <><div data-tour="assist" style={space === 'out' || (tab === 'home' && !tour) ? { display: 'none' } : undefined} className="fixed bottom-20 end-4 z-40 hidden items-center lg:flex rounded-full bg-ink/90 p-1 text-white shadow-lg backdrop-blur">
-        <button className="grid h-11 w-11 place-items-center rounded-full text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}><Sparkles size={18} aria-hidden /></button>
-      </div>
-      <Assistant open={assist} onClose={() => setAssist(false)} tab={tab} next={help} more={more} undo={undo} onTour={() => setTour(true)} go={go} />
+      <>
       <Tour run={tour} onEnd={() => setTour(false)} />
       <CartMode open={caddie} onClose={() => setCaddie(false)} items={cart} onFinish={() => endTrip(celebrate)} />
       {up && <button className="fixed bottom-[6.5rem] end-4 lg:bottom-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
