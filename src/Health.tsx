@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Share2, RefreshCw, Play, Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, Soup, Sun, Sunrise, type LucideIcon } from 'lucide-react'
+import { Share2, RefreshCw, Play, Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, ShoppingBasket, Soup, Sun, Sunrise, type LucideIcon } from 'lucide-react'
 import type { Lang } from './lib/i18n'
+import { Sheet } from './ui'
 import { buildProgram } from './Program'
 import { WorkoutStory } from './Coach'
 import type { SportProfile } from './Sport'
@@ -56,6 +57,28 @@ const FOOD_TAGS: [RegExp, Nut[]][] = [
   [/houmous/i, ['B9', 'fer']], [/bœuf|boeuf|kefta/i, ['fer', 'B12']], [/patate douce/i, ['vA', 'K', 'vC']], [/cabillaud|poisson/i, ['B12', 'vD']], [/pommes de terre/i, ['K', 'vC']],
   [/tofu/i, ['ca', 'fer']], [/dattes/i, ['K', 'mg', 'fib']], [/harira/i, ['fer', 'B9']], [/huile d’olive/i, ['vE']],
 ]
+/** Simple preparation steps built from the foods of a meal (cooking method per food family, then assembly). */
+const HOW: [RegExp, string, string][] = [
+  [/poulet|dinde/i, 'Assaisonner (sel, poivre, paprika, citron) et griller ou poêler 6 à 8 min par face jusqu’à cuisson à cœur.', 'Season (salt, pepper, paprika, lemon) and grill or pan-fry 6–8 min per side until cooked through.'],
+  [/bœuf/i, 'Faire revenir à feu vif 5 à 6 min avec oignon, sel et épices.', 'Brown over high heat 5–6 min with onion, salt and spices.'],
+  [/saumon|cabillaud|poisson|thon|sardines/i, 'Cuire le poisson 4 à 5 min par face (poêle ou four 200 °C, 12 min) avec citron et huile d’olive.', 'Cook the fish 4–5 min per side (pan or 200 °C oven, 12 min) with lemon and olive oil.'],
+  [/tofu/i, 'Couper en cubes, dorer à la poêle 5 min avec sauce soja ou épices.', 'Cube and pan-fry 5 min with soy sauce or spices.'],
+  [/riz|quinoa|semoule|soba|nouilles/i, 'Cuire la base de féculents dans l’eau salée selon le paquet (riz 12–15 min, quinoa 12 min, semoule 5 min), égoutter.', 'Cook the starch in salted water as per packet (rice 12–15 min, quinoa 12 min, semolina 5 min), drain.'],
+  [/patate douce|pommes de terre/i, 'Cuire à l’eau ou au four 20 à 25 min jusqu’à tendreté.', 'Boil or bake 20–25 min until tender.'],
+  [/lentilles|pois chiches|haricots/i, 'Réchauffer 5 min avec cumin, ail et un filet d’huile d’olive.', 'Warm 5 min with cumin, garlic and a drizzle of olive oil.'],
+  [/brocoli|courgette|carottes|légumes|poivron/i, 'Cuire les légumes à la vapeur ou à la poêle 6 à 8 min, ils doivent rester croquants.', 'Steam or pan-cook the vegetables 6–8 min, keep them crisp.'],
+  [/œufs(?! durs)/i, 'Cuire les œufs (omelette ou brouillés) 3 à 4 min à feu moyen avec peu d’huile.', 'Cook the eggs (omelette or scrambled) 3–4 min over medium heat with little oil.'],
+  [/œufs durs/i, 'Cuire les œufs 9 min à l’eau bouillante, refroidir et écaler.', 'Boil the eggs 9 min, cool and peel.'],
+  [/flocons d’avoine/i, 'Chauffer l’avoine avec le lait 3 à 4 min en remuant, ou laisser tremper la veille (overnight).', 'Heat the oats with milk 3–4 min stirring, or soak overnight.'],
+  [/bissara|harira|soupe/i, 'Réchauffer la soupe à feu doux 5 min, ajouter huile d’olive et cumin.', 'Warm the soup gently 5 min, add olive oil and cumin.'],
+  [/lait\b.*|whey/i, '', ''],
+]
+const howTo = (foods: string[], lang: Lang): string[] => {
+  const out: string[] = []; const seen = new Set<string>()
+  for (const [re, fr, en] of HOW) { if (!fr || !foods.some((x) => re.test(x))) continue; if (seen.has(fr)) continue; seen.add(fr); out.push(lang === 'en' ? en : fr) }
+  out.push(L(lang, 'Assemble on a plate with the remaining ingredients (fresh or raw ones need no cooking), season, and eat.', 'Dresser dans l’assiette avec le reste des ingrédients (les produits frais ou crus ne se cuisent pas), assaisonner, et déguster.'))
+  return out
+}
 export function mealTags(foods: string[]): Nut[] {
   const c: Partial<Record<Nut, number>> = {}
   for (const f of foods) for (const [re, ns] of FOOD_TAGS) if (re.test(f)) for (const n of ns) c[n] = (c[n] ?? 0) + 1
@@ -63,7 +86,7 @@ export function mealTags(foods: string[]): Nut[] {
 }
 const Tags = ({ ns, lang }: { ns?: Nut[]; lang: Lang }) => ns && ns.length ? <span className="mt-1 flex flex-wrap gap-1">{ns.map((n) => <span key={n} className="rounded-full bg-surface px-1.5 py-0.5 text-[12px] font-semibold text-forest shadow-soft">{NUT[n][0]} {nutName(n, lang)}</span>)}</span> : null
 
-type Item = { at: string; icon: LucideIcon; tone: string; title: string; sub?: string; kcal?: number; prot?: number; list?: [string, string][]; slot?: string; tags?: Nut[] }
+type Item = { at: string; icon: LucideIcon; tone: string; title: string; sub?: string; kcal?: number; prot?: number; list?: [string, string][]; slot?: string; tags?: Nut[]; how?: string[]; raw?: [string, number, string][] }
 const fmtQ = (q: number, u: string) => u === 'pc' ? (q < 1 ? '½' : `${Math.round(q * 2) / 2}`) : `${Math.round(q / 5) * 5} ${u}`
 export type Swaps = Record<string, number>
 
@@ -76,7 +99,7 @@ export function dayPlan(p: SportProfile & { lvl?: Lvl }, week: number, d: number
   const snacks: [string, M][] = s ? [['pre', pick(PRE, 0, 'pre')], ['post', pick(POST, 1, 'post')]] : [['snk', pick(SNK, 0, 'snk')]]
   const base = meals.reduce((a, m) => a + m[1][2], 0) + snacks.reduce((a, m) => a + m[1][2], 0)
   const f = Math.max(0.7, Math.min(1.6, kcal / base))
-  const meal = (m: M): Pick<Item, 'title' | 'kcal' | 'prot' | 'list' | 'tags'> => ({ tags: mealTags(m[4].map((f) => f[0])), title: lang === 'en' ? m[1] : m[0], kcal: Math.round(m[2] * f / 10) * 10, prot: Math.round(m[3] * f), list: m[4].map(([n, q, u]) => [n, fmtQ(q * f, u)]) })
+  const meal = (m: M): Pick<Item, 'title' | 'kcal' | 'prot' | 'list' | 'tags' | 'how' | 'raw'> => ({ how: howTo(m[4].map((f) => f[0]), lang), raw: m[4].map(([n, q, u]) => [n, q * f, u] as [string, number, string]), tags: mealTags(m[4].map((f) => f[0])), title: lang === 'en' ? m[1] : m[0], kcal: Math.round(m[2] * f / 10) * 10, prot: Math.round(m[3] * f), list: m[4].map(([n, q, u]) => [n, fmtQ(q * f, u)]) })
   const sn = (i: number) => ({ ...meal(snacks[i][1]), slot: snacks[i][0] })
   const items: Item[] = [
     { at: '07:00', icon: Droplet, tone: '#2f9be6', title: L(lang, 'Wake up · big glass of water', 'Réveil · un grand verre d’eau'), sub: '500 ml' },
@@ -103,6 +126,10 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
   const planText = (wk: number) => DN.map((n, i) => { const x = dayPlan(p, wk, i, kcal, lang, am, sw); return `${n} · ${x.tk} kcal\n` + x.items.filter((y) => y.slot).map((y) => `  ${y.at} ${y.title}${y.tags?.length ? ' [' + y.tags.map((t) => nutName(t, lang)).join(', ') + ']' : ''}`).join('\n') }).join('\n\n')
   const sharePlan = async (wk: number) => { const txt = `${L(lang, 'My meal plan', 'Mon plan d’alimentation')} · ${L(lang, 'week', 'semaine')} ${wk + 1}\n\n${planText(wk)}`; try { if (navigator.share) await navigator.share({ text: txt }); else await navigator.clipboard.writeText(txt) } catch { /* cancelled */ } }
   const day = dayPlan(p, wa, d, kcal, lang, am, sw)
+  const [shop, setShop] = useState(false)
+  const shopList = () => { const t: Record<string, [number, string]> = {}; for (let i = 0; i < 7; i++) for (const it of dayPlan(p, wa, i, kcal, lang, am, sw).items) for (const [n, q, u] of it.raw ?? []) { t[n] = [(t[n]?.[0] ?? 0) + q, u] } return Object.entries(t).map(([n, [q, u]]) => [n, u === 'pc' ? `${Math.ceil(q)}` : u === 'g' && q >= 1000 ? `${(q / 1000).toFixed(1)} kg` : u === 'ml' && q >= 1000 ? `${(q / 1000).toFixed(1)} L` : `${Math.round(q / 5) * 5} ${u}`] as [string, string]).sort((a, b) => a[0].localeCompare(b[0], lang)) }
+  const shopText = () => `${L(lang, 'Athlete shopping list', 'Courses du sportif')} · ${L(lang, 'week', 'semaine')} ${wa + 1}\n\n` + shopList().map(([n, q]) => `☐ ${n} · ${q}`).join('\n')
+  const shareShop = async () => { try { if (navigator.share) await navigator.share({ text: shopText() }); else await navigator.clipboard.writeText(shopText()) } catch { /* cancelled */ } }
   const perWeek = p.goal === 'cut' ? -0.5 : p.goal === 'bulk' ? 0.25 : 0
   return (
     <section className="rounded-[24px] bg-surface p-4 shadow-soft">
@@ -111,6 +138,7 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
       <div className="mt-3 flex rounded-full bg-cream p-1">{(['beg', 'mid', 'adv'] as Lvl[]).map((l) => <button key={l} onClick={() => set({ lvl: l })} className={`flex-1 rounded-full py-1.5 text-[13px] font-bold transition ${(p.lvl ?? 'beg') === l ? 'bg-surface text-forest shadow-soft' : 'text-muted'}`}>{{ beg: L(lang, 'Beginner', 'Débutant'), mid: L(lang, 'Intermediate', 'Intermédiaire'), adv: L(lang, 'Advanced', 'Confirmé') }[l]}</button>)}</div>
       {view !== 'month' && <div className="mt-2 flex gap-1.5">{[0, 1, 2, 3].map((i) => <button key={i} onClick={() => setW(i)} className={`flex-1 rounded-xl py-1.5 text-xs font-bold ${w === i ? 'bg-ink text-white' : 'bg-cream text-muted'}`}>{L(lang, 'Wk', 'S')}{i + 1}{i === 3 ? ' · ' + L(lang, 'rec.', 'récup') : ''}</button>)}</div>}
 
+      <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-forest py-2.5 text-sm font-extrabold text-white active:scale-95" onClick={() => setShop(true)}><ShoppingBasket size={16} aria-hidden /> {L(lang, 'Shopping list of the week', 'Liste de courses de la semaine')}</button>
       {view === 'day' && <>
         <div className="mt-3 grid grid-cols-7 gap-1">{DN.map((n, i) => { const has = !!buildProgram(p, w + blk * 4).days[i]; return <button key={i} onClick={() => { setD(i); setOpen(null) }} className={`rounded-xl py-1.5 text-center transition ${d === i ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[12px] font-extrabold uppercase">{n}</span><span className={`mx-auto mt-1 block h-1.5 w-1.5 rounded-full ${has ? (d === i ? 'bg-apricot' : 'bg-forest') : 'bg-transparent'}`} /></button> })}</div>
         <div className="mt-3 flex items-center justify-between rounded-2xl bg-cream/70 px-3 py-2 text-xs"><span><b className="font-display text-base tabular-nums">{day.tk}</b> kcal · <b className="tabular-nums">{day.tp} g</b> {L(lang, 'protein', 'protéines')}</span>
@@ -123,7 +151,9 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
               <span className="flex items-start gap-2"><b className="flex-1 text-[14px] leading-snug">{x.title}</b>{x.slot && <span role="button" tabIndex={0} aria-label={L(lang, 'Another meal', 'Autre repas')} onClick={(ev) => { ev.stopPropagation(); swap(wa, d, x.slot!) }} className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-forest shadow-soft active:scale-90"><RefreshCw size={14} aria-hidden /></span>}{x.list && <ChevronDown size={16} className={`mt-0.5 shrink-0 opacity-60 transition-transform ${open === i ? 'rotate-180' : ''}`} aria-hidden />}</span>
               <span className={`block text-xs ${x.icon === Dumbbell ? 'text-white/75' : 'text-muted'}`}>{x.kcal ? `${x.kcal} kcal · ${x.prot} g ${L(lang, 'protein', 'prot.')}` : x.sub}</span>
               {x.kcal ? <Tags ns={x.tags} lang={lang} /> : null}
+              {x.how && <span className="mt-1 flex items-center gap-1 text-[12px] font-bold text-forest"><ChevronDown size={13} className={`transition-transform ${open === i ? 'rotate-180' : ''}`} aria-hidden />{open === i ? L(lang, 'Hide', 'Masquer') : L(lang, 'Ingredients and how to cook', 'Ingrédients et préparation')}</span>}
               {open === i && x.list && <ul className="fade-up mt-2 space-y-0.5 border-t border-current/10 pt-2">{x.list.map(([n, q], j) => <li key={j} className="flex justify-between gap-2 text-[13px]"><span>{n}</span><b className="tabular-nums">{q}</b></li>)}</ul>}
+              {open === i && x.how && <div className="fade-up mt-2 border-t border-current/10 pt-2"><p className="text-[12px] font-bold uppercase tracking-wider text-muted">{L(lang, 'How to prepare', 'Comment préparer')}</p><ol className="mt-1 list-decimal space-y-1 ps-5 text-[13px] leading-snug">{x.how.map((h, j) => <li key={j}>{h}</li>)}</ol></div>}
               {x.icon === Dumbbell && x.list && <span role="button" tabIndex={0} onClick={(ev) => { ev.stopPropagation(); setStory({ t: x.title, ex: x.list! }) }} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-apricot py-2 text-sm font-extrabold text-ink active:scale-95"><Play size={15} aria-hidden /> {L(lang, 'Start with the coach', 'Démarrer avec le coach')}</span>}
             </button></li>))}</ol>
       </>}
@@ -136,7 +166,7 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: x.s ? ['#25a35a', '#e0a526', '#e5484d'][x.s.hard - 1] : '#9aa3ab' }}>{x.s ? <Dumbbell size={16} aria-hidden /> : <Moon size={16} aria-hidden />}</span>
             <span className="min-w-0 flex-1"><b className="block truncate text-sm">{x.s ? `${x.s.t} · ${x.s.min} min` : L(lang, 'Rest + walk', 'Repos + marche')}</b><span className="block truncate text-xs text-muted">{x.items.filter((y) => y.kcal).length} {L(lang, 'meals', 'repas')} · {x.tk} kcal · {x.tp} g</span></span>
             <ChevronDown size={16} className={`text-muted transition-transform ${op ? 'rotate-180' : ''}`} aria-hidden /></button>
-          {op && <ul className="fade-up space-y-1 border-t border-line/60 px-3 py-2">{x.items.filter((y) => y.kcal).map((y, j) => <li key={j} className="flex items-center gap-2 text-[13px]"><span className="w-10 shrink-0 tabular-nums text-muted">{y.at}</span><span className="min-w-0 flex-1 leading-snug">{y.title}<span className="block text-xs text-muted">{y.kcal} kcal · {y.prot} g</span><Tags ns={y.tags} lang={lang} /></span>{y.slot && <button className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-forest shadow-soft active:scale-90" onClick={() => swap(wa, i, y.slot!)} aria-label={L(lang, 'Another meal', 'Autre repas')}><RefreshCw size={13} aria-hidden /></button>}</li>)}
+          {op && <ul className="fade-up space-y-1 border-t border-line/60 px-3 py-2">{x.items.filter((y) => y.kcal).map((y, j) => <li key={j} className="flex items-center gap-2 text-[13px]"><span className="w-10 shrink-0 tabular-nums text-muted">{y.at}</span><span className="min-w-0 flex-1 leading-snug">{y.title}<span className="block text-xs text-muted">{y.kcal} kcal · {y.prot} g</span>{y.list && <span className="mt-0.5 block text-xs leading-snug text-ink/80">{y.list.map(([n, q]) => `${n} ${q}`).join(' · ')}</span>}<Tags ns={y.tags} lang={lang} /></span>{y.slot && <button className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-forest shadow-soft active:scale-90" onClick={() => swap(wa, i, y.slot!)} aria-label={L(lang, 'Another meal', 'Autre repas')}><RefreshCw size={13} aria-hidden /></button>}</li>)}
             <li><button className="mt-1 w-full text-center text-xs font-bold text-forest" onClick={() => { setD(i); setView('day') }}>{L(lang, 'Open the day ›', 'Ouvrir la journée ›')}</button></li></ul>}
         </div>) })}</div>}
 
@@ -150,6 +180,11 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
           <button className="mt-2 flex w-full items-center justify-between rounded-xl bg-surface px-3 py-2 text-xs font-bold text-forest" onClick={() => setMOpen(op ? null : i)} aria-expanded={op}>{L(lang, 'Meals of the week', 'Repas de la semaine')}<ChevronDown size={15} className={`transition-transform ${op ? 'rotate-180' : ''}`} aria-hidden /></button>
           {op && <div className="fade-up mt-2 space-y-1.5">{DN.map((dn, di) => { const x = dayPlan(p, i + blk * 4, di, kcal, lang, am, sw); return <div key={di} className="rounded-xl bg-surface px-3 py-2 text-[12.5px]"><b className="text-forest">{dn}</b> · {x.tk} kcal{x.items.filter((y) => y.slot === 'b' || y.slot === 'l' || y.slot === 'd').map((y, j) => <div key={j} className="mt-1 leading-snug text-ink/80"><span className="inline-block w-12 text-muted">{y.at}</span>{y.title}<div className="ms-12"><Tags ns={y.tags} lang={lang} /></div></div>)}<button className="mt-1 text-xs font-bold text-forest" onClick={() => { setW(i); setD(di); setView('day') }}>{L(lang, 'Change ›', 'Modifier ›')}</button></div> })}</div>}
         </div>) })}</div>}
+      <Sheet open={shop} onClose={() => setShop(false)} title={L(lang, 'Athlete shopping list', 'Courses du sportif')}>
+        <p className="mb-2 text-xs text-muted">{L(lang, 'Week', 'Semaine')} {wa + 1} · {L(lang, 'all ingredients of the 7 days, quantities for one person.', 'tous les ingrédients des 7 jours, quantités pour une personne.')}</p>
+        <ul className="divide-y divide-line/60">{shopList().map(([n, q]) => <li key={n} className="flex justify-between gap-2 py-2 text-sm"><span>{n}</span><b className="tabular-nums">{q}</b></li>)}</ul>
+        <button className="btn btn-primary mt-3 w-full" onClick={shareShop}><Share2 size={16} className="me-1.5 inline" aria-hidden />{L(lang, 'Share / copy the list', 'Partager / copier la liste')}</button>
+      </Sheet>
       {story && <WorkoutStory title={story.t} ex={story.ex} lang={lang} onClose={() => setStory(null)} />}
     </section>)
 }
