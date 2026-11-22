@@ -143,29 +143,17 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
     </div></Swipe>) }
   return (
     <div className="space-y-3">
-      {cart.length > 0 && <button className="fade-up flex w-full items-center gap-3 rounded-[24px] bg-forest p-4 text-start text-white shadow-lg active:scale-[.98]" onClick={() => setCartOpen(true)}>
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/15"><ShoppingCart size={28} aria-hidden /></span>
-        <span className="min-w-0 flex-1"><b className="block font-display text-lg leading-tight">{lang === 'en' ? 'Start store mode' : 'Lancer le mode magasin'}</b><span className="block text-xs text-white/80">{lang === 'en' ? 'One hand, one swipe per product' : 'Une main, un geste par produit'} · {cart.filter((x) => !chk[x.key]).length} / {cart.length}</span></span>
-        <span className="text-2xl" aria-hidden>→</span>
-      </button>}
-      <CartMode open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onFinish={finish} />
-      {!store && <button className="card fade-up flex w-full items-center gap-3 border-2 border-apricot p-4 text-start" onClick={goStores}><span className="text-3xl"><Ic e="🏬" /> </span><span className="flex-1"><b className="block font-display">{lang === 'en' ? 'First, pick your store' : 'D’abord, choisis ton magasin'}</b><span className="text-xs text-muted">{lang === 'en' ? 'Your list will use its prices.' : 'Ta liste utilisera ses prix. Compare les magasins en un coup d’œil.'}</span></span><span className="text-xl text-forest">→</span></button>}
-      <div className="card p-4">
-        <div className="grid grid-cols-4 gap-1 text-center">
-          {([[t('budgetW', lang), budget, 'ink'], [t('taken', lang), spent, 'forest'], [t('toTake', lang), pace - spent, 'ink'], [t('solde', lang), budget - pace, budget - pace < 0 ? 'danger' : 'forest']] as [string, number, string][]).map(([l, v, c]) => (
-            <div key={l} className="rounded-xl bg-cream/60 px-1 py-1.5"><p className="text-[10px] font-semibold uppercase leading-tight text-muted">{l}</p><p className="whitespace-nowrap font-display text-[13px] font-extrabold tabular-nums" style={{ color: `rgb(var(--${c}))` }}><Num v={v} fmt={(x) => money(x, lang)} /></p></div>))}
+      <div className="fade-up rounded-[24px] bg-surface p-4 shadow-soft">
+        <div className="flex items-center gap-3">
+          <button onClick={goStores} className="flex min-w-0 flex-1 items-center gap-2.5 text-start active:opacity-70">{store ? <StoreLogo id={store.id} w={64} /> : <span className="grid h-11 w-11 place-items-center rounded-xl bg-apricot/30 text-forest"><Store size={20} aria-hidden /></span>}
+            <span className="min-w-0"><b className="block truncate text-[15px]">{store ? store.name : (lang === 'en' ? 'Choose a store' : 'Choisir un magasin')}</b><span className="text-xs text-muted">{store ? (lang === 'en' ? 'Change ›' : 'Changer ›') : (lang === 'en' ? 'Compare prices ›' : 'Comparer les prix ›')}</span></span></button>
+          <span className="text-end"><b className="block font-display text-xl tabular-nums"><Num v={pace} fmt={(x) => money(x, lang)} /></b><span className="text-[11px] text-muted">{void spent}{over ? `+${money(pace - budget, lang)} ${lang === 'en' ? 'over' : 'au-delà'}` : `${money(budget - pace, lang)} ${lang === 'en' ? 'left' : 'de marge'}`}</span></span>
+          <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cream text-forest active:scale-90" onClick={share} aria-label={t('shareList', lang)}><Share2 size={17} aria-hidden /></button>
         </div>
-        <div className="relative mt-3 h-3 overflow-hidden rounded-full bg-cream">
-          <div className="absolute inset-y-0 start-0 rounded-full bg-leaf/50 transition-all duration-500" style={{ width: `${Math.min(100, (pace / budget) * 100)}%` }} />
-          <div className="absolute inset-y-0 start-0 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (spent / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} />
-        </div>
-        <p className="mt-2 text-xs" style={{ color: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}><b>{t('pace', lang)}: {money(pace, lang)}</b> · {over ? `${t('overBy', lang)} ${money(pace - budget, lang)}` : `${money(budget - pace, lang)} ${t('saving', lang)}`}</p>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button className="btn btn-soft !min-h-11 !text-sm" onClick={goStores}><Store size={16} className="inline -mt-0.5" aria-hidden /> {t('compareStores', lang)}</button>
-          <button className="btn btn-primary !min-h-11 !text-sm" onClick={share}><Share2 size={16} className="inline -mt-0.5" aria-hidden /> {t('shareList', lang)}</button>
-        </div>
-        <p className="mt-2 text-center text-[11px] text-muted">{t('pricesAt', lang)}: {store ? store.name : t('avgPrice', lang)} · {t('qtyHint', lang)}</p>
+        <div className="relative mt-3 h-2 overflow-hidden rounded-full bg-cream"><div className="absolute inset-y-0 start-0 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (pace / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></div>
+        {cart.length > 0 && <button className="btn btn-primary mt-3 w-full !min-h-12" onClick={() => setCartOpen(true)}><ShoppingCart size={18} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'Start shopping' : 'Je fais mes courses'} · {cart.filter((x) => !chk[x.key]).length}</button>}
       </div>
+      <CartMode open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onFinish={finish} />
       <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1">
         <div className="flex shrink-0 rounded-full bg-surface p-1 shadow-soft">{([[-1, t('lWeek', lang)], [TODAY, lang === 'en' ? 'Today' : 'Aujourd’hui'], [(TODAY + 1) % 7, lang === 'en' ? 'Tomorrow' : 'Demain']] as [number, string][]).map(([d, l]) => <button key={l} className={`rounded-full px-3 py-1.5 text-xs font-bold ${day === d ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{l}</button>)}</div>
         <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={saveList}><Ic e="📌" /> {lang === 'en' ? 'Save list' : 'Enregistrer'}</button>
