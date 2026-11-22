@@ -180,6 +180,54 @@ const EXTRA: Record<string, [Act, [number, number]][]> = {
     [A('frioul', '⛴️', 'Navette vers les îles du Frioul', 'Criques et château d’If', 130, 4, 'nature famille couple', 'Vieux-Port, quai de la Fraternité', 'Traversée en bateau|Château d’If|Baignade en crique'), [43.280, 5.310]],
   ],
 }
+// Enrichment: more real places per city (indicative entry prices in MAD), each with a short timeline and an address.
+const MORE: Record<string, [Act, [number, number]][]> = {
+  Rabat: [
+    [A('rabat-archeo', '🏺', 'Musée archéologique de Rabat', 'Statues romaines en bronze et objets de Volubilis et du Chellah', 20, 1, 'culture famille', '23 rue Brihi, Rabat', 'Salle romaine|Bronzes de Volubilis|Jardin du musée'), [34.0233, -6.8371]],
+    [A('rue-consuls', '🧵', 'Rue des Consuls', 'Rue d’artisans : tapis, cuivre, bijoux, cuir', 0, 1, 'culture couple famille', 'Rue des Consuls, médina de Rabat', 'Entrée par Bab el Had|Boutiques d’artisans|Thé de menthe'), [34.0243, -6.8358]],
+    [A('sale-medina', '🕌', 'Médina de Salé et médersa mérinide', 'Souks authentiques et médersa du XIVe siècle', 10, 2, 'culture couple', 'Bab Mrissa, Salé', 'Traversée du Bouregreg|Médersa mérinide|Souks et pâtisseries'), [34.0393, -6.8161]],
+    [A('bouknadel', '🌴', 'Jardins exotiques de Bouknadel', 'Jardins thématiques entre Rabat et Kénitra', 40, 2, 'nature famille couple', 'Route de Kénitra, Bouknadel', 'Jardin japonais et andalou|Pergolas|Pique-nique'), [34.1331, -6.7547]],
+    [A('mehdia', '🏖️', 'Kasbah et plage de Mehdia', 'Kasbah du XVIIe siècle et plage de l’Atlantique', 0, 4, 'nature famille couple', 'Mehdia, près de Kénitra (45 min)', 'Visite de la kasbah|Baignade|Poisson grillé en bord de mer'), [34.2603, -6.6787]],
+  ],
+  Marrakech: [
+    [A('jardin-secret', '🌿', 'Le Jardin Secret', 'Jardin andalou dans un riad restauré, tour panoramique', 70, 1, 'culture couple', 'Rue Mouassine, médina', 'Jardin islamique|Jardin exotique|Tour panoramique'), [31.6326, -7.9886]],
+    [A('saadiens', '⚰️', 'Tombeaux Saadiens', 'Mausolées du XVIe siècle avec plafonds en cèdre sculpté', 70, 1, 'culture famille couple', 'Rue de la Kasbah, médina', 'Salle des douze colonnes|Jardin des tombes'), [31.6177, -7.9893]],
+    [A('el-badi', '🏰', 'Palais El Badi', 'Ruines monumentales du palais de Ahmed el-Mansour, cigognes sur les murs', 70, 1, 'culture famille', 'Ksibat Nhass, médina', 'Cour centrale et bassins|Terrasses sur la médina'), [31.6183, -7.9858]],
+    [A('musee-mk', '🖼️', 'Musée de Marrakech', 'Palais Dar Menebhi, calligraphie et arts marocains', 70, 1, 'culture couple', 'Place Ben Youssef, médina', 'Patio et lustre monumental|Collections d’art'), [31.6320, -7.9872]],
+    [A('dromadaire', '🐪', 'Balade en dromadaire dans la palmeraie', 'Heure de balade et thé sous les palmiers', 250, 2, 'nature famille couple', 'Palmeraie de Marrakech (départ en navette)', 'Départ en dromadaire|Pause thé|Retour à la palmeraie'), [31.6700, -7.9600]],
+    [A('cyber-park', '🌳', 'Cyber Park Arsat Moulay Abdeslam', 'Grand parc ombragé avec bornes wifi et aires de jeux', 0, 2, 'famille nature', 'Av. Mohammed V, près de la Koutoubia', 'Allées d’oliviers et palmiers|Aires de jeux'), [31.6372, -7.9988]],
+    [A('essaouira', '🌊', 'Journée à Essaouira', 'Remparts, port de pêche, plage et poisson grillé (2 h 30 de route)', 150, 6, 'culture nature couple famille', 'Essaouira (excursion depuis Marrakech)', 'Route le matin|Remparts et port|Poisson grillé|Plage et retour'), [31.5085, -9.7595]],
+    [A('takerkoust', '🏞️', 'Lac Lalla Takerkoust', 'Lac de barrage au pied de l’Atlas : kayak, quad, pique-nique', 120, 4, 'nature famille sport', 'Lalla Takerkoust (35 min)', 'Arrivée au lac|Kayak ou balade|Pique-nique au bord de l’eau'), [31.3667, -8.1500]],
+  ],
+  'Fès': [
+    [A('attarine', '🕌', 'Médersa Al Attarine', 'Joyau mérinide aux zelliges et bois de cèdre sculpté', 20, 1, 'culture couple', 'Rue Talaa Kebira, médina', 'Cour aux zelliges|Salle de prière'), [34.0646, -4.9731]],
+    [A('quaraouiyine', '📜', 'Quartier d’Al Quaraouiyine', 'Mosquée-université la plus ancienne du monde, souks du quartier', 0, 2, 'culture famille', 'Place Seffarine, médina', 'Place Seffarine (chaudronniers)|Portes de la mosquée|Souk des teinturiers'), [34.0650, -4.9737]],
+    [A('poterie-fes', '🏺', 'Atelier de poterie à Aïn Nokbi', 'Coopérative de potiers, fabrication et zellige', 0, 2, 'culture famille couple', 'Aïn Nokbi, hauteurs de Fès', 'Tournage et peinture|Fabrication du zellige'), [34.0420, -4.9730]],
+    [A('cuisine-fes', '🍲', 'Cours de cuisine fassie', 'Marché le matin puis pastilla ou tajine en riad', 400, 4, 'culture couple famille', 'Riad en médina de Fès', 'Marché avec le chef|Préparation du repas|Dégustation'), [34.0630, -4.9770]],
+    [A('merinides', '🌇', 'Tombeaux mérinides', 'Ruines avec vue sur toute la médina au coucher du soleil', 0, 1, 'culture nature couple', 'Colline nord, au-dessus de Bab Ftouh', 'Montée à la colline|Vue sur la médina|Coucher du soleil'), [34.0775, -4.9760]],
+    [A('volubilis', '🏛️', 'Journée à Meknès et Volubilis', 'Cité impériale et mosaïques romaines (1 h 15 de route)', 150, 6, 'culture famille couple', 'Meknès et Volubilis (excursion)', 'Bab Mansour à Meknès|Déjeuner en médina|Ruines de Volubilis'), [34.0731, -5.5553]],
+    [A('azrou-cedres', '🌲', 'Forêt de cèdres d’Azrou', 'Cèdres centenaires et singes magots (1 h 30 de route)', 0, 6, 'nature famille', 'Azrou, Moyen Atlas', 'Route vers Ifrane|Cèdre Gouraud|Pique-nique en forêt'), [33.4360, -5.2100]],
+  ],
+  Tanger: [
+    [A('grand-socco', '🍊', 'Grand Socco et Place du 9-Avril', 'Place animée entre médina et ville nouvelle, marché de fruits', 0, 1, 'culture couple famille', 'Grand Socco, médina', 'Marché aux fruits|Portes de la médina|Café Central'), [35.7857, -5.8123]],
+    [A('phare-malabata', '🌅', 'Phare de Malabata', 'Vue sur le détroit de Gibraltar au coucher du soleil', 0, 1, 'nature couple famille', 'Route de Malabata', 'Route de la corniche|Vue sur l’Espagne|Coucher du soleil'), [35.8147, -5.7392]],
+    [A('tetouan', '🕌', 'Journée à Tétouan', 'Médina classée Unesco, artisans et pâtisseries (1 h de route)', 100, 6, 'culture couple famille', 'Médina de Tétouan (excursion)', 'Porte Bab Okla|Souk el Hots|Déjeuner et pâtisseries'), [35.5712, -5.3699]],
+    [A('cuisine-tng', '🥘', 'Cours de cuisine tangéroise', 'Cuisine du Nord : poisson, tajine et pains', 350, 3, 'culture couple famille', 'Médina de Tanger', 'Marché aux poissons|Préparation|Repas partagé'), [35.7870, -5.8130]],
+  ],
+  Agadir: [
+    [A('olhao', '🌺', 'Jardin d’Olhão', 'Jardin portugais et ses fontaines, gratuit', 0, 1, 'nature famille couple', 'Bd Mohammed V, centre', 'Allées fleuries|Fontaines|Pause au café'), [30.4228, -9.5983]],
+    [A('souss-massa', '🦩', 'Parc national de Souss-Massa', 'Oiseaux migrateurs, flamants et ibis chauve (1 h au sud)', 50, 5, 'nature famille couple', 'Embouchure de l’oued Massa', 'Route côtière|Observation des oiseaux|Pique-nique'), [30.0500, -9.6667]],
+    [A('quad-agadir', '🏍️', 'Quad dans les dunes', 'Sortie de 2 h sur les pistes du sud', 350, 3, 'sport loisirs couple', 'Départ de la route de Taghazout', 'Briefing et équipement|Piste dans les dunes|Thé berbère'), [30.5000, -9.7000]],
+    [A('imouzzer', '💧', 'Cascades d’Imouzzer Ida Outanane', 'Village de montagne et cascades (1 h 30 de route)', 0, 6, 'nature famille', 'Imouzzer des Ida Outanane', 'Route dans l’Atlas|Cascades|Miel local et déjeuner'), [30.7000, -9.5500]],
+  ],
+  Chefchaouen: [
+    [A('tissage', '🧶', 'Ateliers de tissage', 'Couvertures et vêtements de laine du Rif', 0, 1, 'culture famille couple', 'Médina, quartier Souika', 'Atelier de tisserands|Boutiques de laine'), [35.1693, -5.2680]],
+    [A('hammam-chaouen', '♨️', 'Hammam traditionnel', 'Gommage au savon noir dans la médina', 100, 2, 'couple loisirs', 'Médina de Chefchaouen', 'Vapeur|Gommage|Thé de menthe'), [35.1690, -5.2690]],
+    [A('bouhachem', '🌳', 'Parc naturel de Bouhachem', 'Forêts de chênes-lièges et sentiers du Rif', 0, 5, 'nature famille sport', 'Bouhachem, entre Chefchaouen et Ksar Sghir', 'Route forestière|Randonnée facile|Pique-nique'), [35.2000, -5.4000]],
+    [A('fromage-chaouen', '🧀', 'Fromage de chèvre et marché', 'Dégustation du fromage frais local et des produits du terroir', 30, 1, 'culture couple famille', 'Place Outa el Hammam et marché', 'Marché du matin|Dégustation de fromage|Miel et olives'), [35.1689, -5.2685]],
+  ],
+}
+for (const [c, xs] of Object.entries(MORE)) (EXTRA[c] ??= []).push(...xs.filter(([a]) => !(EXTRA[c] ?? []).some(([b]) => b.id === a.id)))
 for (const [c, xs] of Object.entries(EXTRA)) for (const [a] of xs) if (CITIES0[c] && !CITIES0[c].some((b) => b.id === a.id)) CITIES0[c].push(a)
 export const COUNTRY_CITIES: Record<string, string[]> = { ...WORLD_COUNTRY_CITIES, MA: ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Chefchaouen'], FR: ['Paris', 'Lyon', 'Marseille'] }
 type Mode = 'day' | 'eve' | 'we' | 'week'
