@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, Soup, Sun, Sunrise, Utensils, type LucideIcon } from 'lucide-react'
+import { Play, Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, Soup, Sun, Sunrise, Utensils, type LucideIcon } from 'lucide-react'
 import type { Lang } from './lib/i18n'
 import { buildProgram } from './Program'
+import { WorkoutStory } from './Coach'
 import type { SportProfile } from './Sport'
 
 type Lvl = 'beg' | 'mid' | 'adv'
@@ -61,13 +62,13 @@ export function dayPlan(p: SportProfile & { lvl?: Lvl }, week: number, d: number
 
 export function HealthPlan({ p, set, lang, kcal, prot }: { p: SportProfile & { lvl?: Lvl }; set: (o: Partial<SportProfile & { lvl?: Lvl }>) => void; lang: Lang; kcal: number; prot: number }) {
   const today = (new Date().getDay() + 6) % 7
-  const [view, setView] = useState<'day' | 'week' | 'month'>('day'); const [w, setW] = useState(0); const [d, setD] = useState(today); const [open, setOpen] = useState<number | null>(null); const [am, setAm] = useState(false)
+  const [view, setView] = useState<'day' | 'week' | 'month'>('day'); const [w, setW] = useState(0); const [d, setD] = useState(today); const [open, setOpen] = useState<number | null>(null); const [am, setAm] = useState(false); const [story, setStory] = useState<{ t: string; ex: [string, string][] } | null>(null)
   const DN = lang === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
   const day = dayPlan(p, w, d, kcal, lang, am)
   const perWeek = p.goal === 'cut' ? -0.5 : p.goal === 'bulk' ? 0.25 : 0
   return (
     <section className="rounded-[24px] bg-surface p-4 shadow-soft">
-      <div className="flex items-center justify-between gap-2"><h2 className="font-display text-lg font-extrabold">{L(lang, 'My health plan', 'Mon programme santé')}</h2>
+      <div className="flex items-center justify-between gap-2"><h2 className="whitespace-nowrap font-display text-[17px] font-extrabold">{L(lang, 'My plan', 'Mon programme')}</h2>
         <div className="flex rounded-full bg-cream p-0.5 text-xs font-bold">{(['day', 'week', 'month'] as const).map((v) => <button key={v} onClick={() => setView(v)} className={`rounded-full px-3 py-1.5 transition ${view === v ? 'bg-forest text-white' : 'text-muted'}`}>{{ day: L(lang, 'Day', 'Jour'), week: L(lang, 'Week', 'Semaine'), month: L(lang, 'Month', 'Mois') }[v]}</button>)}</div></div>
       <div className="mt-3 flex rounded-full bg-cream p-1">{(['beg', 'mid', 'adv'] as Lvl[]).map((l) => <button key={l} onClick={() => set({ lvl: l })} className={`flex-1 rounded-full py-1.5 text-[13px] font-bold transition ${(p.lvl ?? 'beg') === l ? 'bg-surface text-forest shadow-soft' : 'text-muted'}`}>{{ beg: L(lang, 'Beginner', 'Débutant'), mid: L(lang, 'Intermediate', 'Intermédiaire'), adv: L(lang, 'Advanced', 'Confirmé') }[l]}</button>)}</div>
       {view !== 'month' && <div className="mt-2 flex gap-1.5">{[0, 1, 2, 3].map((i) => <button key={i} onClick={() => setW(i)} className={`flex-1 rounded-xl py-1.5 text-xs font-bold ${w === i ? 'bg-ink text-white' : 'bg-cream text-muted'}`}>{L(lang, 'Wk', 'S')}{i + 1}{i === 3 ? ' · ' + L(lang, 'rec.', 'récup') : ''}</button>)}</div>}
@@ -84,6 +85,7 @@ export function HealthPlan({ p, set, lang, kcal, prot }: { p: SportProfile & { l
               <span className="flex items-start gap-2"><b className="flex-1 text-[14px] leading-snug">{x.title}</b>{x.list && <ChevronDown size={16} className={`mt-0.5 shrink-0 opacity-60 transition-transform ${open === i ? 'rotate-180' : ''}`} aria-hidden />}</span>
               <span className={`block text-xs ${x.icon === Dumbbell ? 'text-white/75' : 'text-muted'}`}>{x.kcal ? `${x.kcal} kcal · ${x.prot} g ${L(lang, 'protein', 'prot.')}` : x.sub}</span>
               {open === i && x.list && <ul className="fade-up mt-2 space-y-0.5 border-t border-current/10 pt-2">{x.list.map(([n, q], j) => <li key={j} className="flex justify-between gap-2 text-[13px]"><span>{n}</span><b className="tabular-nums">{q}</b></li>)}</ul>}
+              {x.icon === Dumbbell && x.list && <span role="button" tabIndex={0} onClick={(ev) => { ev.stopPropagation(); setStory({ t: x.title, ex: x.list! }) }} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-apricot py-2 text-sm font-extrabold text-ink active:scale-95"><Play size={15} aria-hidden /> {L(lang, 'Start with the coach', 'Démarrer avec le coach')}</span>}
             </button></li>))}</ol>
       </>}
 
@@ -101,5 +103,6 @@ export function HealthPlan({ p, set, lang, kcal, prot }: { p: SportProfile & { l
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface"><div className="grow-x h-full rounded-full bg-forest" style={{ width: `${[60, 75, 90, 45][i]}%` }} /></div>
           <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold"><Scale size={13} aria-hidden /> {L(lang, 'Sunday weigh-in', 'Pesée le dimanche')}{perWeek ? ` · ${L(lang, 'target', 'objectif')} ${perWeek > 0 ? '+' : ''}${(perWeek * (i + 1)).toFixed(perWeek % 0.5 ? 2 : 1)} kg` : ` · ${L(lang, 'keep your weight', 'garder ton poids')}`}</p>
         </button>) })}</div>}
+      {story && <WorkoutStory title={story.t} ex={story.ex} lang={lang} onClose={() => setStory(null)} />}
     </section>)
 }

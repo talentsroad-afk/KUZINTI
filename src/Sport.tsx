@@ -2,14 +2,8 @@ import { zf } from './lib/zgh'
 import { E3 } from './E3'
 import { HealthPlan } from './Health'
 import { Ic } from './Ic'
-import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
-import { rname, type Lang } from './lib/i18n'
-import { RECIPES, type Meal, type Recipe } from './data/recipes'
-import { kcalPerServing, protPerServing } from './lib/engine'
-import { inCuisine } from './lib/plan'
-import { Dish } from './ui'
-import { RecipeSheet } from './Screens'
+import type { Lang } from './lib/i18n'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 export type SportProfile = { sex: 'f' | 'm'; age: number; h: number; w: number; sport: string; goal: string; days: number; kcalO?: number; protO?: number; lvl?: 'beg' | 'mid' | 'adv' }
@@ -25,9 +19,6 @@ const GOALS: [string, string, number, number, [string, string, string], [string,
   ['cut', '🔥', -400, 2.1, ['Lose fat', 'Perdre du gras', 'خسارة الدهون'], ['A deficit that keeps the muscle', 'Un déficit qui garde le muscle', 'عجز يحافظ على العضلات']],
   ['fit', '⚖️', 0, 1.5, ['Stay in shape', 'Garder la forme', 'الحفاظ على اللياقة'], ['Balanced, steady energy', 'Équilibré, énergie stable', 'متوازن']],
   ['perf', '⚡', 150, 1.6, ['Endurance', 'Endurance', 'التحمل'], ['More carbs for long efforts', 'Plus de glucides pour les longs efforts', 'نشويات أكثر']],
-]
-const SLOTS: [Meal, string, [string, string, string], number][] = [
-  ['b', '🌅', ['Breakfast', 'Petit-déjeuner', 'الفطور'], 0.25], ['l', '☀️', ['Lunch', 'Déjeuner', 'الغداء'], 0.35], ['g', '🥤', ['Snack (after training)', 'Collation (après l’entraînement)', 'وجبة خفيفة'], 0.1], ['d', '🌙', ['Dinner', 'Dîner', 'العشاء'], 0.3],
 ]
 
 /** Daily needs from Mifflin-St Jeor, activity from sessions per week, adjusted for the goal. */
@@ -59,30 +50,7 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
   const set = (o: Partial<SportProfile>) => patchMe({ sport: { ...p, ...o } } as never)
   const n0 = needs(p); const n = { ...n0, kcal: p.kcalO ?? n0.kcal, prot: p.protO ?? n0.prot }
   n.carbs = Math.max(0, Math.round((n.kcal - n.prot * 4 - n.fat * 9) / 4))
-  const [add, setAdd] = useState<string[]>([])
-  const [rv, setRv] = useState<Recipe | null>(null); const [shift, setShift] = useState(0)
-  const cuisine = me!.cuisine ?? 'ma'
-  // Meals of the day: for each slot, the dish closest to the slot's kcal share with the best protein density.
-  const day = useMemo(() => SLOTS.map(([s, e, lab, share], i) => {
-    const target = n.kcal * share
-    const pool = RECIPES.filter((r) => r.m.includes(s) && (inCuisine(r, cuisine) || s === 'g')).map((r) => ({ r, k: kcalPerServing(r.id), pr: protPerServing(r.id) }))
-      .filter((x) => x.k > 0).sort((a, b) => (Math.abs(a.k - target) / target - (a.pr / a.k) * (p.goal === 'bulk' || p.goal === 'cut' ? 3 : 1.5)) - (Math.abs(b.k - target) / target - (b.pr / b.k) * (p.goal === 'bulk' || p.goal === 'cut' ? 3 : 1.5)))
-    const x = pool[(shift + i) % Math.max(1, Math.min(4, pool.length))]
-    return { s, e, lab, target, x }
-  }), [n.kcal, cuisine, shift, p.goal])
-  const ADD: [string, string, string, number, number][] = [
-    ['eggs', '🥚', L(lang, '2 eggs', '2 œufs', 'بيضتان'), 150, 12], ['yog', '🥛', L(lang, 'Greek yogurt', 'Yaourt nature', 'ياغورت'), 100, 6], ['tuna', '🐟', L(lang, 'Can of tuna', 'Boîte de thon', 'علبة تونة'), 120, 25],
-    ['chick', '🍗', L(lang, 'Chicken breast 150 g', 'Blanc de poulet 150 g', 'صدر دجاج'), 165, 35], ['lent', '🫘', L(lang, 'Bowl of lentils', 'Bol de lentilles', 'عدس'), 230, 18], ['milk', '🥤', L(lang, 'Glass of milk', 'Verre de lait', 'كأس حليب'), 120, 8],
-    ['nuts', '🥜', L(lang, 'Handful of almonds', 'Poignée d’amandes', 'لوز'), 170, 6], ['dates', '🌴', L(lang, '3 dates + bread', '3 dattes + pain', 'تمر وخبز'), 260, 6],
-  ]
-  const tk = day.reduce((a, d) => a + (d.x?.k ?? 0), 0) + ADD.filter((x) => add.includes(x[0])).reduce((a, x) => a + x[3], 0)
-  const tp = day.reduce((a, d) => a + (d.x?.pr ?? 0), 0) + ADD.filter((x) => add.includes(x[0])).reduce((a, x) => a + x[4], 0)
-  const gapP = n.prot - tp; const gapK = n.kcal - tk
-  const ranked = [...ADD].filter((x) => !add.includes(x[0])).sort((a, b) => gapP > 10 ? b[4] / b[3] - a[4] / a[3] : gapK > 0 ? b[3] - a[3] : a[3] - b[3]).slice(0, 4)
   const g = GOALS.find((x) => x[0] === p.goal)!
-  const BAR: [string, string, number, number, string, string][] = [
-    ['🔥', L(lang, 'Calories', 'Calories', 'سعرات'), tk, n.kcal, 'kcal', '#ee9b45'], ['🥩', L(lang, 'Protein', 'Protéines', 'بروتين'), tp, n.prot, 'g', '#e2574c'],
-  ]
   const weightMsg = p.w < n.lo ? L(lang, `Below the healthy range: aim for ${n.lo} kg, +0.25 kg a week.`, `Sous la zone santé : visez ${n.lo} kg, à +0,25 kg par semaine.`, `أقل من النطاق الصحي`)
     : p.w > n.hi && p.goal !== 'bulk' ? L(lang, `Above the range: ${n.hi} kg is a good target, about −0.5 kg a week.`, `Au-dessus de la zone : ${n.hi} kg est une bonne cible, environ −0,5 kg par semaine.`, `أعلى من النطاق`)
     : L(lang, 'You are in the healthy range. Keep it and work on the muscle.', 'Vous êtes dans la zone santé. Gardez-la et travaillez le muscle.', 'أنت في النطاق الصحي')
@@ -98,7 +66,9 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
           <div key={l} className="rounded-2xl bg-white/12 p-2" style={{ background: 'rgba(255,255,255,.12)' }}><span className="float inline-block text-xl" style={{ animationDelay: `${i * 0.35}s` }}><E3 e={e} /></span><b className="block text-[15px] tabular-nums">{v}{u}</b><span className="block text-[10px] text-white/75">{l}</span></div>))}</div>
       </section>
 
-      <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+      <HealthPlan p={p} set={set} lang={lang} kcal={p.kcalO ?? n.kcal} prot={p.protO ?? n.prot} />
+
+      <details className="group rounded-[24px] bg-surface p-4 shadow-soft"><summary className="flex cursor-pointer list-none items-center justify-between font-display font-extrabold">{L(lang, 'My sports profile', 'Mon profil sportif', 'ملفي الرياضي')}<span className="text-sm font-semibold text-muted">{p.w} kg · {p.days}/{L(lang, 'wk', 'sem', 'أسبوع')} <span className="inline-block transition-transform group-open:rotate-90">›</span></span></summary><div className="mt-3">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My sport', 'Mon sport', 'رياضتي')}</p>
         <div className="grid grid-cols-3 gap-2">{SPORTS.map(([k, e, en, fr, ar]) => { const on = p.sport === k; return <button key={k} className={`flex items-center gap-2 rounded-[16px] p-2 text-start text-[12.5px] font-bold transition-all duration-300 active:scale-95 ${on ? 'bg-[#2f6fa8] text-white shadow-lift' : 'bg-cream/80'}`} onClick={() => set({ sport: k })} aria-pressed={on}><span className={`text-xl ${on ? 'pop' : ''}`}><E3 e={e} /></span><span className="truncate">{L(lang, en, fr, ar)}</span></button> })}</div>
         <p className="mb-2 mt-4 text-[11px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My goal', 'Mon objectif', 'هدفي')}</p>
@@ -110,19 +80,17 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
           <Num v={p.age} set={(age) => set({ age })} min={14} max={90} unit={L(lang, 'yrs', 'ans', 'سنة')} label={L(lang, 'Age', 'Âge', 'العمر')} />
           <Num v={p.days} set={(days) => set({ days })} min={0} max={7} unit={L(lang, '/wk', '/sem', '/أسبوع')} label={L(lang, 'Sessions', 'Séances', 'حصص')} />
         </div>
-      </section>
+      </div></details>
 
-      <HealthPlan p={p} set={set} lang={lang} kcal={p.kcalO ?? n.kcal} prot={p.protO ?? n.prot} />
-
-      <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+      <details className="group rounded-[24px] bg-surface p-4 shadow-soft"><summary className="flex cursor-pointer list-none items-center justify-between font-display font-extrabold">{L(lang, 'Weight & targets', 'Poids et objectifs', 'الوزن والأهداف')}<span className="inline-block text-muted transition-transform group-open:rotate-90">›</span></summary><div className="mt-3 space-y-4">
+      <div>
         <div className="flex items-baseline justify-between"><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted"><Ic e="⚖️" /> {L(lang, 'Advised weight', 'Poids conseillé', 'الوزن المنصوح')}</p><b className="font-display text-lg tabular-nums text-forest">{n.lo}–{n.hi} kg</b></div>
         <div className="relative mt-3 h-3 rounded-full" style={{ background: 'linear-gradient(90deg,#8fd3ff 0%,#7fc79a 25%,#7fc79a 75%,#ffcf8a 100%)' }}>
           <span className="absolute -top-1.5 grid h-6 w-6 -translate-x-1/2 place-items-center rounded-full bg-ink text-[10px] font-bold text-white shadow-lift transition-all duration-500" style={{ left: `${pct}%` }}>{p.w}</span></div>
         <p className="mt-3 text-sm">{weightMsg}</p>
         <p className="mt-1 text-[11px] text-muted">IMC {n.bmi}. {L(lang, 'A muscular body can weigh a bit more: trust the mirror and your waist too.', 'Un corps musclé peut peser un peu plus : fiez-vous aussi au miroir et au tour de taille.', 'الجسم العضلي قد يزن أكثر.')}</p>
-      </section>
-
-      <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+      </div>
+      <div className="border-t border-line pt-4">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">🎚️ {L(lang, 'Adjust my targets', 'Ajuster mes objectifs', 'ضبط أهدافي')}</p>
         {([['🔥', L(lang, 'Calories', 'Calories', 'سعرات'), n.kcal, n0.kcal, 1200, 4500, 50, 'kcal', (v?: number) => set({ kcalO: v })], ['🥩', L(lang, 'Protein', 'Protéines', 'بروتين'), n.prot, n0.prot, 40, 260, 5, 'g', (v?: number) => set({ protO: v })]] as [string, string, number, number, number, number, number, string, (v?: number) => void][]).map(([e, l, v, rec, mn, mx, st, u, f]) => (
           <div key={l} className="mb-3">
@@ -133,34 +101,8 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
             <input type="range" min={mn} max={mx} step={st} value={v} onChange={(ev) => f(+ev.target.value)} className="mt-1 w-full accent-[#2f6fa8]" aria-label={l} />
             <p className="text-[10.5px] text-muted">{L(lang, 'Advised for you', 'Conseillé pour vous', 'المنصوح')} : {rec} {u}{v !== rec && <button className="ms-2 font-bold text-forest" onClick={() => f(undefined)}>↺ {L(lang, 'reset', 'revenir', 'إرجاع')}</button>}</p>
           </div>))}
-      </section>
-
-      <section>
-        <div className="mb-2 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'My meals today', 'Mes repas du jour', 'وجباتي اليوم')}</h2><button className="text-sm font-bold text-forest" onClick={() => setShift(shift + 1)}><Ic e="🎲" /> {L(lang, 'Others', 'Autres', 'أخرى')}</button></div>
-        <div className="mb-3 space-y-2 rounded-[20px] bg-surface p-3 shadow-soft">{BAR.map(([e, l, v, t, u, c]) => <div key={l}>
-          <div className="flex items-baseline justify-between text-xs"><span className="font-bold">{e} {l}</span><span className="tabular-nums"><b>{Math.round(v)}</b> / {t} {u}</span></div>
-          <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (v / t) * 100)}%`, background: c }} /></div></div>)}
-          <p className={`rounded-xl px-2.5 py-1.5 text-[11.5px] font-semibold ${Math.abs(gapK) < n.kcal * 0.08 && gapP < 10 ? 'bg-leaf/25 text-forest' : 'bg-apricot/20'}`}>{Math.abs(gapK) < n.kcal * 0.08 && gapP < 10 ? L(lang, '✅ Right on target today.', '✅ Pile dans l’objectif aujourd’hui.', '✅ في الهدف') : `${gapK > 0 ? L(lang, `🔥 ${Math.round(gapK)} kcal missing`, `🔥 Il manque ${Math.round(gapK)} kcal`, `ينقص ${Math.round(gapK)}`) : L(lang, `🔥 ${Math.round(-gapK)} kcal over`, `🔥 ${Math.round(-gapK)} kcal en trop`, `زيادة ${Math.round(-gapK)}`)}${gapP > 0 ? ' · ' + L(lang, `🥩 ${Math.round(gapP)} g protein missing`, `🥩 il manque ${Math.round(gapP)} g de protéines`, `ينقص ${Math.round(gapP)} غ`) : ''}`}</p>
-          {(gapK > 80 || gapP > 8) && <div><p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted">{L(lang, 'My suggestions to fill the gap', 'Mes propositions pour combler', 'اقتراحاتي')}</p>
-            <div className="grid grid-cols-2 gap-1.5">{ranked.map(([k, e, l, kc, pr]) => <button key={k} className="flex items-center gap-2 rounded-2xl bg-cream/80 p-2 text-start active:scale-95" onClick={() => setAdd([...add, k])}><span className="text-xl"><E3 e={e} /></span><span className="min-w-0"><b className="block truncate text-[12px]">{l}</b><span className="text-[10.5px] text-muted">+{kc} kcal · +{pr} g</span></span><span className="ms-auto text-forest">＋</span></button>)}</div></div>}
-          {add.length > 0 && <div className="flex flex-wrap gap-1.5">{ADD.filter((x) => add.includes(x[0])).map(([k, e, l]) => <button key={k} className="pop rounded-full bg-forest px-2.5 py-1 text-[11px] font-bold text-white" onClick={() => setAdd(add.filter((y) => y !== k))}>{e} {l} ✕</button>)}</div>}
-        </div>
-        <div className="space-y-2">{day.map(({ s, e, lab, target, x }) => x && (
-          <button key={s} className="flex w-full items-center gap-3 rounded-[20px] bg-surface p-2.5 text-start shadow-soft active:scale-[.98]" onClick={() => setRv(x.r)}>
-            <Dish r={x.r} w={200} className="h-16 w-16 shrink-0 rounded-2xl" />
-            <span className="min-w-0 flex-1"><span className="block text-[10.5px] font-bold uppercase tracking-wide text-muted">{e} {lab[lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]} · {L(lang, 'target', 'cible', 'الهدف')} {Math.round(target)} kcal</span>
-              <span className="block truncate font-semibold">{rname(x.r.n, lang)}</span>
-              <span className="mt-0.5 flex gap-1.5 text-[11px] font-bold"><span className="rounded-full bg-apricot/30 px-2 py-0.5"><Ic e="🔥" /> {Math.round(x.k)}</span><span className="rounded-full bg-[#e2574c]/15 px-2 py-0.5">🥩 {Math.round(x.pr)} g</span></span></span>
-          </button>))}</div>
-        <div className="mt-3 rounded-[20px] bg-cream/80 p-3 text-[12px] leading-relaxed">
-          <p><Ic e="⏱️" /> <b>{L(lang, 'Before training', 'Avant la séance', 'قبل التمرين')}</b> · {L(lang, 'banana, dates or bread with honey, 1 h before', 'banane, dattes ou pain au miel, 1 h avant', 'موز أو تمر قبل ساعة')}</p>
-          <p>🔁 <b>{L(lang, 'After', 'Après', 'بعد')}</b> · {L(lang, 'protein within 2 h: eggs, yogurt, tuna, chicken', 'des protéines dans les 2 h : œufs, yaourt, thon, poulet', 'بروتين خلال ساعتين')}</p>
-          <p><Ic e="💧" /> <b>{n.water} L</b> {L(lang, 'of water a day, more on training days', 'd’eau par jour, plus les jours d’entraînement', 'ماء يوميا')}</p>
-        </div>
-        <button className="btn btn-primary mt-3 w-full !min-h-14" onClick={() => apply(n.kcal)}><Ic e="✨" /> {L(lang, `Apply ${n.kcal} kcal to my week`, `Appliquer ${n.kcal} kcal à ma semaine`, `تطبيق ${n.kcal} على أسبوعي`)}</button>
-        <p className="mt-2 text-center text-[10.5px] text-muted">{L(lang, 'Estimates for healthy adults. Pregnancy, illness or a competition: ask a doctor or a coach.', 'Estimations pour adultes en bonne santé. Grossesse, maladie ou compétition : demandez l’avis d’un médecin ou d’un coach.', 'تقديرات للبالغين الأصحاء.')}</p>
-      </section>
-      {rv && <RecipeSheet r={rv} onClose={() => setRv(null)} />}
+      </div>
+      </div></details>
     </div>
   )
 }
