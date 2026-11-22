@@ -13,7 +13,7 @@ import { CartMode } from './Cart'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
-import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Wallet, Dumbbell, type LucideIcon } from './icons'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, Wallet, Dumbbell, type LucideIcon } from './icons'
 import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Nav } from './Nav'
@@ -119,7 +119,7 @@ const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', Cal
 type World = 'food' | 'sorties' | 'budget'
 const SPACES: World[] = ['food', 'sorties', 'budget']
 const FOOD_TABS: Tab[] = ['week', 'recipes', 'list', 'stores', 'sport']
-const SUB: [Tab, LucideIcon, string, string, string][] = [['week', CalendarDays, 'Week', 'Semaine', 'الأسبوع'], ['recipes', BookOpen, 'Recipes', 'Recettes', 'وصفات'], ['list', ShoppingCart, 'Shopping', 'Courses', 'التسوق'], ['sport', Dumbbell, 'Sport', 'Sport', 'رياضة']]
+const SUB: [Tab, LucideIcon, string, string, string][] = [['week', CalendarDays, 'Week', 'Semaine', 'الأسبوع'], ['list', ShoppingCart, 'Shopping', 'Courses', 'التسوق'], ['sport', Dumbbell, 'Fitness', 'Forme', 'لياقة']]
 const L3 = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : l === 'zgh' ? zf(fr) : fr)
 
 function Shell() {
@@ -234,9 +234,9 @@ function Shell() {
           <button className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-lg shadow-soft active:scale-90" onClick={() => setCtry(true)} aria-label={cname(countryOf(me!.country), lang)}>{countryOf(me!.country).f}</button>
           <button className={`grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-sm font-extrabold shadow-soft active:scale-90 ${tab === 'profile' ? 'bg-forest text-white' : 'bg-surface text-forest'}`} onClick={() => go('profile')} aria-label={t('profile', lang)}>{(me!.name || '?').slice(0, 1).toUpperCase()}</button>
         </div>
-        {FOOD_TABS.includes(tab) && <div data-tour="subtabs" className="mx-auto max-w-2xl px-4 pb-2"><div className="relative grid grid-cols-4 rounded-full bg-surface p-1 shadow-soft" role="tablist">
-          <span className="absolute inset-y-1 rounded-full bg-forest shadow-soft transition-all duration-500 ease-[cubic-bezier(.2,.9,.25,1)]" style={{ width: 'calc((100% - .5rem) / 4)', insetInlineStart: `calc(.25rem + ${Math.max(0, SUB.findIndex((x) => x[0] === (tab === 'stores' ? 'list' : tab)))} * (100% - .5rem) / 4)` }} aria-hidden />
-          {SUB.map(([k, I, en, fr, ar]) => { const on = (tab === 'stores' ? 'list' : tab) === k; return <button key={k} role="tab" aria-selected={on} onClick={() => go(k)} className={`relative z-10 flex items-center justify-center gap-1 rounded-full py-1.5 text-[12.5px] font-bold transition-colors duration-300 ${on ? 'text-white' : 'text-muted'}`}><I size={15} strokeWidth={2.3} className="hidden sm:inline-grid" aria-hidden />{L3(lang, en, fr, ar)}{k === 'list' && cartLeft > 0 && <span className={`rounded-full px-1.5 text-[10px] tabular-nums ${on ? 'bg-white/25' : 'bg-apricot/40 text-ink'}`}>{cartLeft}</span>}</button> })}
+        {FOOD_TABS.includes(tab) && <div data-tour="subtabs" className="mx-auto max-w-2xl px-4 pb-2"><div className="relative grid grid-cols-3 rounded-full bg-surface p-1 shadow-soft" role="tablist">
+          <span className="absolute inset-y-1 rounded-full bg-forest shadow-soft transition-all duration-500 ease-[cubic-bezier(.2,.9,.25,1)]" style={{ width: 'calc((100% - .5rem) / 3)', insetInlineStart: `calc(.25rem + ${Math.max(0, SUB.findIndex((x) => x[0] === (tab === 'stores' ? 'list' : tab === 'recipes' ? 'week' : tab)))} * (100% - .5rem) / 3)` }} aria-hidden />
+          {SUB.map(([k, I, en, fr, ar]) => { const on = (tab === 'stores' ? 'list' : tab === 'recipes' ? 'week' : tab) === k; return <button key={k} role="tab" aria-selected={on} onClick={() => go(k)} className={`relative z-10 flex items-center justify-center gap-1 rounded-full py-1.5 text-[12.5px] font-bold transition-colors duration-300 ${on ? 'text-white' : 'text-muted'}`}><I size={15} strokeWidth={2.3} className="hidden sm:inline-grid" aria-hidden />{L3(lang, en, fr, ar)}{k === 'list' && cartLeft > 0 && <span className={`rounded-full px-1.5 text-[10px] tabular-nums ${on ? 'bg-white/25' : 'bg-apricot/40 text-ink'}`}>{cartLeft}</span>}</button> })}
         </div></div>}
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
@@ -244,10 +244,11 @@ function Shell() {
 
         {space === 'out' ? <div key={tab} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>
           {tab === 'home' && <HomeTab composeFor={(o) => composeWith(o)} clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
+          {tab === 'week' && <button className="mb-2 flex w-full items-center justify-between rounded-2xl bg-surface px-4 py-2.5 text-sm font-bold text-forest shadow-soft active:scale-[.99]" onClick={() => go('recipes')}><span>📖 {L3(lang, 'Browse all recipes', 'Parcourir toutes les recettes', 'تصفح الوصفات')}</span><span aria-hidden>›</span></button>}
           {tab === 'week' && <WeekTab toBasket={() => setBask(true)} clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
-          {tab === 'recipes' && <RecipesTab say={say} />}
+          {tab === 'recipes' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => go('week')}>‹ {L3(lang, 'My week', 'Ma semaine', 'أسبوعي')}</button><RecipesTab say={say} /></>}
           {tab === 'sport' && <SportTab apply={(k) => { patchMe({ kcal: k, health: 'sport' }); if (hasPlan) composeWith({ kcal: k, health: 'sport' }, true); else composeWith({ kcal: k, health: 'sport' }); go('week') }} />}
           {tab === 'profile' && <ProfileScreen celebrate={celebrate} openCountry={() => setCtry(true)} />}
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}

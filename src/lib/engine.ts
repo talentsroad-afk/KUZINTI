@@ -61,8 +61,13 @@ export function fmtQty(q: number, base: Base): string {
   return `${Math.round(q)} ${base}`
 }
 
+/** Frying oil is mostly left in the pan: only ~12 % ends up in the food. Applies when a recipe uses 40 ml or more of oil per serving. */
+const FRY_ABSORBED = 0.12
+export function kcalOfScaled(q: Record<string, number>, servings: number): number {
+  return Object.entries(q).reduce((a, [id, v]) => a + v * ING[id].k * (id === 'oil' && v / servings >= 40 ? FRY_ABSORBED : 1), 0)
+}
 export function recipeKcal(rid: string, servings = REC[rid].s): number {
-  return Object.entries(scaleRecipe(rid, servings)).reduce((a, [id, q]) => a + q * ING[id].k, 0)
+  return kcalOfScaled(scaleRecipe(rid, servings), servings)
 }
 /** kcal for one person for one serving of the recipe. */
 export const kcalPerServing = (rid: string) => recipeKcal(rid, REC[rid].s) / REC[rid].s
@@ -77,7 +82,7 @@ export function scaleEntry(e: PlanEntry): Record<string, number> {
   return out
 }
 export const entryCost = (e: PlanEntry) => Object.entries(scaleEntry(e)).reduce((a, [id, q]) => a + q * ING[id].p, 0)
-export const entryKcal = (e: PlanEntry) => Object.entries(scaleEntry(e)).reduce((a, [id, q]) => a + q * ING[id].k, 0) / e.n
+export const entryKcal = (e: PlanEntry) => (kcalOfScaled(scaleRecipe(e.r, e.n), e.n) + sideParts(e).reduce((a, [, part]) => a + Object.entries(part).reduce((b, [id, q]) => b + q * ING[id].k, 0), 0)) / e.n
 /** Daily kcal per person: average complete meal for each meal type planned, plus tea-time spread over the week. */
 export function dailyKcal(plan: Record<string, PlanEntry>): number {
   const by: Record<string, number[]> = {}

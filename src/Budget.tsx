@@ -149,6 +149,8 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
   tips.push([L(lang, 'Emergency fund', 'Épargne de précaution', 'احتياطي الطوارئ'), L(lang, `Keep 3 months of essentials aside: about ${money(emergency, lang)}. Build it before any other goal.`, `Gardez 3 mois de dépenses essentielles de côté : environ ${money(emergency, lang)}. Constituez-la avant tout autre objectif.`, `احتفظ بـ ${money(emergency, lang)}.`)])
   if ((m.fix.credit ?? 0) > 0) tips.push([L(lang, 'Loans first', 'Les crédits d’abord', 'القروض أولًا'), L(lang, 'Pay off the most expensive consumer loan first (avalanche method); avoid new revolving credit.', 'Remboursez d’abord le crédit conso le plus cher (méthode avalanche) et évitez tout nouveau crédit renouvelable.', 'سدّد القرض الأغلى أولًا.')])
   if (m.goal?.target && m.goal.monthly) tips.push([L(lang, 'Your goal', 'Votre objectif', 'هدفك'), L(lang, `${m.goal.n || 'Goal'}: ${money(Math.max(0, m.goal.target - m.goal.saved), lang)} to go, about ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / m.goal.monthly)} months at this pace.`, `${m.goal.n || 'Objectif'} : encore ${money(Math.max(0, m.goal.target - m.goal.saved), lang)}, soit environ ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / m.goal.monthly)} mois à ce rythme.`, `${m.goal.n}`)])
+  // Safety cushion = savings explicitly kept as a cushion, not a holiday or car fund.
+  const cushion = !m.goal?.n || /pr[ée]caution|urgence|safety|[ée]pargne|savings|احتياط/i.test(m.goal.n) ? m.goal?.saved ?? 0 : 0
   // Financial health score, 0-100, from five weighted, explainable criteria.
   const essentials = fix + (m.env.food ?? 0) + (m.env.health ?? 0)
   const lin = (x: number, good: number, bad: number) => Math.max(0, Math.min(1, (bad - x) / (bad - good)))
@@ -157,7 +159,7 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
     [L(lang, 'Savings rate', 'Taux d’épargne', 'نسبة الادخار'), 25 * Math.min(1, saveM / (inc * 0.2)), 25, `${pct(saveM)} % / 20 %`],
     [L(lang, 'Debt load', 'Endettement', 'المديونية'), 25 * lin(debt / inc, 0.3, 0.5), 25, `${pct(debt)} %`],
     [L(lang, 'Essentials', 'Dépenses essentielles', 'الحاجيات'), 20 * lin(need / inc, 0.5, 0.8), 20, `${pct(need)} %`],
-    [L(lang, 'Safety cushion', 'Matelas de sécurité', 'الاحتياطي'), 15 * Math.min(1, (m.goal?.saved ?? 0) / Math.max(1, essentials * 3)), 15, `${((m.goal?.saved ?? 0) / Math.max(1, essentials)).toFixed(1)} ${L(lang, 'months', 'mois', 'أشهر')}`],
+    [L(lang, 'Safety cushion', 'Matelas de sécurité', 'الاحتياطي'), 15 * Math.min(1, cushion / Math.max(1, essentials * 3)), 15, `${(cushion / Math.max(1, essentials)).toFixed(1)} ${L(lang, 'months', 'mois', 'أشهر')}`],
     [L(lang, 'Envelopes kept', 'Enveloppes tenues', 'الأظرفة المحترمة'), envs.length ? 15 * (kept / envs.length) : 15, 15, `${kept}/${envs.length}`],
   ] : []
   const score = Math.round(crit.reduce((a, c) => a + c[1], 0))
@@ -203,7 +205,7 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
     ['walk', '🚶', L(lang, 'Two short trips a week on foot or by tram', 'Deux petits trajets par semaine à pied ou en tram', 'تنقلات مشيا'), 100],
   ] as [string, string, string, number][]).filter((x) => x[3] > 0)
   const scenGain = SCEN.filter(([k]) => scen[k]).reduce((a, x) => a + x[3], 0)
-  const cushionLeft = Math.max(0, essentials * 3 - (m.goal?.saved ?? 0))
+  const cushionLeft = Math.max(0, essentials * 3 - cushion)
   const pockets: [string, string, number, string][] = cushionLeft > 0
     ? [['🛟', L(lang, 'Safety cushion', 'Matelas de sécurité', 'احتياطي'), 0.6, C.need], ['🎯', m.goal?.n || L(lang, 'Project', 'Projet', 'مشروع'), 0.25, C.want], ['🎉', L(lang, 'Aïd, holidays, gifts', 'Aïd, vacances, cadeaux', 'العيد والعطل'), 0.15, C.save]]
     : [['🎯', m.goal?.n || L(lang, 'Project', 'Projet', 'مشروع'), 0.55, C.want], ['📈', L(lang, 'Long-term savings', 'Épargne long terme', 'ادخار طويل'), 0.3, C.need], ['🎉', L(lang, 'Aïd, holidays, gifts', 'Aïd, vacances, cadeaux', 'العيد والعطل'), 0.15, C.save]]

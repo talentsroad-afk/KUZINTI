@@ -36,7 +36,10 @@ export function pool(slot: Meal, p: Pick<Prefs, 'cuisine' | 'diet'> & { health?:
 }
 function weight(r: Recipe, slot: Meal, p: Prefs, used: Record<string, number>) {
   const g = p.goals
-  return (1 / (1 + (used[r.id] ?? 0) * (g.includes('varied') ? 10 : 4))) * (p.kcal ? kcalFit(kcalPerServing(r.id), slot, p.kcal) : modeWeight(modeOf(g), kcalPerServing(r.id)))
+  // The main cuisine leads: secondary cuisines (Mediterranean, etc.) stay a minority, and never at breakfast.
+  const primary = p.cuisine.split(',')[0]
+  const lead = (primary === 'ma' || WORLD.includes(primary)) && p.cuisine !== primary && cuisineOf(r) !== primary ? (slot === 'b' ? 0.05 : 0.25) : 1
+  return lead * (1 / (1 + (used[r.id] ?? 0) * (g.includes('varied') ? 10 : 4))) * (p.kcal ? kcalFit(kcalPerServing(r.id), slot, p.kcal) : modeWeight(modeOf(g), kcalPerServing(r.id)))
     * (g.includes('cheap') ? 8 / (2 + recipeCost(r.id) / r.s) : 1) * (g.includes('quick') ? (r.t <= 35 ? 3 : 0.4) : 1)
     * (p.region !== 'all' && REGION_DISHES[p.region]?.includes(r.id) ? 2.5 : 1) * (r.tags.includes('sweet') && slot !== 'g' && slot !== 'b' ? 0.1 : 1) * healthWeight(r, p.health)
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildList, recipeCost, roundBuy, scaleRecipe, toBase } from './engine'
 import { ING, STAPLES } from '../data/catalog'
-import { RECIPES } from '../data/recipes'
+import { RECIPES, REC } from '../data/recipes'
 
 describe('engine', () => {
   it('converts household units with per-ingredient factors', () => {
@@ -28,7 +28,7 @@ describe('engine', () => {
 })
 
 import { composeWeek, adaptToBudget, listCost, composeSides, type Prefs } from './plan'
-import { dailyKcal } from './engine'
+import { dailyKcal, kcalPerServing, parseIng } from './engine'
 const P = (goals: string[], budget = 99999): Prefs => ({ size: 2, diet: [], cuisine: 'ma', region: 'all', goals, meals: ['b', 'l', 'd'], budget })
 describe('composer', () => {
   const avg = (g: string[]) => { let s = 0; for (let i = 0; i < 12; i++) s += dailyKcal(composeWeek(P(g), STAPLES, {})); return s / 12 }
@@ -45,5 +45,16 @@ describe('composer', () => {
     const big = composeWeek(P(['gourmand']), STAPLES, {}); const target = listCost(big, STAPLES, {}) * 0.6
     const fit = adaptToBudget(big, target, STAPLES, {}, P([]))
     expect(fit.after).toBeLessThanOrEqual(target)
+  })
+})
+
+describe('recipe sanity', () => {
+  it('every recipe has plausible calories, known ingredients and units', () => {
+    for (const r of Object.values(REC)) {
+      const k = kcalPerServing(r.id)
+      expect(k, r.id).toBeGreaterThan(80)
+      expect(k, r.id).toBeLessThan(1000)
+      for (const s of r.ing) { const { id } = parseIng(s); expect(ING[id], `${r.id}:${id}`).toBeDefined() }
+    }
   })
 })
