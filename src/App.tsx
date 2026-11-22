@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, setCurrency, t, type Lang } from './lib/i18n'
 import { LANG_LABEL } from './lib/i18n'
-import { Brand, Confetti, Toasts } from './ui'
+import { Brand, Confetti, Toasts , ChefHost } from './ui'
 import { RECIPES } from './data/recipes'
 import { Controls, usePrefs, WeekTab } from './Screens'
 import { HomeTab } from './Home'
@@ -235,7 +235,7 @@ function Shell() {
         </div>
         {FOOD_TABS.includes(tab) && <div data-tour="subtabs" className="mx-auto max-w-2xl px-4 pb-2"><div className="relative grid grid-cols-4 rounded-full bg-surface p-1 shadow-soft" role="tablist">
           <span className="absolute inset-y-1 rounded-full bg-forest shadow-soft transition-all duration-500 ease-[cubic-bezier(.2,.9,.25,1)]" style={{ width: 'calc((100% - .5rem) / 4)', insetInlineStart: `calc(.25rem + ${Math.max(0, SUB.findIndex((x) => x[0] === (tab === 'stores' ? 'list' : tab)))} * (100% - .5rem) / 4)` }} aria-hidden />
-          {SUB.map(([k, I, en, fr, ar]) => { const on = (tab === 'stores' ? 'list' : tab) === k; return <button key={k} role="tab" aria-selected={on} onClick={() => go(k)} className={`relative z-10 flex items-center justify-center gap-1 rounded-full py-1.5 text-[12.5px] font-bold transition-colors duration-300 ${on ? 'text-white' : 'text-muted'}`}><I size={15} strokeWidth={2.3} aria-hidden />{L3(lang, en, fr, ar)}{k === 'list' && cartLeft > 0 && <span className={`rounded-full px-1.5 text-[10px] tabular-nums ${on ? 'bg-white/25' : 'bg-apricot/40 text-ink'}`}>{cartLeft}</span>}</button> })}
+          {SUB.map(([k, I, en, fr, ar]) => { const on = (tab === 'stores' ? 'list' : tab) === k; return <button key={k} role="tab" aria-selected={on} onClick={() => go(k)} className={`relative z-10 flex items-center justify-center gap-1 rounded-full py-1.5 text-[12.5px] font-bold transition-colors duration-300 ${on ? 'text-white' : 'text-muted'}`}><I size={15} strokeWidth={2.3} className="hidden sm:inline-grid" aria-hidden />{L3(lang, en, fr, ar)}{k === 'list' && cartLeft > 0 && <span className={`rounded-full px-1.5 text-[10px] tabular-nums ${on ? 'bg-white/25' : 'bg-apricot/40 text-ink'}`}>{cartLeft}</span>}</button> })}
         </div></div>}
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
@@ -284,5 +284,5 @@ export default function App() {
   if (!me) body = mode === 'landing' ? <Landing go={setMode} /> : <Auth mode={mode} setMode={setMode} close={() => setMode('landing')} />
   else if (!house) body = <Onboarding />
   else body = <Shell />
-  return <><Toasts />{body}</>
+  return <><Toasts /><ChefHost />{body}</>
 }

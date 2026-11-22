@@ -14,7 +14,7 @@ import { REC } from './data/recipes'
 import { SIDE } from './data/sides'
 import { HOME, HOME_BY } from './data/home'
 import { storesNow, splitTotal, storeTotal } from './lib/stores'
-import { Num, PriceDial, Sheet, Swipe } from './ui'
+import { Num, PriceDial, Sheet, Swipe, chefSays, flyToCart } from './ui'
 import { dayName } from './lib/i18n'
 import { FridgeSheet } from './Extra'
 
@@ -111,7 +111,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   const groups = (Object.keys(AISLE) as Aisle[]).map((a) => [a, buy.filter((l) => l.ing.aisle === a)] as const).filter(([, v]) => v.length)
   const toggle = (key: string, name: string) => {
     const on = !chk[key]; upHouse((h) => { h.checked[key] = on }, on ? `✔ ${name}` : `↩ ${name}`)
-    if (on) { if (done + 1 === items.length) { celebrate(); award(40, t('tripDone', lang)) } else award(2, name) }
+    if (on) { if (done + 1 === items.length) { celebrate(); award(40, t('tripDone', lang)); chefSays(lang === 'en' ? 'All done! You shop faster than me 🏆' : 'Tout est pris ! Plus rapide que moi en cuisine 🏆') } else award(2, name) }
   }
   const openEdit = (key: string, name: string, est: number, line?: Line) => { setEdit({ key, name, est, line }); setVal(house!.paid?.[key] !== undefined ? String(Math.round(house!.paid![key] * curRate() * 100) / 100) : '') }
   const savePaid = () => { if (!edit) return; const v = parseFloat(val.replace(',', '.')) / curRate(); upHouse((h) => { const p = { ...(h.paid ?? {}) }; if (isNaN(v)) delete p[edit.key]; else p[edit.key] = v; h.paid = p; if (!isNaN(v)) h.checked[edit.key] = true }); setEdit(null) }
@@ -133,7 +133,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   const Row = ({ k, name, sub, est, line, q, e }: { k: string; name: string; sub: string; est: number; line?: Line; q?: string; e?: string }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; const no = !!house!.missing?.[k]; return (
     <Swipe onDelete={() => remove(k, name, line)} label={lang === 'en' ? 'Remove' : lang === 'ar' ? 'حذف' : 'Supprimer'} rtl={lang === 'ar'}>
     <div className={`flex items-center gap-3 py-2 transition-opacity ${on || no ? 'opacity-70' : ''}`}>
-      <button data-on={on} className={`chk relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl transition active:scale-90 ${on ? 'bg-leaf/35' : 'bg-cream'}`} onClick={() => toggle(k, name)} aria-pressed={on} aria-label={name}><span className={on ? 'pop' : ''}><E3 e={e ?? '🛒'} /></span>{on && <span className="pop absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-forest text-xs font-bold text-white ring-2 ring-surface">✓</span>}{no && !on && <span className="absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-muted text-xs font-bold text-white ring-2 ring-surface">✕</span>}</button>
+      <button data-on={on} className={`chk relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl transition active:scale-90 ${on ? 'bg-leaf/35' : 'bg-cream'}`} onClick={(ev) => { if (!chk[k]) flyToCart(ev.currentTarget, e ?? '🛒'); toggle(k, name) }} aria-pressed={on} aria-label={name}><span className={on ? 'pop' : ''}><E3 e={e ?? '🛒'} /></span>{on && <span className="pop absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-forest text-xs font-bold text-white ring-2 ring-surface">✓</span>}{no && !on && <span className="absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-muted text-xs font-bold text-white ring-2 ring-surface">✕</span>}</button>
       <button className="min-w-0 flex-1 text-start" onClick={() => openEdit(k, name, est, line)}><span className={`block truncate font-semibold ${on ? 'text-muted line-through' : ''}`}>{name}</span>{sub && <span className="block truncate text-xs text-muted">{sub}</span>}</button>
       <button className={`shrink-0 rounded-xl px-2.5 py-1 text-end tabular-nums ${paid !== undefined ? 'bg-leaf/30' : 'bg-cream'}`} onClick={() => openEdit(k, name, est, line)}>
         {q && <span className="block text-[15px] font-extrabold leading-tight text-forest">{q}</span>}

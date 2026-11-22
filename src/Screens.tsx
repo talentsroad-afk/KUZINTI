@@ -1,7 +1,7 @@
 import { RefreshCw, Shuffle } from 'lucide-react'
 import { BookOpen, Coffee, Dices, Moon, Sun, Sunrise, type LucideIcon } from './icons'
 import { E3 } from './E3'
-import { StepScene, actOf, ACT_LABEL } from './StepScene'
+import { StepScene, actOf, ACT_LABEL, CHEF_LINE } from './StepScene'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { HEALTH as HP, NUT, healthOk, nutName, nutrientsOf, type Health } from './lib/nutri'
@@ -12,7 +12,7 @@ import { ING } from './data/catalog'
 import { SIDE } from './data/sides'
 import { dailyKcal, entryCost, entryKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
 import { alternatives, FLAG, surpriseOne, composeSides, type Prefs } from './lib/plan'
-import { Dish, FoodTile, Sheet, Stepper } from './ui'
+import { ChefPop, Dish, FoodTile, Sheet, Stepper } from './ui'
 const SLOT_BG: Record<string, string> = { b: '#FBEFD9', l: '#E6F0E4', d: '#E7E9F4', g: '#FCE7E1' }
 import { iconOf } from './Cart'
 import { FormeCard } from './Forme'
@@ -44,23 +44,32 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
   // Every ingredient with its real quantity for the chosen servings (grams, ml, pieces or kitchen units).
   const ings = r.ing.map((s) => { const p = parseIng(s); const ing = ING[p.id]; if (!ing || ing.aisle === 'spices') return null; const q = (p.qty * sv) / r.s
     return { e: iconOf(p.id, ing.aisle), c: ing.aisle === 'produce' || ing.aisle === 'meat', n: ing.n[li(lang)], q: p.unit && p.unit !== ing.base && UNIT[p.unit] ? `${r1(q)} ${UNIT[p.unit][li(lang)]}` : fmtQty(toBase(ing, q, p.unit), ing.base) } }).filter(Boolean) as { e: string; c: boolean; n: string; q: string }[]
+  const sceneIngs = r.ing.map((x) => { const p = parseIng(x); const ing = ING[p.id]; if (!ing) return null; return { e: iconOf(p.id, ing.aisle), n: ing.n[li(lang)], c: ing.aisle === 'produce' || ing.aisle === 'meat', l: ing.base === 'ml', s: ing.aisle === 'spices' } }).filter(Boolean) as { e: string; n: string; c: boolean; l: boolean; s: boolean }[]
   const N = steps.length + 2; const [i, setI] = useState(0); const [dir, setDir] = useState(1)
   const go = (k: number) => { setDir(k > i ? 1 : -1); setI(k) }
-  useEffect(() => { if (i >= N - 1) return; const id = setTimeout(() => go(i + 1), i === 0 ? 2600 + ings.length * 260 : 6500); return () => clearTimeout(id) }, [i, N]) // eslint-disable-line react-hooks/exhaustive-deps
+  const dur = i === 0 ? 2600 + ings.length * 260 : 8000
+  // Pause: hold the screen (like a story) or tap ⏸. The timer resumes where it stopped.
+  const [paused, setPaused] = useState(false); const left = useRef(dur); const t0 = useRef(Date.now())
+  useEffect(() => { left.current = dur }, [i]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (i >= N - 1 || paused) return; t0.current = Date.now(); const id = setTimeout(() => go(i + 1), left.current); return () => { clearTimeout(id); left.current = Math.max(400, left.current - (Date.now() - t0.current)) } }, [i, N, paused]) // eslint-disable-line react-hooks/exhaustive-deps
+  const hold = useRef(0); const held = useRef(false)
+  const down = () => { held.current = false; hold.current = window.setTimeout(() => { held.current = true; setPaused(true) }, 220) }
+  const up = () => { clearTimeout(hold.current); if (held.current) { setPaused(false) } }
   // Parallax: the 3D scene follows the finger, the mouse or the phone's tilt.
   const [tilt, setTilt] = useState({ x: 0, y: 0 })
   useEffect(() => { const o = (e: DeviceOrientationEvent) => setTilt({ x: Math.max(-12, Math.min(12, ((e.beta ?? 45) - 45) / 3)), y: Math.max(-14, Math.min(14, (e.gamma ?? 0) / 3)) }); addEventListener('deviceorientation', o); return () => removeEventListener('deviceorientation', o) }, [])
   const onMove = (x: number, y: number) => setTilt({ x: ((y / innerHeight) - 0.5) * -14, y: ((x / innerWidth) - 0.5) * 18 })
   const hue = r.h; const R = Math.min(150, 60 + ings.length * 11)
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex flex-col overflow-hidden text-white" style={{ background: `radial-gradient(120% 80% at 50% 0%, hsl(${hue} 50% 30%), #0a130f 72%)` }} role="dialog" aria-label={rname(r.n, lang)}
-      onPointerMove={(e) => onMove(e.clientX, e.clientY)}>
+    <div className={`fixed inset-0 z-[80] flex select-none flex-col overflow-hidden text-white ${paused ? 'story-paused' : ''}`} style={{ background: `radial-gradient(120% 80% at 50% 0%, hsl(${hue} 50% 30%), #0a130f 72%)` }} role="dialog" aria-label={rname(r.n, lang)}
+      onPointerMove={(e) => onMove(e.clientX, e.clientY)} onPointerDown={down} onPointerUp={up} onPointerCancel={up}>
       <span className="pointer-events-none absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl" style={{ background: `hsl(${hue} 80% 55% / .35)` }} aria-hidden />
-      <div className="relative flex gap-1 px-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}>{Array.from({ length: N }, (_, k) => <span key={k} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20"><span key={i} className={`block h-full rounded-full bg-white ${k < i ? 'w-full' : k === i && i < N - 1 ? 'story-bar' : k === i ? 'w-full' : 'w-0'}`} style={k === i ? { animationDuration: i === 0 ? `${2.6 + ings.length * 0.26}s` : '6.5s' } : undefined} /></span>)}</div>
-      <div className="relative flex items-center gap-3 px-4 py-3"><Dish r={r} w={120} className="h-9 w-9 rounded-full" /><span className="min-w-0 flex-1"><b className="block truncate">{rname(r.n, lang)}</b><span className="text-[11px] text-white/60">{sv} {t('servings', lang)} · ⏱ {r.t} min</span></span><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close">✕</button></div>
+      <div className="relative flex gap-1 px-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}>{Array.from({ length: N }, (_, k) => <span key={k} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20"><span key={i} className={`block h-full rounded-full bg-white ${k < i ? 'w-full' : k === i && i < N - 1 ? 'story-bar' : k === i ? 'w-full' : 'w-0'}`} style={k === i ? { animationDuration: `${dur / 1000}s`, animationPlayState: paused ? 'paused' : 'running' } : undefined} /></span>)}</div>
+      <div className="relative flex items-center gap-3 px-4 py-3"><Dish r={r} w={120} className="h-9 w-9 rounded-full" /><span className="min-w-0 flex-1"><b className="block truncate">{rname(r.n, lang)}</b><span className="text-[11px] text-white/60">{sv} {t('servings', lang)} · ⏱ {r.t} min</span></span><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-sm" onClick={() => setPaused(!paused)} aria-label={paused ? (lang === 'en' ? 'Play' : 'Lecture') : 'Pause'}>{paused ? '▶' : '❚❚'}</button><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close">✕</button></div>
+      {paused && <div className="pointer-events-none absolute inset-x-0 top-24 z-30 flex justify-center"><span className="rounded-full bg-black/55 px-4 py-2 text-sm font-bold backdrop-blur">❚❚ {lang === 'en' ? 'Paused · tap ▶ to resume' : 'En pause · ▶ pour reprendre'}</span></div>}
       <div className="relative flex-1" style={{ perspective: 1100 }}>
-        <button className="absolute inset-y-0 start-0 z-10 w-1/3" onClick={() => go(Math.max(0, i - 1))} aria-label="‹" />
-        <button className="absolute inset-y-0 end-0 z-10 w-2/3" onClick={() => (i < N - 1 ? go(i + 1) : onClose())} aria-label="›" />
+        <button className="absolute inset-y-0 start-0 z-10 w-1/3" onClick={() => { if (!held.current) go(Math.max(0, i - 1)) }} aria-label="‹" />
+        <button className="absolute inset-y-0 end-0 z-10 w-2/3" onClick={() => { if (held.current) return; if (i < N - 1) go(i + 1); else onClose() }} aria-label="›" />
         <div className="scene3d h-full" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
         <div key={i} className={`${dir > 0 ? 'flip-in-r' : 'flip-in-l'} flex h-full flex-col justify-center px-6`}>
           {i === 0 && <><div className="story-pop mb-6 flex items-center gap-4" style={{ transform: 'translateZ(50px)' }}><Dish r={r} w={240} className="h-24 w-24 shrink-0 rounded-full shadow-[0_24px_40px_-12px_rgba(0,0,0,.8)] ring-4 ring-white/15" /><div><p className="font-display text-[26px] font-extrabold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-sm text-white/70">👥 {sv} · ⏱ {r.t} min</p></div></div><p className="text-[12px] font-bold uppercase tracking-[.22em] text-white/60">{lang === 'en' ? 'You need' : 'Il vous faut'} · {ings.length}</p>
@@ -71,7 +80,7 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
                 <span className="qty-pop mt-1 rounded-full bg-white px-2 py-0.5 font-display text-[13px] font-extrabold text-ink tabular-nums" style={{ animationDelay: `${k * 260 + 420}ms` }}>{x.q}</span>
               </div>))}</div></>}
           {i > 0 && i <= steps.length && (() => { const si = ings.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5))); const act = actOf(steps[i - 1]); return <>
-            <StepScene text={steps[i - 1]} ings={si} />
+            <StepScene text={steps[i - 1]} ings={sceneIngs.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5)))} />
             <div className="-mt-2 rounded-[28px] border border-white/15 bg-white/[.07] p-5 shadow-[0_30px_60px_-20px_rgba(0,0,0,.7)] backdrop-blur-md" style={{ transform: 'translateZ(40px)' }}>
             <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.2em] text-apricot"><span className="grid h-6 w-6 place-items-center rounded-full bg-apricot font-display text-[12px] text-ink">{i}</span>{ACT_LABEL[act][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p>
             <p className="mt-2 font-display text-[21px] font-bold leading-snug">{steps[i - 1]}</p>
@@ -84,6 +93,8 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
           </div>}
         </div></div>
       </div>
+      {i > 0 && (() => { const st = steps[i - 1]; const onion = st && /oignon|onion/i.test(st) && actOf(st) === 'chop'; const line = i === N - 1 ? (lang === 'en' ? 'Bravo chef! Enjoy 🎉' : 'Bravo chef ! Régale-toi 🎉') : onion ? (lang === 'en' ? 'Onions… I’m not crying, you are 😭' : 'Les oignons… c’est pas moi qui pleure 😭') : CHEF_LINE[actOf(st)][lang === 'en' ? 0 : 1]
+        return <ChefPop key={i} line={line} dark className="pointer-events-none absolute bottom-6 start-4 z-20" /> })()}
     </div>, document.body)
 }
 

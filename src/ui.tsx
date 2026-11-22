@@ -133,3 +133,34 @@ export function PriceDial({ value, est, onChange, fmt }: { value: number; est: n
     <div className="grid grid-cols-4 gap-1.5">{[[-20, 'Promo −20 %'], [-10, '−10 %'], [0, 'Estimé'], [10, '+10 %']].map(([d, l]) => <button type="button" key={l} className={`rounded-full py-1.5 text-[11.5px] font-bold transition active:scale-95 ${Math.abs(value - est * (1 + (d as number) / 100)) < step / 2 ? 'bg-forest text-white' : 'bg-cream'}`} onClick={() => onChange(+(est * (1 + (d as number) / 100)).toFixed(2))}>{l}</button>)}</div>
   </div>
 }
+
+/** Comic little moment: the item's emoji jumps from where you tapped into the caddie, which bounces. */
+export function flyToCart(from: Element | null, emoji: string) {
+  try {
+    if (!from || matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const r = from.getBoundingClientRect(); const cart = document.querySelector('[data-tour="caddie"]:not([hidden])')?.getBoundingClientRect()
+    const tx = cart && cart.width ? cart.left + cart.width / 2 : innerWidth / 2; const ty = cart && cart.width ? cart.top + cart.height / 2 : innerHeight - 40
+    const el = document.createElement('span'); el.textContent = emoji
+    Object.assign(el.style, { position: 'fixed', left: `${r.left + r.width / 2 - 16}px`, top: `${r.top + r.height / 2 - 16}px`, fontSize: '32px', zIndex: '95', pointerEvents: 'none', filter: 'drop-shadow(0 8px 6px rgba(0,0,0,.3))' })
+    document.body.appendChild(el)
+    const dx = tx - (r.left + r.width / 2), dy = ty - (r.top + r.height / 2)
+    el.animate([{ transform: 'translate(0,0) scale(1) rotate(0)' }, { transform: `translate(${dx * 0.4}px, ${Math.min(dy, 0) - 90}px) scale(1.4) rotate(-20deg)`, offset: 0.45 }, { transform: `translate(${dx}px, ${dy}px) scale(.4) rotate(30deg)`, opacity: 0.6 }], { duration: 720, easing: 'cubic-bezier(.45,0,.55,1)' }).onfinish = () => { el.remove(); window.dispatchEvent(new Event('kz-cart-bump')) }
+  } catch { /* decoration only */ }
+}
+
+/** The little chef: pops up from the corner with a funny line, then leaves. */
+export function ChefPop({ line, dark, className = '' }: { line: string; dark?: boolean; className?: string }) {
+  return (
+    <div key={line} className={`chef-pop pointer-events-none flex items-end gap-1.5 ${className}`} aria-live="polite">
+      <span className="chef-body text-[64px] leading-none" style={{ filter: 'drop-shadow(0 12px 10px rgba(0,0,0,.35))' }}><E3 e="🧑‍🍳" /></span>
+      <span className={`chef-bubble relative mb-12 max-w-[210px] rounded-2xl rounded-bl-sm px-3 py-2 text-[13px] font-bold leading-snug shadow-lift ${dark ? 'bg-white text-ink' : 'bg-forest text-white'}`}>{line}</span>
+    </div>)
+}
+/** Site-wide host: any screen can call chefSays('…') to make the chef appear for a moment. */
+export const chefSays = (line: string) => { try { window.dispatchEvent(new CustomEvent('kz-chef', { detail: line })) } catch { /* ignore */ } }
+export function ChefHost() {
+  const [line, setLine] = useState<string | null>(null)
+  useEffect(() => { let id = 0; const f = (e: Event) => { setLine((e as CustomEvent<string>).detail); clearTimeout(id); id = window.setTimeout(() => setLine(null), 3600) }; addEventListener('kz-chef', f); return () => { removeEventListener('kz-chef', f); clearTimeout(id) } }, [])
+  if (!line) return null
+  return createPortal(<ChefPop line={line} className="fixed bottom-[96px] start-3 z-[85] lg:bottom-6 lg:start-[268px]" />, document.body)
+}

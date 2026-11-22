@@ -2,7 +2,7 @@ import { zf } from './lib/zgh'
 import { E3 } from './E3'
 import { ArrowRight, Plus, RefreshCw, Shuffle, SlidersHorizontal } from 'lucide-react'
 import { BookOpen, Dumbbell, Ticket, Carrot, Flame, Clock, Dices, Leaf, Sparkles, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from './icons'
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState , useEffect } from 'react'
 import { KcalGoal } from './Forme'
 import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
@@ -10,7 +10,7 @@ import { REC, RECIPES, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { entryCost, parseIng, recipeCost } from './lib/engine'
 import { composeSides, cuisineOf, inCuisine, CUISINES, FLAG, REGIONS, type Prefs } from './lib/plan'
-import { Badge, Dish, Sheet, type Tone } from './ui'
+import { Badge, Dish, Sheet, type Tone , chefSays } from './ui'
 import type { Tab } from './Assist'
 import { Controls, RecipeSheet, ReplaceSheet } from './Screens'
 import { useBasket } from './Flow'
@@ -40,6 +40,9 @@ const when = (off: number, s: Meal, d: number, l: Lang) => {
 /** Home, "Riad" direction: an editorial page built only from the household's real data. */
 export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clear, composeFor }: { composeFor: (o: Partial<Prefs>) => void; clear: () => void; openCountry: () => void; compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: Tab) => void; makeHealthy: () => void }) {
   const { lang, me, house, patchMe, upHouse, toast } = useApp()
+  useEffect(() => { let seen = false; try { seen = !!sessionStorage.getItem('kz-chef') } catch { /* ignore */ } if (seen) return
+    const J = lang === 'en' ? ['Hi! I’ve already planned your week, you just eat 😋', 'Today’s mission: eat well, spend less 💪', 'The fridge called, it misses you 🧊'] : ['Salut ! J’ai déjà prévu ta semaine, tu n’as plus qu’à manger 😋', 'Mission du jour : bien manger, moins dépenser 💪', 'Le frigo a appelé, il s’ennuie de toi 🧊']
+    const id = setTimeout(() => { try { sessionStorage.setItem('kz-chef', '1') } catch { /* ignore */ } chefSays(J[Math.floor(Math.random() * J.length)]) }, 1400); return () => clearTimeout(id) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const [eat, setEat] = useState(false); const [wel, setWel] = useState(false); const [kc, setKc] = useState(false)
   const kt = useRef<number | undefined>(undefined)
   const onKcal = (k: number) => { clearTimeout(kt.current); kt.current = window.setTimeout(() => recompose({ kcal: k }), 450) }
@@ -130,7 +133,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
         <span className="glow pointer-events-none absolute -bottom-24 -start-16 h-64 w-64 rounded-full bg-apricot/35 blur-3xl" aria-hidden />
         <div className="relative flex h-full flex-col justify-between p-5" style={{ minHeight: nr ? 300 : 170 }}>
           <div><p className="text-[11px] font-bold uppercase tracking-[.2em] text-white/70">{date}</p>
-            <h1 className="font-serif text-[30px] font-semibold leading-tight !text-white lg:text-[42px]">{greet}, <span className="italic text-apricot">{firstName}</span></h1></div>
+            <h1 className="font-serif text-[30px] font-semibold leading-tight !text-white lg:text-[42px]">{greet}, <span className="italic text-apricot">{firstName}</span> <span className="wave inline-block text-[26px]"><E3 e={now.getHours() >= 18 || now.getHours() < 4 ? "🌙" : "👋"} /></span></h1></div>
           {nr && nm ? <div>
             <p className="text-[11px] font-bold uppercase tracking-[.18em] text-apricot">{when(nm.off, nm.s, nm.d, lang)}</p>
             <button className="block text-start font-display text-[28px] font-extrabold leading-[1.05] drop-shadow" onClick={() => setRv(nr)}>{rname(nr.n, lang)}</button>

@@ -1,5 +1,5 @@
 import { zf } from './lib/zgh'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Dumbbell, Ticket, UtensilsCrossed, BookOpen, CalendarDays, Home, MapPinned, ShoppingBasket, ShoppingCart, Store, UserRound, Wallet, type LucideIcon } from './icons'
 import { useApp } from './lib/store'
 import { t, type Lang } from './lib/i18n'
@@ -21,6 +21,8 @@ const isOn = (tab: Tab, k: Tab) => tab === k
  *  Desktop: a zellige sidebar grouped by life area, caddie button always visible. */
 export function Nav({ tab, go, left, onCaddie, hasCart, openCountry }: { tab: Tab; go: (k: Tab) => void; left: number; onCaddie: () => void; hasCart: boolean; openCountry: () => void }) {
   const { lang, setLang, me } = useApp()
+  const [bump, setBump] = useState(0)
+  useEffect(() => { const f = () => setBump((b) => b + 1); addEventListener('kz-cart-bump', f); return () => removeEventListener('kz-cart-bump', f) }, [])
   const [all, setAll] = useState(false)
   const g = items(lang)
   const c = countryOf(me!.country)
@@ -30,8 +32,8 @@ export function Nav({ tab, go, left, onCaddie, hasCart, openCountry }: { tab: Ta
       <Icon size={21} strokeWidth={on ? 2.4 : 1.8} className="relative" aria-hidden /><span className={`relative ${on ? 'font-extrabold text-cream' : ''}`}>{label}</span>
     </button>)
   const Caddie = ({ big }: { big?: boolean }) => (
-    <button data-tour="caddie" onClick={hasCart ? onCaddie : () => go('list')} aria-label={L(lang, 'Store mode: tick your list in the aisles', 'Mode magasin : cochez votre liste en rayon', 'وضع المتجر')} className={`relative grid place-items-center rounded-full bg-apricot text-forest shadow-lift transition active:scale-90 ${big ? 'h-[62px] w-[62px] -translate-y-4 ring-[5px] ring-[rgb(var(--bg))]' : 'h-12 w-12'}`}>
-      <ShoppingCart size={big ? 26 : 22} strokeWidth={2.3} aria-hidden />
+    <button data-tour="caddie" key={bump} onClick={hasCart ? onCaddie : () => go('list')} aria-label={L(lang, 'Store mode: tick your list in the aisles', 'Mode magasin : cochez votre liste en rayon', 'وضع المتجر')} className={`relative grid place-items-center rounded-full bg-apricot text-forest shadow-lift transition active:scale-90 ${big ? 'h-[62px] w-[62px] -translate-y-4 ring-[5px] ring-[rgb(var(--bg))]' : 'h-12 w-12'}`}>
+      <ShoppingCart size={big ? 28 : 22} strokeWidth={2.3} className={bump ? 'cart-bump' : ''} aria-hidden />
 
     </button>)
   const Tile = ([k, Icon, label, sub]: Item) => (
