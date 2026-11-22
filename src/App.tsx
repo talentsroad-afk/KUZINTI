@@ -17,6 +17,7 @@ import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, Wallet, Dumbbel
 import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Nav } from './Nav'
+import { CriteriaSheet, CriteriaFab } from './Criteria'
 import { SportTab } from './Sport'
 import { BasketStory } from './Basket'
 import { setDietFilter } from './lib/plan'
@@ -174,7 +175,7 @@ function Shell() {
   }
   const clearWeek = () => { const s0 = snap(lang === 'en' ? 'Clear' : 'Vider'); const prevHome = h.home; const prevEx = h.extras; const u: [string, () => void] = [s0[0], () => { s0[1](); upHouse((x) => { x.home = prevHome; x.extras = prevEx }, '↩') }]; upHouse((x) => { x.plan = {}; x.qty = {}; x.checked = {}; x.store = undefined; x.home = {}; x.extras = {} }, '🗑 semaine vidée'); say(lang === 'en' ? '🗑 Week cleared, the shopping list followed.' : '🗑 Semaine vidée, la liste de courses a suivi.', u); if (tab !== 'list') go('home') }
   const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
-  const [ctry, setCtry] = useState(false)
+  const [ctry, setCtry] = useState(false); const [crit, setCrit] = useState(false)
   // Three worlds side by side: swipe left/right (or tap the pill) to move between Meals, Outings and Budget.
   const world: World = tab === 'sorties' ? 'sorties' : tab === 'budget' ? 'budget' : 'food'
   const lastFood = useRef<Tab>('home'); if (world === 'food') lastFood.current = tab
@@ -251,7 +252,7 @@ function Shell() {
         {space === 'out' ? <div key={tab} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>
           {tab === 'home' && <HomeTab composeFor={(o) => composeWith(o)} clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
           {tab === 'week' && <button className="mb-2 flex w-full items-center justify-between rounded-2xl bg-surface px-4 py-2.5 text-sm font-bold text-forest shadow-soft active:scale-[.99]" onClick={() => go('recipes')}><span>📖 {L3(lang, 'Browse all recipes', 'Parcourir toutes les recettes', 'تصفح الوصفات')}</span><span aria-hidden>›</span></button>}
-          {tab === 'week' && <WeekTab toBasket={() => setBask(true)} clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
+          {tab === 'week' && <WeekTab openCriteria={() => setCrit(true)} toBasket={() => setBask(true)} clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} setBudget={setBudget} clear={clearWeek} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
           {tab === 'recipes' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => go('week')}>‹ {L3(lang, 'My week', 'Ma semaine', 'أسبوعي')}</button><RecipesTab say={say} /></>}
@@ -268,6 +269,8 @@ function Shell() {
       
       <BasketStory open={bask} lines={lines} onClose={() => setBask(false)} go={go} />
       <Nav tab={tab} go={go} left={cartLeft} hasCart={cart.length > 0} onCaddie={() => setCaddie(true)} openCountry={() => setCtry(true)} /></>
+      <CriteriaSheet open={crit} onClose={() => setCrit(false)} recompose={(o) => hasPlan && composeWith(o, true)} makeHealthy={makeHealthy} setBudget={setBudget} />
+      {tab === 'week' && hasPlan && <CriteriaFab onClick={() => setCrit(true)} label={lang === 'en' ? 'Criteria' : 'Critères'} />}
       <CountrySheet open={ctry} onClose={() => setCtry(false)} onPick={setCountry} />
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>
         <Controls setBudget={setBudget} />
