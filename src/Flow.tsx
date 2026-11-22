@@ -91,6 +91,12 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   const dayLines = useMemo(() => day < 0 ? lines : buildList(Object.fromEntries(Object.entries(house!.plan).filter(([k]) => k.startsWith(day + '-'))), house!.pantry, {}, {}), [day, lines, house])
   const buy = dayLines.filter((l) => l.buy > 0 || l.auto > 0)
   const setDay = (d: number) => upHouse((h) => { h.listDay = d })
+  const TODAY = (new Date().getDay() + 6) % 7
+  // Save the list on screen (week, today or tomorrow) so it can be found, shared or reused later.
+  const saveList = () => { const label = day < 0 ? t('lWeek', lang) : day === (TODAY + 1) % 7 ? (lang === 'en' ? 'Tomorrow' : 'Demain') + ' · ' + dayName(day, lang) : dayName(day, lang)
+    const its = buy.filter((l) => l.buy > 0).map((l) => ({ n: l.ing.n[li(lang)], q: fmtQty(l.buy, l.ing.base), p: Math.round(price(l.id, l.cost * mul(l.ing.aisle)) * 100) / 100 }))
+    if (!its.length) { toast(lang === 'en' ? 'Nothing to buy here' : 'Rien à acheter ici'); return }
+    upHouse((h) => { h.saved = [{ t: Date.now(), label, items: its }, ...(h.saved ?? [])].slice(0, 10) }, `📌 ${label}`); toast(`📌 ${label} · ${its.length} ${lang === 'en' ? 'items saved' : 'articles enregistrés'}`) }
   const share = async () => {
     const L = (n: string, q: string, p: number) => `${chk[n] ? '✅' : '⬜'} ${q} · ${p.toFixed(2)}`
     const txt = [`🛒 KUZINTI · ${day < 0 ? t('lWeek', lang) : dayName(day, lang)}`, ...buy.map((l) => L(l.id, `${l.ing.n[li(lang)]} — ${fmtQty(l.buy, l.ing.base)}`, price(l.id, l.cost * mul(l.ing.aisle)))),
@@ -146,11 +152,12 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
         </div>
         <p className="mt-2 text-center text-[11px] text-muted">{t('pricesAt', lang)}: {store ? store.name : t('avgPrice', lang)} · {t('qtyHint', lang)}</p>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex rounded-full bg-surface p-1 shadow-soft">{[-1, (new Date().getDay() + 6) % 7].map((d, i) => <button key={i} className={`rounded-full px-3 py-1.5 text-xs font-bold ${(i === 0 ? day < 0 : day >= 0) ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{i === 0 ? t('lWeek', lang) : t('lDay', lang)}</button>)}</div>
-        <button className="ms-auto rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white shadow-soft" onClick={() => setAdding(true)}>＋ {lang === 'en' ? 'Product' : 'Produit'}</button>
-        <button className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setHistOpen(true)}><History size={14} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'History' : 'Historique'}</button>
-        <button className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}><Camera size={14} className="inline -mt-0.5" aria-hidden /> {t('fridgeS', lang)}</button>
+      <div className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1">
+        <div className="flex shrink-0 rounded-full bg-surface p-1 shadow-soft">{([[-1, t('lWeek', lang)], [TODAY, lang === 'en' ? 'Today' : 'Aujourd’hui'], [(TODAY + 1) % 7, lang === 'en' ? 'Tomorrow' : 'Demain']] as [number, string][]).map(([d, l]) => <button key={l} className={`rounded-full px-3 py-1.5 text-xs font-bold ${day === d ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{l}</button>)}</div>
+        <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={saveList}>📌 {lang === 'en' ? 'Save list' : 'Enregistrer'}</button>
+        <button className="shrink-0 rounded-full bg-forest px-3 py-1.5 text-xs font-bold text-white shadow-soft" onClick={() => setAdding(true)}>＋ {lang === 'en' ? 'Product' : 'Produit'}</button>
+        <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setHistOpen(true)}><History size={14} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'My lists' : 'Mes listes'}</button>
+        <button className="shrink-0 rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}><Camera size={14} className="inline -mt-0.5" aria-hidden /> {t('fridgeS', lang)}</button>
       </div>
       {day >= 0 && <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`chip shrink-0 capitalize ${d === day ? '!bg-forest !text-white' : ''}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 3)}</button>)}</div>}
       <FridgeSheet open={fridge} onClose={() => setFridge(false)} />
@@ -181,7 +188,12 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
           <button className="btn btn-primary w-full">{t('save', lang)}</button>
         </form>}
       </Sheet>
-      <Sheet open={histOpen} onClose={() => setHistOpen(false)} title={lang === 'en' ? 'Purchase history' : 'Historique des achats'}>
+      <Sheet open={histOpen} onClose={() => setHistOpen(false)} title={lang === 'en' ? 'My lists and history' : 'Mes listes et historique'}>
+        {(house!.saved ?? []).length > 0 && <div className="mb-4 space-y-2"><p className="text-xs font-bold uppercase tracking-wider text-muted">📌 {lang === 'en' ? 'Saved lists' : 'Listes enregistrées'}</p>
+          {house!.saved!.map((sv, k) => <details key={sv.t} className="rounded-2xl bg-cream/70 p-3"><summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold"><span className="flex-1 capitalize">{sv.label}</span><span className="text-xs font-semibold text-muted">{sv.items.length} · {money(sv.items.reduce((a, x) => a + x.p, 0), lang)}</span></summary>
+            <ul className="mt-2 space-y-1 text-sm">{sv.items.map((x, j) => <li key={j} className="flex justify-between gap-2"><span>{x.n} <span className="text-muted">· {x.q}</span></span><span className="tabular-nums">{money2(x.p, lang)}</span></li>)}</ul>
+            <div className="mt-2 flex gap-2"><button className="btn btn-soft !min-h-9 flex-1 !text-xs" onClick={async () => { const txt = [`🛒 ${sv.label}`, ...sv.items.map((x) => `⬜ ${x.n} — ${x.q}`)].join('\n'); try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); toast(t('shared', lang)) } } catch { /* cancelled */ } }}>📤 {lang === 'en' ? 'Share' : 'Partager'}</button><button className="btn btn-soft !min-h-9 !text-xs text-danger" onClick={() => upHouse((h) => { h.saved = (h.saved ?? []).filter((_, i) => i !== k) }, '🗑 liste')}>🗑</button></div>
+          </details>)}</div>}
         {!(house!.trips ?? []).length ? <p className="py-6 text-center text-sm text-muted">{lang === 'en' ? 'Your finished shopping trips will appear here, with date, store and total.' : 'Vos courses terminées apparaîtront ici, avec la date, le magasin et le total.'}</p>
           : <div className="space-y-2">{house!.trips!.map((tr) => (
             <details key={tr.t} className="group rounded-2xl border border-line p-3">

@@ -53,31 +53,36 @@ function Setup({ start, onDone, onCancel, lang, weekly }: { start: MoneyData; on
   const left = inc - fix
   const suggest = () => {
     // 20% saved first, groceries from KUZINTI, 3% health, the rest split across lifestyle envelopes. Never more than income.
-    const save = Math.round(inc * 0.2); const food = Math.round(Math.max(d.env.food ?? 0, weekly * 4.33)); const health = Math.round(inc * 0.03)
+    const save = d.goal?.monthly || Math.round(inc * 0.2); const food = Math.round(Math.max(d.env.food ?? 0, weekly * 4.33)); const health = Math.round(inc * 0.03)
     const rest = Math.max(0, left - save - food - health); const sh: [string, number][] = [['outings', 0.3], ['clothes', 0.2], ['home', 0.15], ['gifts', 0.15], ['misc', 0.2]]
     setD({ ...d, env: { food, health, ...Object.fromEntries(sh.map(([k, f]) => [k, Math.round(rest * f)])) }, goal: { n: d.goal?.n ?? '', target: d.goal?.target ?? 0, saved: d.goal?.saved ?? 0, monthly: d.goal?.monthly || save } })
   }
+  const suggestInto = () => { const save = d.goal?.monthly ?? Math.round(inc * 0.2); const food = Math.round(Math.max(d.env.food ?? 0, weekly * 4.33)); const health = Math.round(inc * 0.03); const rest = Math.max(0, left - save - food - health); const sh: [string, number][] = [['outings', 0.3], ['clothes', 0.2], ['home', 0.15], ['gifts', 0.15], ['misc', 0.2]]
+    onDone({ ...d, since: d.since || Date.now(), env: { food, health, ...Object.fromEntries(sh.map(([k, f]) => [k, Math.round(rest * f)])) }, goal: { n: d.goal?.n ?? '', target: d.goal?.target ?? 0, saved: d.goal?.saved ?? 0, monthly: save } }) }
   const salary = d.inc.find((x) => x.id === 'salary')?.a; const other = d.inc.find((x) => x.id === 'other')?.a
   const setInc = (id: string, n: string, a: number) => setD({ ...d, inc: [...d.inc.filter((x) => x.id !== id), ...(a > 0 ? [{ id, n, a }] : [])] })
   const cards: { t: string; s: string; body: JSX.Element; ok: boolean }[] = [
     { t: L(lang, 'Your income', 'Vos revenus', 'مداخيلك'), s: L(lang, 'Net monthly amounts. Only you can see them.', 'Montants nets par mois. Vous seul les voyez.', 'المبالغ الصافية شهريًا. أنت فقط من يراها.'), ok: inc > 0, body: <div className="space-y-3">
       <Field label={L(lang, 'Net salary', 'Salaire net', 'الراتب الصافي')} v={show(salary)} set={(v) => setInc('salary', 'Salaire', num(v))} big />
+      <div className="flex flex-wrap gap-1.5">{[3000, 5000, 8000, 12000, 20000].map((a) => <button key={a} className={`rounded-full px-3 py-1.5 text-sm font-bold tabular-nums transition active:scale-95 ${salary === a ? 'bg-forest text-white' : 'bg-cream'}`} onClick={() => setInc('salary', 'Salaire', a)}>{money(a, lang)}</button>)}</div>
       <Field label={L(lang, 'Partner, rent received, extras', 'Conjoint, loyers perçus, extras', 'الزوج، كراء، إضافات')} v={show(other)} set={(v) => setInc('other', 'Autres revenus', num(v))} />
     </div> },
     { t: L(lang, 'Fixed charges', 'Charges fixes', 'المصاريف الثابتة'), s: L(lang, 'What leaves every month, whatever happens.', 'Ce qui part chaque mois, quoi qu’il arrive.', 'ما يُصرف كل شهر مهما حدث.'), ok: true, body: <div className="grid grid-cols-2 gap-2">
       {FIXED.map((k) => <label key={k} className="rounded-2xl border border-line bg-surface p-2.5"><span className="block text-xs font-semibold text-muted">{CATS[k].e} {cn(k, lang)}</span><input inputMode="decimal" className="mt-1 w-full bg-transparent font-display text-lg font-extrabold tabular-nums outline-none" placeholder="0" value={show(d.fix[k])} onChange={(e) => setD({ ...d, fix: { ...d.fix, [k]: num(e.target.value) } })} /></label>)}
     </div> },
-    { t: L(lang, 'Monthly envelopes', 'Enveloppes du mois', 'أظرفة الشهر'), s: L(lang, `After fixed charges you have ${money(left, lang)}. Split it, or let us suggest.`, `Après les charges fixes il vous reste ${money(left, lang)}. Répartissez-le, ou laissez-nous proposer.`, `بعد المصاريف الثابتة يبقى ${money(left, lang)}.`), ok: true, body: <div>
+    { t: L(lang, 'How much do you put aside?', 'Combien mettez-vous de côté ?', 'كم تدّخر؟'), s: L(lang, 'Pay yourself first, at the start of the month. 10% is good, 20% is excellent.', 'Payez-vous en premier, en début de mois. 10 % c’est bien, 20 % c’est excellent.', 'ادفع لنفسك أولًا. 10% جيد و20% ممتاز.'), ok: true, body: <div className="space-y-4">
+      <div className="text-center"><p className="font-display text-[44px] font-extrabold leading-none tabular-nums" style={{ color: C.save }}>{money(d.goal?.monthly ?? 0, lang)}</p><p className="text-sm text-muted">{inc ? Math.round(((d.goal?.monthly ?? 0) / inc) * 100) : 0} % {L(lang, 'of income', 'des revenus', 'من الدخل')}</p></div>
+      <input type="range" min={0} max={30} value={inc ? Math.round(((d.goal?.monthly ?? 0) / inc) * 100) : 0} onChange={(e) => setD({ ...d, goal: { n: d.goal?.n ?? '', target: d.goal?.target ?? 0, saved: d.goal?.saved ?? 0, monthly: Math.round((inc * +e.target.value) / 100) } })} className="w-full accent-[#D97A1E]" aria-label="%" />
+      <div className="flex flex-wrap justify-center gap-1.5">{([['🛟', L(lang, 'Safety', 'Précaution', 'احتياط')], ['🕌', 'Aïd'], ['✈️', L(lang, 'Holidays', 'Vacances', 'عطلة')], ['🚗', L(lang, 'Car', 'Voiture', 'سيارة')], ['🏠', L(lang, 'Home', 'Logement', 'سكن')], ['🎓', L(lang, 'Studies', 'Études', 'دراسة')]] as [string, string][]).map(([e, n]) => <button key={n} className={`rounded-full px-3 py-1.5 text-sm font-bold ${d.goal?.n === `${e} ${n}` ? 'bg-forest text-white' : 'bg-cream'}`} onClick={() => setD({ ...d, goal: { n: `${e} ${n}`, target: d.goal?.target ?? 0, saved: d.goal?.saved ?? 0, monthly: d.goal?.monthly ?? 0 } })}>{e} {n}</button>)}</div>
+      <Field label={L(lang, 'Target amount (optional)', 'Montant visé (facultatif)', 'المبلغ المستهدف')} v={show(d.goal?.target)} set={(v) => setD({ ...d, goal: { n: d.goal?.n ?? '', target: num(v), monthly: d.goal?.monthly ?? 0, saved: d.goal?.saved ?? 0 } })} />
+    </div> },
+    { t: L(lang, 'Envelopes (optional)', 'Enveloppes (facultatif)', 'الأظرفة (اختياري)'), s: L(lang, `After fixed charges you have ${money(left, lang)}. Split it, or let us suggest.`, `Après les charges fixes il vous reste ${money(left, lang)}. Répartissez-le, ou laissez-nous proposer.`, `بعد المصاريف الثابتة يبقى ${money(left, lang)}.`), ok: true, body: <div>
       <button className="btn btn-soft mb-3 w-full !min-h-11 !text-sm" onClick={suggest}><Lightbulb size={16} aria-hidden /> {L(lang, 'Suggest with the 50/30/20 rule', 'Proposer avec la règle 50/30/20', 'اقتراح بقاعدة 50/30/20')}</button>
       <div className="grid grid-cols-2 gap-2">{VAR.map((k) => <label key={k} className="rounded-2xl border border-line bg-surface p-2.5"><span className="block text-xs font-semibold text-muted">{CATS[k].e} {cn(k, lang)}{k === 'food' ? ' ⟵ KUZINTI' : ''}</span><input inputMode="decimal" className="mt-1 w-full bg-transparent font-display text-lg font-extrabold tabular-nums outline-none" placeholder="0" value={show(d.env[k])} onChange={(e) => setD({ ...d, env: { ...d.env, [k]: num(e.target.value) } })} /></label>)}</div>
     </div> },
-    { t: L(lang, 'A savings goal', 'Un objectif d’épargne', 'هدف ادخار'), s: L(lang, 'Pay yourself first: this amount is set aside at the start of the month.', 'Payez-vous en premier : ce montant est mis de côté en début de mois.', 'ادفع لنفسك أولًا.'), ok: true, body: <div className="space-y-3">
-      <label className="block"><span className="mb-1 block text-sm font-semibold">{L(lang, 'Goal', 'Objectif', 'الهدف')}</span><input className="input" placeholder={L(lang, 'Emergency fund, holidays, Aïd…', 'Épargne de précaution, vacances, Aïd…', 'احتياط، عطلة، العيد…')} value={d.goal?.n ?? ''} onChange={(e) => setD({ ...d, goal: { n: e.target.value, target: d.goal?.target ?? 0, monthly: d.goal?.monthly ?? 0, saved: d.goal?.saved ?? 0 } })} /></label>
-      <Field label={L(lang, 'Target amount', 'Montant visé', 'المبلغ المستهدف')} v={show(d.goal?.target)} set={(v) => setD({ ...d, goal: { n: d.goal?.n ?? '', target: num(v), monthly: d.goal?.monthly ?? 0, saved: d.goal?.saved ?? 0 } })} />
-      <Field label={L(lang, 'Set aside each month', 'Mis de côté chaque mois', 'يُدّخر كل شهر')} v={show(d.goal?.monthly)} set={(v) => setD({ ...d, goal: { n: d.goal?.n ?? '', target: d.goal?.target ?? 0, monthly: num(v), saved: d.goal?.saved ?? 0 } })} hint={inc ? `${L(lang, 'Recommended', 'Recommandé', 'المستحسن')} : ${money(inc * 0.2, lang)} (20 %)` : undefined} />
-    </div> },
   ]
-  const go = (n: number) => { setDir(n > i ? 1 : -1); setI(Math.max(0, Math.min(cards.length - 1, n))) }
+  const go = (n: number) => { setDir(n > i ? 1 : -1); if (n === 3 && Object.keys(d.env).length <= 1) suggest(); setI(Math.max(0, Math.min(cards.length - 1, n))) }
+  const finish = () => { const envs = Object.keys(d.env).length > 1 ? d.env : null; if (!envs) { suggestInto() } else onDone({ ...d, since: d.since || Date.now() }) }
   const c = cards[i]
   return (
     <div className="space-y-4">
@@ -95,9 +100,12 @@ function Setup({ start, onDone, onCancel, lang, weekly }: { start: MoneyData; on
       <div className="flex items-center justify-between text-xs text-muted"><span>{i > 0 ? `‹ ${cards[i - 1].t}` : ''}</span><span>{i < cards.length - 1 ? `${cards[i + 1].t} ›` : ''}</span></div>
       <div className="flex gap-2">
         {i > 0 ? <button className="btn btn-soft flex-1" onClick={() => go(i - 1)}><ArrowLeft size={18} aria-hidden /> {L(lang, 'Back', 'Retour', 'رجوع')}</button> : onCancel ? <button className="btn btn-soft flex-1" onClick={onCancel}>{L(lang, 'Cancel', 'Annuler', 'إلغاء')}</button> : null}
-        {i < cards.length - 1 ? <button className="btn btn-primary flex-[2]" disabled={!c.ok} style={{ opacity: c.ok ? 1 : 0.5 }} onClick={() => go(i + 1)}>{L(lang, 'Next', 'Suivant', 'التالي')} <ArrowRight size={18} aria-hidden /></button>
-          : <button className="btn btn-primary flex-[2]" onClick={() => onDone({ ...d, since: d.since || Date.now() })}><Check size={18} aria-hidden /> {L(lang, 'See my budget', 'Voir mon budget', 'عرض ميزانيتي')}</button>}
+        {i < 2 ? <button className="btn btn-primary flex-[2]" disabled={!c.ok} style={{ opacity: c.ok ? 1 : 0.5 }} onClick={() => go(i + 1)}>{L(lang, 'Next', 'Suivant', 'التالي')} <ArrowRight size={18} aria-hidden /></button>
+          : <button className="btn btn-primary flex-[2]" onClick={finish}><Check size={18} aria-hidden /> {L(lang, 'See my budget', 'Voir mon budget', 'عرض ميزانيتي')}</button>}
       </div>
+      {i === 2 && <button className="w-full text-center text-sm font-semibold text-forest" onClick={() => go(3)}>{L(lang, 'Adjust my envelopes first ›', 'Ajuster mes enveloppes d’abord ›', 'ضبط الأظرفة أولاً ›')}</button>}
+      {inc > 0 && <div className="flex items-center gap-1 rounded-2xl bg-cream/80 p-2 text-center text-[11px] tabular-nums">{([[L(lang, 'Income', 'Revenus', 'دخل'), inc, ''], [L(lang, 'Charges', 'Charges', 'مصاريف'), fix, '−'], [L(lang, 'Savings', 'Épargne', 'ادخار'), d.goal?.monthly ?? 0, '−']] as [string, number, string][]).map(([l, v, sg]) => <div key={l} className="flex-1"><p className="text-muted">{l}</p><b>{sg}{money(v, lang)}</b></div>)}<div className="flex-1 rounded-xl bg-forest py-1 text-white"><p className="opacity-80">👛 {L(lang, 'Pocket', 'Poche', 'جيب')}</p><b>{money(inc - fix - (d.goal?.monthly ?? 0), lang)}</b></div>
+      </div>}
     </div>
   )
 }
@@ -193,27 +201,21 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
         <button className="grid h-10 w-10 place-items-center rounded-full bg-surface shadow-soft disabled:opacity-30" disabled={mon >= now} onClick={() => setMon(mon + 1)} aria-label={L(lang, 'Next month', 'Mois suivant', 'الشهر التالي')}><ChevronRight size={20} aria-hidden /></button>
       </div>
 
-      {/* Hero: what is left to live on */}
+      {/* Hero: my pocket, as a simple receipt */}
       <section className="relative overflow-hidden rounded-[28px] bg-forest p-5 text-white">
         <span className="zellige pointer-events-none absolute inset-0 opacity-[.06]" aria-hidden />
-        <p className="relative text-[11px] font-bold uppercase tracking-[.18em] text-white/70">{L(lang, 'Left to live on', 'Reste à vivre', 'المتبقي للعيش')}</p>
-        <p className={`relative font-display text-[44px] font-extrabold leading-none tabular-nums ${rest < 0 ? 'text-apricot' : ''}`}>{rest < 0 ? '−' : ''}{money(Math.abs(rest), lang)}</p>
-        {mon === now && <p className="relative mt-1 text-sm text-white/80">{L(lang, `≈ ${money(perDay, lang)} per day until the end of the month`, `≈ ${money(perDay, lang)} par jour jusqu’à la fin du mois`, `≈ ${money(perDay, lang)} يوميًا`)}</p>}
-        <div className="relative mt-4 grid grid-cols-4 gap-1 text-center text-[11px]">
-          {([[L(lang, 'Income', 'Revenus', 'المداخيل'), inc], [L(lang, 'Fixed', 'Fixes', 'ثابتة'), fix], [L(lang, 'Spent', 'Dépensé', 'مصروف'), varSpent], [L(lang, 'Saved', 'Épargne', 'ادخار'), saveM]] as [string, number][]).map(([l, v]) => <div key={l} className="rounded-xl bg-white/10 px-1 py-2"><p className="text-white/70">{l}</p><p className="font-display text-[13px] font-extrabold tabular-nums">{money(v, lang)}</p></div>)}
-        </div>
+        <p className="relative text-[11px] font-bold uppercase tracking-[.18em] text-white/70">{L(lang, 'I still have', 'Il me reste', 'يتبقى لي')}</p>
+        <p className={`relative font-display text-[46px] font-extrabold leading-none tabular-nums ${rest < 0 ? 'text-apricot' : ''}`}>{rest < 0 ? '−' : ''}{money(Math.abs(rest), lang)}</p>
+        {mon === now && <p className="relative mt-1 text-sm text-white/80">{rest >= 0 ? L(lang, `that is ${money(perDay, lang)} a day until the end of the month`, `soit ${money(perDay, lang)} par jour jusqu’à la fin du mois`, `أي ${money(perDay, lang)} يوميًا`) : L(lang, 'Over budget: see the plan below.', 'Dépassement : voyez le plan juste en dessous.', 'تجاوز: انظر الخطة أدناه')}</p>}
+        <ul className="relative mt-4 space-y-1.5 rounded-2xl bg-white/10 p-3 text-sm tabular-nums">
+          {([['💼', L(lang, 'Income', 'Revenus', 'المداخيل'), inc, '+'], ['🏠', L(lang, 'Fixed charges (leave on their own)', 'Charges fixes (partent toutes seules)', 'مصاريف ثابتة'), fix, '−'], ['🐷', L(lang, 'Savings (paid to me first)', 'Épargne (je me paie en premier)', 'ادخار'), saveM, '−']] as [string, string, number, string][]).map(([e, l, v, sg]) => <li key={l} className="flex items-center gap-2"><span>{e}</span><span className="flex-1 text-white/85">{l}</span><b>{sg} {money(v, lang)}</b></li>)}
+          <li className="flex items-center gap-2 border-t border-white/20 pt-1.5"><span>👛</span><span className="flex-1 font-bold">{L(lang, 'In my pocket this month', 'Dans ma poche ce mois', 'في جيبي هذا الشهر')}</span><b className="text-apricot">{money(inc - fix - saveM, lang)}</b></li>
+          <li className="flex items-center gap-2"><span>🧾</span><span className="flex-1 text-white/85">{L(lang, 'Already spent', 'Déjà dépensé', 'صُرف')}</span><b>− {money(varSpent, lang)}</b></li>
+        </ul>
       </section>
-
-      {inc > 0 && <section className="rounded-[24px] bg-surface p-4 shadow-soft">
-        <div className="flex items-center gap-4">
-          <Gauge v={score} color={grade[1]} />
-          <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'Financial health', 'Santé financière', 'الصحة المالية')}</p><p className="font-serif text-[26px] font-semibold leading-tight">{grade[0]}</p><p className="text-xs text-muted">{L(lang, 'Score out of 100, updated live', 'Note sur 100, mise à jour en direct', 'من 100')}</p></div>
-        </div>
-        <ul className="mt-3 space-y-1.5">{crit.map(([l, v, max, info]) => <li key={l} className="text-sm"><div className="flex items-center gap-2"><span className="flex-1">{l} <span className="text-xs text-muted">· {info}</span></span><b className="tabular-nums">{Math.round(v)}/{max}</b></div><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${(v / max) * 100}%`, background: v / max >= 0.7 ? C.need : v / max >= 0.4 ? C.save : 'rgb(var(--danger))' }} /></div></li>)}</ul>
-      </section>}
-
+      <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => setAdd(true)}><Plus size={20} aria-hidden /> {L(lang, 'Add an expense', 'Ajouter une dépense', 'إضافة مصروف')}</button>
       {inc > 0 && <section aria-label={L(lang, 'Strengths and weak points', 'Points forts et points faibles', 'نقاط القوة والضعف')}>
-        <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'Your check-up', 'Votre bilan', 'تشخيصك')}</h2>{potential > 0 && <span className="rounded-full bg-leaf/30 px-2.5 py-1 text-xs font-bold text-forest tabular-nums">{L(lang, 'up to', 'jusqu’à', 'حتى')} +{money(potential, lang)}/{L(lang, 'mo', 'mois', 'شهر')}</span>}</div>
+        <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'My improvement plan', 'Mon plan d’amélioration', 'خطة التحسين')}</h2>{potential > 0 && <span className="rounded-full bg-leaf/30 px-2.5 py-1 text-xs font-bold text-forest tabular-nums">{L(lang, 'up to', 'jusqu’à', 'حتى')} +{money(potential, lang)}/{L(lang, 'mo', 'mois', 'شهر')}</span>}</div>
         {strong.length > 0 && <div className="mb-3 flex flex-wrap gap-2">{strong.map((x) => <span key={x.k} className="inline-flex items-center gap-1.5 rounded-full bg-leaf/25 px-3 py-1.5 text-sm font-semibold text-forest"><Check size={15} aria-hidden /> {x.t} <span className="text-xs font-normal opacity-80">· {x.why}</span></span>)}</div>}
         {weak.length ? <div className="space-y-2">{weak.map((x, i) => <div key={x.k} className="flex items-stretch overflow-hidden rounded-[20px] bg-surface shadow-soft">
           <span className="w-1.5 shrink-0" style={{ background: i === 0 ? 'rgb(var(--danger))' : C.save }} />
@@ -232,6 +234,14 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
         <button className="btn btn-warm mt-3 w-full" onClick={applyPlan} disabled={amt === saveM}>{amt === saveM ? `✓ ${L(lang, 'Plan in place', 'Plan en place', 'الخطة مفعلة')}` : L(lang, `Apply: save ${money(amt, lang)} a month`, `Appliquer : épargner ${money(amt, lang)} par mois`, 'تطبيق')}</button>
       </section>}
 
+      {inc > 0 && <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+        <div className="flex items-center gap-4">
+          <Gauge v={score} color={grade[1]} />
+          <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'Financial health', 'Santé financière', 'الصحة المالية')}</p><p className="font-serif text-[26px] font-semibold leading-tight">{grade[0]}</p><p className="text-xs text-muted">{L(lang, 'Score out of 100, updated live', 'Note sur 100, mise à jour en direct', 'من 100')}</p></div>
+        </div>
+        <ul className="mt-3 space-y-1.5">{crit.map(([l, v, max, info]) => <li key={l} className="text-sm"><div className="flex items-center gap-2"><span className="flex-1">{l} <span className="text-xs text-muted">· {info}</span></span><b className="tabular-nums">{Math.round(v)}/{max}</b></div><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${(v / max) * 100}%`, background: v / max >= 0.7 ? C.need : v / max >= 0.4 ? C.save : 'rgb(var(--danger))' }} /></div></li>)}</ul>
+      </section>}
+
       {inc > 0 && <section>
         <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'Your 6-month programme', 'Votre programme sur 6 mois', 'برنامجك لستة أشهر')}</h2><span className="text-xs font-bold text-forest">{doneN}/{steps.length}</span></div>
         <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2" data-noswipe>{steps.map(([k, h, b], i) => { const done = !!m.prog?.[k]; const isNow = i === curStep; return (
@@ -243,7 +253,6 @@ function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang;
           </div>) })}</div>
       </section>}
 
-      <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => setAdd(true)}><Plus size={20} aria-hidden /> {L(lang, 'Add an expense', 'Ajouter une dépense', 'إضافة مصروف')}</button>
 
       {alerts.length > 0 && <section className="space-y-2" aria-label={L(lang, 'Alerts', 'Alertes', 'تنبيهات')}>{alerts.map(([lvl, txt]) => <p key={txt} className={`flex items-start gap-2 rounded-2xl p-3 text-sm font-semibold ${lvl === 'critical' ? 'bg-danger/10 text-danger' : 'bg-apricot/25 text-ink'}`}><AlertTriangle size={18} className="mt-0.5 shrink-0" aria-hidden /><span><span className="sr-only">{lvl === 'critical' ? 'Critique' : 'Attention'} : </span>{txt}</span></p>)}</section>}
 
