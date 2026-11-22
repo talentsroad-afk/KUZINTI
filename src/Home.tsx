@@ -14,7 +14,7 @@ import { Welcome } from './Welcome'
 import { cname, countryOf } from './lib/countries'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
-const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
+const li = (l: Lang) => (l === 'en' ? 0 : l === 'ar' ? 2 : 1)
 const ORDER: Meal[] = ['b', 'l', 'g', 'd']
 const ENDS: Record<Meal, number> = { b: 10, l: 15, g: 18, d: 22 }
 const MAINS: Meal[] = ['l', 'd', 'b', 'g']
@@ -50,7 +50,7 @@ export function HomeTab({ compose, recompose, go, makeHealthy, openCountry, clea
   const left = items.filter((x) => !house!.checked[x.key]); const leftCost = left.reduce((a, x) => a + price(x.key, x.est), 0)
   const firstName = me!.name.split(' ')[0]
   const greet = now.getHours() < 4 || now.getHours() >= 18 ? L(lang, 'Good evening', 'Bonsoir', 'مساء الخير') : L(lang, 'Hello', 'Bonjour', 'صباح الخير')
-  const date = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA-u-nu-latn' : lang, { weekday: 'long', day: 'numeric', month: 'long' }).format(now)
+  const date = new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA-u-nu-latn' : lang === 'zgh' ? 'fr' : lang, { weekday: 'long', day: 'numeric', month: 'long' }).format(now)
   const lead = !n ? L(lang, 'Nothing is planned yet. Let’s build a week that fits your table and your budget.', 'Rien n’est encore prévu. Composons une semaine à votre goût et à votre budget.', 'لا شيء مخطط بعد. لنركّب أسبوعًا يناسب ذوقكم وميزانيتكم.')
     : L(lang, `${n} meals planned for ${me!.size}, shopping estimated at ${money(total, lang)}.`, `${n} repas prévus pour ${me!.size}, des courses estimées à ${money(total, lang)}.`, `${n} وجبة لـ${me!.size} أشخاص، والمشتريات بحوالي ${money(total, lang)}.`)
   const week = Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => { const s = MAINS.find((x) => plan[`${d}-${x}`]); return { d, s, e: s ? plan[`${d}-${s}`] : undefined } })

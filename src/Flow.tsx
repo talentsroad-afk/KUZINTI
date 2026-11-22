@@ -16,7 +16,7 @@ import { Sheet } from './ui'
 import { dayName } from './lib/i18n'
 import { FridgeSheet } from './Extra'
 
-const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
+const li = (l: Lang) => (l === 'en' ? 0 : l === 'ar' ? 2 : 1)
 const AISLE: Record<Aisle, [string, string, string, string]> = {
   produce: ['Fruit & veg', 'Fruits & légumes', 'خضر وفواكه', '🥬'], meat: ['Meat & fish', 'Viande & poisson', 'لحوم وأسماك', '🥩'], dairy: ['Dairy & eggs', 'Laitier & œufs', 'ألبان وبيض', '🥚'],
   grocery: ['Grocery', 'Épicerie', 'بقالة', '🫙'], bakery: ['Bakery', 'Boulangerie', 'مخبزة', '🥖'], spices: ['Spices', 'Épices', 'توابل', '🧂'],

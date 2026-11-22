@@ -7,7 +7,7 @@ import { CATALOG } from './data/catalog'
 import { Stepper } from './ui'
 import { cname, countryOf } from './lib/countries'
 
-const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
+const li = (l: Lang) => (l === 'en' ? 0 : l === 'ar' ? 2 : 1)
 
 function Pantry() {
   const { lang, house, upHouse } = useApp()
@@ -49,7 +49,7 @@ export function ProfileScreen({ celebrate, openCountry }: { celebrate: () => voi
       </div>
       <div className="card grid grid-cols-3 gap-2 p-4 text-center"><div><p className="text-2xl">🔥</p><b className="tabular-nums">{me!.streak}</b><p className="text-xs text-muted">{t('streak', lang)}</p></div><div><p className="text-2xl">⭐</p><b className="tabular-nums">{t('level', lang)} {Math.floor(me!.xp / 100) + 1}</b><div className="mx-auto mt-1 h-1.5 w-16 rounded-full bg-cream"><div className="h-full rounded-full bg-apricot" style={{ width: `${me!.xp % 100}%` }} /></div></div><div><p className="text-2xl">✨</p><b className="tabular-nums">{me!.xp}</b><p className="text-xs text-muted">XP</p></div></div>
       <div className="card p-5"><p className="text-lg font-bold">{me!.name}</p><p className="text-sm text-muted">{me!.email} · {me!.city}</p>
-        <div className="mt-4 flex gap-2" role="group" aria-label={t('language', lang)}>{(['fr', 'en', 'ar'] as Lang[]).map((l) => <button key={l} className="chip" aria-pressed={lang === l} onClick={() => setLang(l)}>{{ fr: 'Français', en: 'English', ar: 'العربية' }[l]}</button>)}</div></div>
+        <div className="mt-4 flex gap-2" role="group" aria-label={t('language', lang)}>{(['fr', 'en', 'ar', 'zgh'] as Lang[]).map((l) => <button key={l} className="chip" aria-pressed={lang === l} onClick={() => setLang(l)}>{{ fr: 'Français', en: 'English', ar: 'العربية', zgh: 'ⵜⴰⵎⴰⵣⵉⵖⵜ (bêta)' }[l]}</button>)}</div></div>
       <div className="card space-y-3 p-5"><h2 className="font-bold">{house!.name}</h2><p className="text-sm text-muted">{t('invite', lang)}</p>
         <div className="flex items-center gap-3"><code className="flex-1 rounded-2xl bg-cream px-4 py-3 text-center font-display text-2xl font-extrabold tracking-widest text-forest">{house!.code}</code><button className="btn btn-primary" onClick={copy}>{t('copy', lang)}</button></div>
         <p className="text-xs text-muted">{t('twoTabs', lang)}</p>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BookOpen, CalendarDays, Home, LayoutGrid, MapPinned, ShoppingBasket, ShoppingCart, Store, UserRound, Wallet, type LucideIcon } from 'lucide-react'
 import { useApp } from './lib/store'
 import { t, type Lang } from './lib/i18n'
+import { LANG_LABEL } from './lib/i18n'
 import { Logo, Sheet } from './ui'
 import { cname, countryOf } from './lib/countries'
 import type { Tab } from './Assist'
@@ -43,7 +44,7 @@ export function Nav({ tab, go, left, onCaddie, hasCart, openCountry }: { tab: Ta
     <button key={k} onClick={() => go(k)} aria-current={isOn(tab, k) ? 'page' : undefined} className={`flex w-full items-center gap-3 rounded-2xl px-3.5 py-2.5 text-[14.5px] font-semibold transition ${isOn(tab, k) ? 'bg-cream text-forest shadow-soft' : 'text-cream/80 hover:bg-white/10 hover:text-cream'}`}>
       <Icon size={19} strokeWidth={isOn(tab, k) ? 2.4 : 1.8} aria-hidden /> {label}
     </button>)
-  const Langs = ({ dark }: { dark?: boolean }) => <div className={`inline-flex rounded-full p-1 ${dark ? 'bg-white/10' : 'bg-cream'}`}>{(['fr', 'en', 'ar'] as Lang[]).map((l) => <button key={l} onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${lang === l ? (dark ? 'bg-cream text-forest' : 'bg-forest text-white') : dark ? 'text-cream/70' : 'text-muted'}`}>{l}</button>)}</div>
+  const Langs = ({ dark }: { dark?: boolean }) => <div className={`inline-flex rounded-full p-1 ${dark ? 'bg-white/10' : 'bg-cream'}`}>{(['fr', 'en', 'ar', 'zgh'] as Lang[]).map((l) => <button key={l} onClick={() => setLang(l)} aria-pressed={lang === l} className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${lang === l ? (dark ? 'bg-cream text-forest' : 'bg-forest text-white') : dark ? 'text-cream/70' : 'text-muted'}`}>{LANG_LABEL[l]}</button>)}</div>
   return (<>
     {/* Mobile floating bar */}
     <nav data-tour="tabs" className="navbar lg:hidden" aria-label="Main">

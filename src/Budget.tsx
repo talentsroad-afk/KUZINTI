@@ -28,9 +28,9 @@ const FIXED = Object.keys(CATS).filter((k) => CATS[k].fixed)
 const VAR = Object.keys(CATS).filter((k) => !CATS[k].fixed)
 // Validated categorical palette (needs / wants / savings) and reserved status colours.
 const C = { need: '#1E7A52', want: '#3D7DB8', save: '#D97A1E' }
-const cn = (k: string, l: Lang) => CATS[k].n[l === 'en' ? 0 : l === 'fr' ? 1 : 2]
+const cn = (k: string, l: Lang) => CATS[k].n[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
 const ym = (t: number) => { const d = new Date(t); return d.getFullYear() * 12 + d.getMonth() }
-const monthName = (m: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l, { month: 'long', year: 'numeric' }).format(new Date(Math.floor(m / 12), m % 12, 1))
+const monthName = (m: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l === 'zgh' ? 'fr' : l, { month: 'long', year: 'numeric' }).format(new Date(Math.floor(m / 12), m % 12, 1))
 const uid = () => Math.random().toString(36).slice(2, 9)
 const EMPTY: MoneyData = { inc: [], fix: {}, env: {}, exp: [], since: Date.now() }
 

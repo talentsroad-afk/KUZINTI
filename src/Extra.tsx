@@ -8,7 +8,7 @@ import { FoodTile, Sheet } from './ui'
 import { RecipeSheet } from './Screens'
 import { useBasket } from './Flow'
 
-const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
+const li = (l: Lang) => (l === 'en' ? 0 : l === 'ar' ? 2 : 1)
 const FILTERS = ['all', 'favs', 'ma', 'b', 'l', 'd', 'g', 'veg', 'world'] as const
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 

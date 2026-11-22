@@ -7,8 +7,8 @@
   --forest: 36 91 67; --leaf: 141 187 145; --apricot: 242 185 107; --cream: 244 241 232; --danger: 190 70 60; --shadow: 36 91 67; --terracotta: 184 92 56;
 }
 html, body, #root { min-height: 100%; }
-body { margin: 0; background: rgb(var(--bg)); color: rgb(var(--ink)); font-family: Inter, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
-h1, h2, h3, .font-display { font-family: Manrope, Inter, system-ui, sans-serif; letter-spacing: -0.02em; text-wrap: balance; }
+body { margin: 0; background: rgb(var(--bg)); color: rgb(var(--ink)); font-family: Inter, 'Noto Sans Tifinagh', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+h1, h2, h3, .font-display { font-family: Manrope, Inter, 'Noto Sans Tifinagh', system-ui, sans-serif; letter-spacing: -0.02em; text-wrap: balance; }
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid rgb(var(--apricot)); outline-offset: 2px; border-radius: 12px; }
 

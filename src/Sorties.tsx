@@ -133,7 +133,14 @@ const CITIES0: Record<string, Act[]> = {
 }
 export const COUNTRY_CITIES: Record<string, string[]> = { ...WORLD_COUNTRY_CITIES, MA: ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Chefchaouen'], FR: ['Paris', 'Lyon', 'Marseille'] }
 type Mode = 'day' | 'eve' | 'we' | 'week'
-export const CITIES: Record<string, Act[]> = { ...CITIES0, ...WORLD_CITIES }
+// Everyday leisure found in every city (indicative prices, MAD base): added where the city list has no such activity.
+const FUN: [string, string, string, string, number, number, string][] = [
+  ['cinema', '🎬', 'Cinéma', 'Le film du moment en salle (multiplexe du centre)', 60, 2, 'loisirs couple famille'], ['bowling', '🎳', 'Bowling', 'Deux parties entre amis ou en famille', 70, 2, 'loisirs famille couple'],
+  ['escape', '🔐', 'Escape game', '60 minutes pour sortir, en équipe', 160, 1, 'loisirs famille couple'], ['karting', '🏎️', 'Karting', 'Sessions de 10 minutes', 150, 1, 'loisirs sport'],
+  ['laser', '🔫', 'Laser game', 'Parties de 20 minutes', 90, 1, 'loisirs sport famille'], ['piscine', '🏊', 'Piscine', 'Baignade et toboggans', 40, 2, 'loisirs sport famille'],
+  ['spa', '🧖', 'Hammam ou spa', 'Gommage et détente', 200, 2, 'loisirs couple'], ['patinoire', '⛸️', 'Patinoire', 'Patins compris', 60, 2, 'loisirs famille couple'],
+]
+export const CITIES: Record<string, Act[]> = Object.fromEntries(Object.entries({ ...CITIES0, ...WORLD_CITIES }).map(([c, acts]) => [c, [...acts, ...FUN.filter(([, e]) => !acts.some((a) => a.e === e)).map(([id, e, n, d, p, h, k]) => ({ id: `${id}-${c}`, e, n, d, p, h, k: k.split(' ') as Kind[] }))]]))
 type Fmt = 'full' | 'half' | 'eve' | 'night'
 const FMT: [Fmt, string, string, number][] = [['full', '☀️ Journée entière', '10h → 21h', 3], ['half', '🌤️ Demi-journée', '14h → 19h', 2], ['eve', '🌇 Fin de journée', '17h → 20h', 1], ['night', '🌙 Soirée', '19h → 23h', 1]]
 // Where to eat and how to move, per city (real, well-known spots; prices indicative per person).
@@ -150,7 +157,7 @@ const FOOD0: Record<string, { lunch: [string, number][]; cafe: [string, number][
   Marseille: { lunch: [['Panisse et poissons au Vieux-Port', 110], ['Snack du Panier', 70]], cafe: [['Café du Vieux-Port', 25], ['Navettes (biscuits) du four des Navettes', 20]], dinner: [['Bouillabaisse ou soupe de poissons', 250], ['Pizza au feu de bois', 110]], move: 'Métro, tram et navettes maritimes (ticket ~2 €).' },
 }
 const FOOD = { ...FOOD0, ...WORLD_FOOD }
-const TIP: Record<Kind, string> = { famille: 'Prévois de l’eau, des en-cas et une casquette pour les enfants.', couple: 'Vise l’heure du coucher du soleil pour les vues et les photos.', sport: 'Pars tôt, prends de l’eau et des chaussures adaptées.', culture: 'Évite le vendredi midi et prévois de la monnaie pour l’entrée.', nature: 'Vérifie la météo et pars avec une petite veste.' }
+const TIP: Record<Kind, string> = { loisirs: 'Réserve en ligne : souvent moins cher et sans file d’attente.', famille: 'Prévois de l’eau, des en-cas et une casquette pour les enfants.', couple: 'Vise l’heure du coucher du soleil pour les vues et les photos.', sport: 'Pars tôt, prends de l’eau et des chaussures adaptées.', culture: 'Évite le vendredi midi et prévois de la monnaie pour l’entrée.', nature: 'Vérifie la météo et pars avec une petite veste.' }
 type Step = { t: string; e: string; n: string; d: string; p: number; id?: string }
 type Day = { fmt: Fmt; acts: string[] }
 const fmtD = (d: Date, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('fr', o).format(d)
@@ -192,8 +199,8 @@ function program(city: string, acts: Act[], day: Day): Step[] {
   if (day.fmt === 'eve') return [A[0] && act('17:00', A[0]), meal('19:00', '☕', F.cafe[F.cafe.length - 1])].filter(Boolean) as Step[]
   return [A[0] && act('19:00', A[0]), meal('20:30', '🌙', d)].filter(Boolean) as Step[]
 }
-const KTONE: Record<Kind, [string]> = { famille: ['linear-gradient(135deg,#d9822b,#b85c1e)'], couple: ['linear-gradient(135deg,#b4475c,#7d2c47)'], sport: ['linear-gradient(135deg,#2f6fa8,#1d4a7a)'], culture: ['linear-gradient(135deg,#a6532f,#6e3420)'], nature: ['linear-gradient(135deg,#2f7a52,#1a4a35)'] }
-const KINDS: [Kind, string][] = [['famille', '👨‍👩‍👧 Famille'], ['couple', '💑 Couple'], ['sport', '⚽ Sport'], ['culture', '🏛️ Culture'], ['nature', '🌿 Nature']]
+const KTONE: Record<Kind, [string]> = { loisirs: ['linear-gradient(135deg,#5b4bb0,#352a75)'], famille: ['linear-gradient(135deg,#d9822b,#b85c1e)'], couple: ['linear-gradient(135deg,#b4475c,#7d2c47)'], sport: ['linear-gradient(135deg,#2f6fa8,#1d4a7a)'], culture: ['linear-gradient(135deg,#a6532f,#6e3420)'], nature: ['linear-gradient(135deg,#2f7a52,#1a4a35)'] }
+const KINDS: [Kind, string][] = [['loisirs', '🎬 Loisirs'], ['famille', '👨‍👩‍👧 Famille'], ['couple', '💑 Couple'], ['sport', '⚽ Sport'], ['culture', '🏛️ Culture'], ['nature', '🌿 Nature']]
 
 /** Outings space: compose a day, a week or the month's weekends of real activities, each with a ready-to-follow program. */
 export function SortiesTab() {
@@ -236,11 +243,11 @@ export function SortiesTab() {
           {list.map((c) => <button key={c} className={`shrink-0 rounded-2xl px-4 py-2.5 text-sm font-bold transition active:scale-95 ${c === city ? 'bg-forest text-white shadow-lift' : 'bg-cream text-ink'}`} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>{c}</button>)}</div>
         {pickC && <div className="fade-up -mx-1 grid grid-cols-5 gap-1.5 rounded-2xl bg-cream/70 p-2">{COUNTRIES.filter((c) => COUNTRY_CITIES[c.id]).map((c) => <button key={c.id} className={`flex flex-col items-center rounded-xl py-1.5 text-[10px] font-bold ${c.id === cc ? 'bg-forest text-white' : 'bg-surface'}`} onClick={() => { setCc(c.id); setPickC(false); patchMe({ city: COUNTRY_CITIES[c.id][0] }); save({}, `${c.f} ${COUNTRY_CITIES[c.id][0]}`, true) }}><span className="text-xl leading-none">{c.f}</span><span className="w-full truncate px-0.5 text-center">{cname(c, 'fr')}</span></button>)}</div>}
         <div className="grid grid-cols-4 gap-1.5">{([['day', '☀️', 'Journée'], ['eve', '🌙', 'Soirée'], ['we', '🏖️', 'Week-end'], ['week', '🗓️', '7 jours']] as [Mode, string, string][]).map(([m, e, l]) => <button key={m} className={`flex flex-col items-center rounded-2xl py-2 text-[12px] font-bold transition active:scale-95 ${mode === m ? 'bg-forest text-white shadow-lift' : 'bg-cream text-ink'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }} aria-pressed={mode === m}><span className="text-xl leading-none">{e}</span>{l}</button>)}</div>
+        <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{KINDS.map(([k, l]) => <button key={k} className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-bold transition ${kinds.includes(k) ? 'bg-ink text-white' : 'bg-cream text-ink'}`} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])} aria-pressed={kinds.includes(k)}>{l}</button>)}</div>
         <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {days.some(([k]) => plan[k]) ? 'Proposer autre chose' : mode === 'day' ? 'Ma journée idéale' : mode === 'eve' ? 'Ma soirée' : mode === 'we' ? 'Mon week-end' : 'Mes 7 jours'}</button>
         <details className="group">
-          <summary className="flex cursor-pointer list-none items-center justify-center gap-1 text-xs font-semibold text-muted"><span>Personnaliser · {kinds.length ? KINDS.filter(([k]) => kinds.includes(k)).map(([, l]) => l.split(' ')[0]).join(' ') : 'tout le monde'} · {money(budget, 'fr')}</span><span className="transition-transform group-open:rotate-90">›</span></summary>
+          <summary className="flex cursor-pointer list-none items-center justify-center gap-1 text-xs font-semibold text-muted"><span>Transport et budget · {MOVES.find(([m]) => m === mv)?.[1]} · {money(budget, 'fr')}</span><span className="transition-transform group-open:rotate-90">›</span></summary>
           <div className="mt-3 space-y-3 rounded-2xl bg-cream/70 p-3">
-        <div className="flex flex-wrap gap-2">{KINDS.map(([k, l]) => <button key={k} className="chip" aria-pressed={kinds.includes(k)} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])}>{l}</button>)}</div>
         <div className="flex gap-2">{MOVES.map(([m, l]) => <button key={m} className="chip flex-1 justify-center" aria-pressed={mv === m} onClick={() => setMv(m)}>{l}</button>)}</div>
         <div className="flex items-center gap-3"><span className="text-xs font-bold text-muted">Budget</span><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-20 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
           </div>

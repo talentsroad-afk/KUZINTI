@@ -1,10 +1,11 @@
+import { healthOk, healthWeight } from './nutri'
 import { RECIPES, REC, type Meal, type Recipe } from '../data/recipes'
 import { COMPLETE, PASTRY_BF, SIDE, SOUPS } from '../data/sides'
 import { buildList, entryCost, kcalPerServing, recipeCost, type PlanEntry } from './engine'
 
 export type Mode = 'light' | 'balanced' | 'gourmet'
 type Plan = Record<string, PlanEntry>
-export interface Prefs { size: number; diet: string[]; cuisine: string; region: string; goals: string[]; meals: Meal[]; budget: number; kcal?: number }
+export interface Prefs { size: number; diet: string[]; cuisine: string; region: string; goals: string[]; meals: Meal[]; budget: number; kcal?: number; health?: string }
 // Share of the daily calorie target per meal; sides (bread, drink, salad) add roughly 150 kcal to main meals.
 const SHARE: Record<Meal, number> = { b: 0.25, l: 0.37, d: 0.28, g: 0.1 }
 const kcalFit = (kc: number, slot: Meal, target: number) => { const want = Math.max(150, target * SHARE[slot] - (slot === 'g' ? 0 : 150)); const z = (kc - want) / (0.3 * want); return Math.exp(-z * z) + 0.02 }
@@ -24,8 +25,8 @@ export const modeWeight = (mode: Mode, k: number) => mode === 'light' ? (k <= 35
 export const listCost = (plan: Plan, pantry: Record<string, number>, extras: Record<string, number>, qty: Record<string, number> = {}) => buildList(plan, pantry, extras, qty).reduce((a, l) => a + l.cost, 0)
 
 /** Dishes allowed for a slot. Falls back to every cuisine when the chosen one has too few (e.g. Japanese breakfast). */
-export function pool(slot: Meal, p: Pick<Prefs, 'cuisine' | 'diet'>): Recipe[] {
-  const base = RECIPES.filter((r) => r.m.includes(slot) && (!p.diet.includes('vegetarian') || r.tags.includes('vegetarian')))
+export function pool(slot: Meal, p: Pick<Prefs, 'cuisine' | 'diet'> & { health?: string }): Recipe[] {
+  const base = RECIPES.filter((r) => r.m.includes(slot) && healthOk(r, p.health) && (!p.diet.includes('vegetarian') || r.tags.includes('vegetarian')))
   const c = base.filter((r) => inCuisine(r, p.cuisine))
   if (c.length >= 4 || p.cuisine === 'ma' || p.cuisine.split(',').includes('ma')) return c.length ? c : base
   // Small foreign catalogs: complete with other world dishes first, Moroccan only as a last resort.
@@ -37,7 +38,7 @@ function weight(r: Recipe, slot: Meal, p: Prefs, used: Record<string, number>) {
   const g = p.goals
   return (1 / (1 + (used[r.id] ?? 0) * (g.includes('varied') ? 10 : 4))) * (p.kcal ? kcalFit(kcalPerServing(r.id), slot, p.kcal) : modeWeight(modeOf(g), kcalPerServing(r.id)))
     * (g.includes('cheap') ? 8 / (2 + recipeCost(r.id) / r.s) : 1) * (g.includes('quick') ? (r.t <= 35 ? 3 : 0.4) : 1)
-    * (p.region !== 'all' && REGION_DISHES[p.region]?.includes(r.id) ? 2.5 : 1) * (r.tags.includes('sweet') && slot !== 'g' && slot !== 'b' ? 0.1 : 1)
+    * (p.region !== 'all' && REGION_DISHES[p.region]?.includes(r.id) ? 2.5 : 1) * (r.tags.includes('sweet') && slot !== 'g' && slot !== 'b' ? 0.1 : 1) * healthWeight(r, p.health)
 }
 const pickW = <T,>(items: T[], w: number[], rnd = Math.random) => { let x = rnd() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < items.length; i++) { x -= w[i]; if (x <= 0) return items[i] } return items[0] }
 

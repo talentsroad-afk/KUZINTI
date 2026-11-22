@@ -2,8 +2,8 @@ import type { Aisle } from '../data/catalog'
 /** Countries KUZINTI supports. `rate` turns the MAD base price into a local shelf price (price level, not FX),
  *  so a basket costs what it would really cost there. Store price indexes are a labelled demo. */
 export interface Country { id: string; f: string; n: [string, string, string]; cur: string; sym: string; rate: number; dec: number; cuisine: string; zone: Zone; stores: string; cities?: string[] }
-export type Zone = 'maghreb' | 'europe' | 'amerique' | 'afrique' | 'orient'
-export const ZONES: [Zone, string, string, string][] = [['maghreb', 'Maghreb', 'Maghreb', 'المغرب العربي'], ['europe', 'Europe', 'Europe', 'أوروبا'], ['amerique', 'Amérique', 'Americas', 'أمريكا'], ['afrique', 'Afrique', 'Africa', 'أفريقيا'], ['orient', 'Moyen-Orient', 'Middle East', 'الشرق الأوسط']]
+export type Zone = 'maghreb' | 'europe' | 'nord' | 'amerique' | 'afrique' | 'orient'
+export const ZONES: [Zone, string, string, string][] = [['maghreb', 'Maghreb', 'Maghreb', 'المغرب العربي'], ['europe', 'Europe', 'Europe', 'أوروبا'], ['nord', 'Pays nordiques', 'Nordic countries', 'دول الشمال'], ['amerique', 'Amérique', 'Americas', 'أمريكا'], ['afrique', 'Afrique', 'Africa', 'أفريقيا'], ['orient', 'Moyen-Orient', 'Middle East', 'الشرق الأوسط']]
 // stores: "Name:kind" — kind d = discount, h = hypermarket, s = supermarket, p = premium, m = open market, n = neighbourhood shop
 export const COUNTRIES: Country[] = [
   { id: 'MA', f: '🇲🇦', n: ['Morocco', 'Maroc', 'المغرب'], cur: 'MAD', sym: 'MAD', rate: 1, dec: 2, cuisine: 'ma', zone: 'maghreb', stores: '' },
@@ -18,6 +18,10 @@ export const COUNTRIES: Country[] = [
   { id: 'NL', f: '🇳🇱', n: ['Netherlands', 'Pays-Bas', 'هولندا'], cur: 'EUR', sym: '€', rate: 0.17, dec: 2, cuisine: 'mix', zone: 'europe', stores: 'Albert Heijn:s|Jumbo:s|Lidl:d|Aldi:d|Plus:s|Markt:m', cities: ['Amsterdam'] },
   { id: 'PT', f: '🇵🇹', n: ['Portugal', 'Portugal', 'البرتغال'], cur: 'EUR', sym: '€', rate: 0.13, dec: 2, cuisine: 'med', zone: 'europe', stores: 'Continente:h|Pingo Doce:s|Lidl:d|Auchan:h|Intermarché:s|Mercado:m', cities: ['Lisbonne'] },
   { id: 'GB', f: '🇬🇧', n: ['United Kingdom', 'Royaume-Uni', 'المملكة المتحدة'], cur: 'GBP', sym: '£', rate: 0.14, dec: 2, cuisine: 'mix', zone: 'europe', stores: 'Tesco:h|Sainsbury’s:s|Asda:h|Aldi:d|Lidl:d|Market:m', cities: ['Londres'] },
+  { id: 'SE', f: '🇸🇪', n: ['Sweden', 'Suède', 'السويد'], cur: 'SEK', sym: 'kr', rate: 2.4, dec: 0, cuisine: 'mix', zone: 'nord', stores: 'Willys:d|Lidl:d|ICA:s|Coop:s|Hemköp:s|Saluhall:m', cities: ['Stockholm'] },
+  { id: 'NO', f: '🇳🇴', n: ['Norway', 'Norvège', 'النرويج'], cur: 'NOK', sym: 'kr', rate: 2.8, dec: 0, cuisine: 'mix', zone: 'nord', stores: 'Rema 1000:d|Kiwi:d|Coop Extra:d|Meny:s|Bunnpris:n', cities: ['Oslo'] },
+  { id: 'DK', f: '🇩🇰', n: ['Denmark', 'Danemark', 'الدنمارك'], cur: 'DKK', sym: 'kr', rate: 1.6, dec: 0, cuisine: 'mix', zone: 'nord', stores: 'Netto:d|Lidl:d|Rema 1000:d|Føtex:s|Bilka:h|Irma:p', cities: ['Copenhague'] },
+  { id: 'FI', f: '🇫🇮', n: ['Finland', 'Finlande', 'فنلندا'], cur: 'EUR', sym: '€', rate: 0.19, dec: 2, cuisine: 'mix', zone: 'nord', stores: 'Lidl:d|Prisma:h|K-Citymarket:h|S-Market:s|Alepa:n|Kauppatori:m', cities: ['Helsinki'] },
   { id: 'TR', f: '🇹🇷', n: ['Türkiye', 'Turquie', 'تركيا'], cur: 'TRY', sym: '₺', rate: 3.6, dec: 0, cuisine: 'tr', zone: 'europe', stores: 'Migros:s|BIM:d|A101:d|ŞOK:d|CarrefourSA:h|Pazar:m', cities: ['Istanbul'] },
   { id: 'CA', f: '🇨🇦', n: ['Canada', 'Canada', 'كندا'], cur: 'CAD', sym: '$ CA', rate: 0.24, dec: 2, cuisine: 'mix', zone: 'amerique', stores: 'Maxi:d|Metro:s|IGA:s|Walmart:h|Costco:h|Marché:m', cities: ['Montréal'] },
   { id: 'US', f: '🇺🇸', n: ['United States', 'États-Unis', 'الولايات المتحدة'], cur: 'USD', sym: '$', rate: 0.2, dec: 2, cuisine: 'mix', zone: 'amerique', stores: 'Walmart:h|Costco:h|Kroger:s|Aldi:d|Whole Foods:p|Farmers market:m', cities: ['New York'] },
@@ -54,6 +58,7 @@ export const CHAIN: Record<string, [string, string]> = {
   metro: ['#e30613', '#fff'], iga: ['#e30613', '#fff'], casino: ['#00843d', '#fff'], leaderprice: ['#e30613', '#ffd400'], prosuma: ['#1d3f8f', '#fff'], uno: ['#e30613', '#fff'],
   ardis: ['#00843d', '#fff'], numidis: ['#1d5fa8', '#fff'], geant: ['#00843d', '#fff'], aziza: ['#e30613', '#fff'], magasingeneral: ['#1d3f8f', '#fff'], hyperone: ['#e30613', '#fff'],
   spinneys: ['#00674b', '#fff'], kheirzaman: ['#f39200', '#fff'], lulu: ['#00843d', '#fff'], unioncoop: ['#1d5fa8', '#fff'], choithrams: ['#e30613', '#fff'], panda: ['#00843d', '#fff'],
+  willys: ['#e30613', '#fff'], ica: ['#e3000f', '#fff'], hemkop: ['#e30613', '#fff'], rema1000: ['#003087', '#fff'], kiwi: ['#7ab51d', '#fff'], coopextra: ['#e30613', '#ffd400'], meny: ['#c8102e', '#fff'], bunnpris: ['#e30613', '#fff'], netto: ['#ffd400', '#111'], fotex: ['#00205b', '#fff'], bilka: ['#00a0e2', '#fff'], irma: ['#00a0e2', '#fff'], prisma: ['#00843d', '#fff'], kcitymarket: ['#ff6600', '#fff'], smarket: ['#e30613', '#fff'], alepa: ['#e30613', '#fff'],
   othaim: ['#f39200', '#fff'], danube: ['#1d3f8f', '#fff'], tamimi: ['#c8102e', '#fff'],
 }
 export const chainKey = slug

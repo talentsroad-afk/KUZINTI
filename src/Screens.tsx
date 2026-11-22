@@ -1,8 +1,9 @@
 import { BookOpen, Coffee, Dices, Moon, RefreshCw, Shuffle, Sun, Sunrise, type LucideIcon } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
+import { HEALTH as HP, NUT, healthOk, nutName, nutrientsOf, type Health } from './lib/nutri'
 import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
-import { REC, type Meal, type Recipe } from './data/recipes'
+import { REC, stepsOf, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { SIDE } from './data/sides'
 import { dailyKcal, entryCost, entryKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
@@ -14,10 +15,21 @@ export const SLOTS: Meal[] = ['b', 'l', 'd', 'g']
 export const SLOT_E: Record<Meal, string> = { b: '🌅', l: '☀️', d: '🌙', g: '🍵' }
 export const SLOT_I: Record<Meal, LucideIcon> = { b: Sunrise, l: Sun, d: Moon, g: Coffee }
 const UNIT: Record<string, [string, string, string]> = { bunch: ['bunch', 'botte', 'botte'], glass: ['glass', 'verre', 'كأس'], pinch: ['pinch', 'pincée', 'رشة'], tbsp: ['tbsp', 'c. à s.', 'م.ك'], tsp: ['tsp', 'c. à c.', 'م.ص'], clove: ['clove', 'gousse', 'فص'], pc: ['', '', ''], g: ['g', 'g', 'غ'], ml: ['ml', 'ml', 'مل'] }
-const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
+const li = (l: Lang) => (l === 'en' ? 0 : l === 'ar' ? 2 : 1)
 const r1 = (n: number) => Math.round(n * 10) / 10
 export const HEALTH = { fit: '🏃', balanced: '🙂', belly: '🫃' } as const
 export const kcalBadge = (rid: string) => { const k = Math.round(kcalPerServing(rid)); return { k, c: k <= 450 ? 'bg-leaf/40 text-forest' : k <= 700 ? 'bg-cream text-muted' : 'bg-apricot/50 text-[#6b4510]' } }
+
+function NutriChips({ r }: { r: Recipe }) {
+  const { lang, me } = useApp(); const ns = nutrientsOf(r).slice(0, 4); const h = (me!.health ?? 'none') as Health; const need = HP[h][4]
+  if (!ns.length) return null
+  return <div className="mb-4 flex flex-wrap gap-1.5">{ns.map((n) => <span key={n} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${need.includes(n) ? 'bg-forest text-white' : 'bg-leaf/25 text-forest'}`}>{NUT[n][0]} {nutName(n, lang)}</span>)}</div>
+}
+function NutriBox({ r }: { r: Recipe }) {
+  const { lang, me } = useApp(); const h = (me!.health ?? 'none') as Health; if (h === 'none') return null
+  const ok = healthOk(r, h); const hit = HP[h][4].filter((n) => nutrientsOf(r).slice(0, 5).includes(n))
+  return <p className={`rounded-2xl p-3 text-sm ${ok ? 'bg-leaf/20' : 'bg-danger/10 text-danger'}`}>{HP[h][0]} <b>{HP[h][lang === 'en' ? 1 : lang === 'ar' ? 3 : 2]}</b> · {!ok ? (lang === 'en' ? 'Not advised (raw egg).' : 'Déconseillé (œuf cru).') : hit.length ? `${lang === 'en' ? 'Good source of' : 'Bonne source de'} ${hit.map((n) => nutName(n, lang).toLowerCase()).join(', ')}.` : (lang === 'en' ? 'Fine, pair it with a dish richer in what you need.' : 'Possible, à compléter avec un plat plus riche en ce dont vous avez besoin.')}</p>
+}
 
 export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | null; onClose: () => void; servings?: number; onServings?: (n: number) => void }) {
   const { lang, me, patchMe, award, upHouse, toast } = useApp()
@@ -35,6 +47,7 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
         <span>⏱ {r.t} {t('min', lang)}</span><span>·</span><span>≈ {money(recipeCost(r.id, sv) / sv, lang)} {t('perServing', lang)}</span><span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${kb.c}`}>{kb.k} kcal</span>
         <button className="ms-auto text-2xl" aria-pressed={fav} aria-label="favorite" onClick={() => { patchMe({ favs: fav ? me!.favs.filter((x) => x !== r.id) : [...me!.favs, r.id] }); if (!fav) award(2, '❤️') }}>{fav ? '❤️' : '🤍'}</button>
       </div>
+      <NutriChips r={r} />
       <div className="mb-3 flex items-center justify-between"><h3 className="font-bold">{t('ingredients', lang)}</h3><span className="flex items-center gap-2 text-sm"><Stepper v={sv} set={setSv} /> {t('servings', lang)}</span></div>
       <ul className="mb-5 space-y-1.5 text-sm">
         {r.ing.map((s) => {
@@ -50,8 +63,8 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
         <p className="mt-1.5 text-[11px] text-muted">{lang === 'en' ? `For ${sv} people · replaces the dish already planned there.` : `Pour ${sv} personne(s) · remplace le plat déjà prévu à ce moment.`}</p>
       </div>}
       <h3 className="mb-2 font-bold">{t('steps', lang)}</h3>
-      <ol className="mb-1 list-decimal space-y-1.5 ps-5 text-sm">{r.st.split('|').map((x, i) => <li key={i}>{x}</li>)}</ol>
-      <p className="text-xs text-muted">{t('stepsNote', lang)}</p>
+      <ol className="mb-4 space-y-2.5 text-sm">{stepsOf(r, lang).map((x, i) => <li key={i} className="flex gap-3"><span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-forest text-xs font-extrabold text-white">{i + 1}</span><span className="pt-1 leading-relaxed">{x}</span></li>)}</ol>
+      <NutriBox r={r} />
     </Sheet>
   )
 }
@@ -60,7 +73,7 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
 
 export function usePrefs(): Prefs {
   const { me } = useApp(); const u = me!
-  return { size: Math.max(1, u.size), diet: u.diet, cuisine: u.cuisine ?? 'ma', region: u.region ?? 'all', goals: (u.goals ?? []).filter((g) => g !== 'healthy' && g !== 'gourmand'), meals: u.meals ?? ['b', 'l', 'd'], budget: u.budget, kcal: u.kcal ?? 2000 }
+  return { size: Math.max(1, u.size), diet: u.diet, cuisine: u.cuisine ?? 'ma', region: u.region ?? 'all', goals: (u.goals ?? []).filter((g) => g !== 'healthy' && g !== 'gourmand'), meals: u.meals ?? ['b', 'l', 'd'], budget: u.budget, kcal: (u.kcal ?? 2000) + (u.health === 'sport' ? 300 : u.health === 'preg' ? 300 : 0), health: u.health }
 }
 const sideNames = (x: string[] | undefined, lang: Lang) => (x ?? []).filter((s) => SIDE[s]).map((s) => SIDE[s].n[li(lang)]).join(' · ')
 
@@ -187,7 +200,7 @@ export function WeekTab({ compose, makeHealthy, say, clear }: { compose: () => v
         <p className="mt-2 text-center text-[11px] text-muted">{t('tapSwap', lang)}</p>
       </div>}
       {view === 'month' && <div className="card p-3">
-        <p className="mb-2 font-display font-extrabold capitalize">{new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, { month: 'long', year: 'numeric' }).format(new Date())}</p>
+        <p className="mb-2 font-display font-extrabold capitalize">{new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang === 'zgh' ? 'fr' : lang, { month: 'long', year: 'numeric' }).format(new Date())}</p>
         <div className="grid grid-cols-7 gap-1 text-center">{Array.from({ length: 7 }, (_, d) => <span key={d} className="text-[10px] font-bold uppercase text-muted">{dayName(d, lang).slice(0, 2)}</span>)}
           {monthCells.map((c, i) => c ? <button key={i} onClick={() => { setDay(c.wd); setView('day') }} className={`rounded-xl py-1 ${c.today ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-bold">{c.n}</span>{plan[`${c.wd}-l`] && <span className="block truncate px-0.5 text-[8.5px] font-semibold leading-tight">{REC[plan[`${c.wd}-l`].r].e} {short(rname(REC[plan[`${c.wd}-l`].r].n, lang)).split(' ')[0]}</span>}</button> : <span key={i} />)}
         </div>

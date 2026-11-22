@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, setCurrency, t, type Lang } from './lib/i18n'
+import { LANG_LABEL } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
 import { Controls, usePrefs, WeekTab } from './Screens'
@@ -24,7 +25,7 @@ import { FoodTile } from './ui'
 
 function LangSwitch() {
   const { lang, setLang } = useApp()
-  return <div className="inline-flex rounded-full bg-surface p-1 shadow-soft" role="group" aria-label="Language">{(['fr', 'en', 'ar'] as Lang[]).map((l) => <button key={l} aria-pressed={lang === l} onClick={() => setLang(l)} className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase ${lang === l ? 'bg-forest text-white' : 'text-muted'}`}>{l}</button>)}</div>
+  return <div className="inline-flex rounded-full bg-surface p-1 shadow-soft" role="group" aria-label="Language">{(['fr', 'en', 'ar', 'zgh'] as Lang[]).map((l) => <button key={l} aria-pressed={lang === l} onClick={() => setLang(l)} className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase ${lang === l ? 'bg-forest text-white' : 'text-muted'}`}>{LANG_LABEL[l]}</button>)}</div>
 }
 
 function Landing({ go }: { go: (m: 'signup' | 'login') => void }) {
@@ -42,11 +43,11 @@ function Landing({ go }: { go: (m: 'signup' | 'login') => void }) {
         <p className="mx-auto mt-5 max-w-xl text-lg text-muted">{t('heroSub', lang)}</p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <button className="btn btn-primary !min-h-14 !px-8 text-base" onClick={() => go('signup')}>{t('cta1', lang)}</button>
-          <button className="btn btn-warm !min-h-14 !px-8 text-base" onClick={demo}>▶ {{ en: 'Try the demo', fr: 'Essayer la démo', ar: 'جرّب العرض' }[lang]}</button>
+          <button className="btn btn-warm !min-h-14 !px-8 text-base" onClick={demo}>▶ {{ en: 'Try the demo', fr: 'Essayer la démo', ar: 'جرّب العرض', zgh: 'Essayer la démo' }[lang]}</button>
           <a className="btn btn-soft !min-h-14 !px-8 text-base" href="#how">{t('cta2', lang)}</a>
         </div>
         <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
-          {showcase.map((r, i) => <div key={r.id} className="rise card overflow-hidden" style={{ animationDelay: `${i * 90}ms` }}><FoodTile r={r} className="h-28" /><p className="p-3 text-left text-xs font-semibold leading-tight">{r.n[lang === 'en' ? 0 : lang === 'fr' ? 1 : 2]}</p></div>)}
+          {showcase.map((r, i) => <div key={r.id} className="rise card overflow-hidden" style={{ animationDelay: `${i * 90}ms` }}><FoodTile r={r} className="h-28" /><p className="p-3 text-left text-xs font-semibold leading-tight">{r.n[lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p></div>)}
         </div>
       </section>
       <section id="how" className="relative mx-auto max-w-5xl px-5 py-12">
@@ -121,6 +122,11 @@ function Onboarding() {
 
 const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', CalendarDays, 'tWeek'], ['list', ShoppingCart, 'list'], ['sorties', MapPinned, 'tSorties'], ['budget', Wallet, 'tBudget'], ['profile', UserRound, 'profile']]
 
+type World = 'food' | 'sorties' | 'budget'
+const SPACES: World[] = ['food', 'sorties', 'budget']
+const W_LABEL: Record<World, [string, string, string, string]> = { food: ['🍽️', 'Meals', 'Repas', 'الوجبات'], sorties: ['🎈', 'Outings', 'Sorties', 'نزهات'], budget: ['💰', 'Budget', 'Budget', 'الميزانية'] }
+const L3 = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
+
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
   setCurrency(me!.country); setStoreCountry(me!.country)
@@ -172,6 +178,15 @@ function Shell() {
   const clearWeek = () => { const u = snap(lang === 'en' ? 'Clear' : 'Vider'); upHouse((x) => { x.plan = {}; x.qty = {}; x.checked = {}; x.store = undefined }, '🗑 semaine vidée'); say(lang === 'en' ? '🗑 Week cleared. Compose a new one when you like.' : '🗑 Semaine vidée. Composez-en une nouvelle quand vous voulez.', u); go('home') }
   const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
   const [ctry, setCtry] = useState(false)
+  // Three worlds side by side: swipe left/right (or tap the pill) to move between Meals, Outings and Budget.
+  const world: World = tab === 'sorties' ? 'sorties' : tab === 'budget' ? 'budget' : 'food'
+  const lastFood = useRef<Tab>('home'); if (world === 'food') lastFood.current = tab
+  const [wdir, setWdir] = useState(0); useEffect(() => { if (!wdir) return; const id = setTimeout(() => setWdir(0), 450); return () => clearTimeout(id) }, [wdir])
+  const goWorld = (w: World) => { if (w === world) return; setWdir(SPACES.indexOf(w) - SPACES.indexOf(world)); go(w === 'food' ? lastFood.current : w) }
+  const sw = useRef<[number, number] | null>(null)
+  const swStart = (e: React.TouchEvent) => { const el = e.target as HTMLElement; sw.current = el.closest('[data-noswipe], .overflow-x-auto, input, .touch-pan-y, [role=dialog]') ? null : [e.touches[0].clientX, e.touches[0].clientY] }
+  const swEnd = (e: React.TouchEvent) => { if (!sw.current) return; const dx = e.changedTouches[0].clientX - sw.current[0], dy = e.changedTouches[0].clientY - sw.current[1]; sw.current = null
+    if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return; const rtl = lang === 'ar'; const i = SPACES.indexOf(world) + ((dx < 0) !== rtl ? 1 : -1); if (i >= 0 && i < 3) goWorld(SPACES[i]) }
   const { cart, finish: endTrip, left: cartLeft } = useCart(); const [caddie, setCaddie] = useState(false)
   const setCountry = (c: string) => {
     if (c === me!.country) return; const k = countryOf(c)
@@ -233,9 +248,15 @@ function Shell() {
         </>}
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
-      <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
+      <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`} onTouchStart={swStart} onTouchEnd={swEnd}>
+        <div className="mb-3 flex items-center gap-2">
+          <div className="relative grid flex-1 grid-cols-3 rounded-full bg-surface p-1 shadow-soft" role="tablist" aria-label={L3(lang, 'Spaces', 'Espaces', 'الفضاءات')}>
+            <span className="absolute inset-y-1 rounded-full bg-forest transition-all duration-300 ease-out" style={{ width: 'calc((100% - .5rem) / 3)', insetInlineStart: `calc(.25rem + ${SPACES.indexOf(world)} * (100% - .5rem) / 3)` }} aria-hidden />
+            {SPACES.map((w) => <button key={w} role="tab" aria-selected={world === w} onClick={() => goWorld(w)} className={`relative z-10 rounded-full py-1.5 text-[13px] font-bold transition-colors ${world === w ? 'text-white' : 'text-muted'}`}>{W_LABEL[w][0]} {L3(lang, W_LABEL[w][1], W_LABEL[w][2], W_LABEL[w][3])}</button>)}
+          </div>
+        </div>
         {tab !== 'home' && <Hint tab={tab} />}
-        {space === 'out' ? <div key={tab} className="fade-up">{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className="fade-up">
+        {space === 'out' ? <div key={tab} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className={wdir > 0 ? 'slide-in-r' : wdir < 0 ? 'slide-in-l' : 'fade-up'}>
           {tab === 'home' && <HomeTab composeFor={(o) => composeWith(o)} clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
           {tab === 'week' && <button className="mb-3 flex w-full items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm font-bold text-forest shadow-soft" onClick={() => go('recipes')}><BookOpen size={18} aria-hidden /> {t('tRecipes', lang)} · {lang === 'en' ? 'browse & favorites' : 'parcourir et favoris'} <span className="ms-auto">›</span></button>}
           {tab === 'week' && <WeekTab clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}

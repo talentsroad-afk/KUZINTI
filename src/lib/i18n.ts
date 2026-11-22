@@ -1,5 +1,8 @@
 import { countryOf, type Country } from './countries'
-export type Lang = 'fr' | 'en' | 'ar'
+export type Lang = 'fr' | 'en' | 'ar' | 'zgh'
+/** Tamazight (Tifinagh, beta): a short reviewed-word list; everything else falls back to French. */
+const Z: Record<string, string> = { tHome: 'ⵜⴰⴷⴷⴰⵔⵜ', tWeek: 'ⵉⵎⴰⵍⴰⵙⵙ', country: 'ⵜⴰⵎⴰⵣⵉⵔⵜ', language: 'ⵜⵓⵜⵍⴰⵢⵜ', welcome: 'ⴰⵏⵙⵓⴼ' }
+export const LANG_LABEL: Record<Lang, string> = { fr: 'FR', en: 'EN', ar: 'ع', zgh: 'ⵣ' }
 type D = Record<string, [string, string, string]> // [en, fr, ar]
 const D: D = {
   tagline: ['Plan your meals. Shop smarter. Live better.', 'Planifiez vos repas. Achetez malin. Vivez mieux.', 'خطط وجباتك. تسوّق بذكاء. عش أفضل.'],
@@ -116,9 +119,9 @@ const D: D = {
   stepHint0: ['Plan: pick your goal and tap “Plan my week”', 'Composer : choisis ton objectif et touche « Composer ma semaine »', 'خطط: اختر هدفك واضغط «خطط أسبوعي»'], stepHint1: ['Week: check and swap your meals', 'Semaine : vérifie et change tes repas', 'الأسبوع: راجع وجباتك'], stepHint2: ['Shopping: tick your products in the store', 'Courses : coche tes produits en magasin', 'التسوق: ضع علامة على منتجاتك'], stepHint3: ['Store: pick where to shop', 'Magasin : choisis où faire tes courses', 'المتجر: اختر أين تتسوق'], stepHint4: ['Done: tick everything and finish', 'Fini : coche tout et termine', 'تم: ضع علامة على الكل وأنهِ'],
   share: ['Share', 'Partager', 'مشاركة'], shared: ['List copied', 'Liste copiée', 'تم نسخ القائمة'], lWeek: ['Week', 'Semaine', 'الأسبوع'], lDay: ['Day', 'Jour', 'اليوم'],
 }
-export const t = (k: string, l: Lang) => (D[k] ?? [k, k, k])[l === 'en' ? 0 : l === 'fr' ? 1 : 2]
-export const rname = (n: [string, string, string], l: Lang) => n[l === 'en' ? 0 : l === 'fr' ? 1 : 2]
-export const dayName = (i: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l, { weekday: 'long' }).format(new Date(2024, 0, 1 + i))
+export const t = (k: string, l: Lang) => (l === 'zgh' && Z[k]) || (D[k] ?? [k, k, k])[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
+export const rname = (n: [string, string, string], l: Lang) => n[l === 'en' ? 0 : l === 'ar' ? 2 : 1]
+export const dayName = (i: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l === 'zgh' ? 'fr' : l, { weekday: 'long' }).format(new Date(2024, 0, 1 + i))
 // Amounts are stored in MAD; France shows an estimated euro equivalent (local price level, not a bank rate).
 let CUR: Country = countryOf('MA')
 export const setCurrency = (c: string) => { CUR = countryOf(c) }
