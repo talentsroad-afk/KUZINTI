@@ -3,6 +3,10 @@ import { E3 } from './E3'
 import { HealthPlan } from './Health'
 import { GoalJourney, goalPlan, type GoalP } from './Goal'
 import { Ic } from './Ic'
+import { Beef, Bike, Dumbbell, Flame, Flower2, Footprints, Scale, Swords, Users, Zap } from 'lucide-react'
+const MODE_IC: Record<string, typeof Scale> = { bulk: Dumbbell, cut: Flame, fit: Scale, perf: Zap }
+const MODE_SHORT: Record<string, [string, string, string]> = { bulk: ['Mass', 'Masse', 'كتلة'], cut: ['Fat loss', 'Perte', 'خسارة'], fit: ['Maintain', 'Maintien', 'حفاظ'], perf: ['Endurance', 'Endurance', 'تحمل'] }
+const SPORT_IC: Record<string, typeof Scale> = { gym: Dumbbell, run: Footprints, team: Users, fight: Swords, bike: Bike, yoga: Flower2 }
 import { useApp } from './lib/store'
 import type { Lang } from './lib/i18n'
 
@@ -73,15 +77,22 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
   return (
     <div className="stagger space-y-4 pb-4">
       {p.age < 18 && p.goal === 'cut' && <p className="rounded-2xl bg-apricot/25 px-3 py-2 text-xs font-semibold">{L(lang, 'Under 18: no calorie deficit. Aim for fitness and good habits, and talk to a doctor before changing your weight.', 'Moins de 18 ans : pas de déficit calorique. Visez la forme et les bonnes habitudes, et parlez-en à un médecin avant de changer de poids.', 'أقل من 18 سنة: لا عجز في السعرات.')}</p>}
-      <section className="rounded-[24px] bg-forest p-4 text-white shadow-soft">
-        <p className="text-[12px] font-bold uppercase tracking-[.16em] text-white/70">{L(lang, 'My mode', 'Mon mode', 'وضعي')}</p>
-        <div className="mt-1 flex items-center gap-3"><span className="text-4xl" aria-hidden>{g[1]}</span>
-          <div className="min-w-0"><b className="block font-display text-[22px] font-extrabold leading-tight">{({ bulk: L(lang, 'Mass gain', 'Prise de masse', 'زيادة الكتلة'), cut: L(lang, 'Weight loss', 'Perte de poids', 'خسارة الوزن'), fit: L(lang, 'Maintenance', 'Maintien', 'الحفاظ'), perf: L(lang, 'Endurance', 'Endurance', 'التحمل') } as Record<string, string>)[p.goal]}</b>
-            <span className="block text-sm text-white/80">{n.kcal} kcal/{L(lang, 'day', 'jour', 'يوم')} · {g[2] > 0 ? '+' : ''}{g[2]} kcal · {g[3]} g {L(lang, 'protein/kg', 'protéines/kg', 'بروتين/كغ')}</span></div></div>
-        <div className="mt-3 grid grid-cols-2 gap-2">{GOALS.map((x) => <button key={x[0]} onClick={() => set({ goal: x[0], tw: undefined, kcalO: undefined, protO: undefined } as never)} aria-pressed={p.goal === x[0]} className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-start text-[13px] font-bold active:scale-95 ${p.goal === x[0] ? 'bg-white text-forest' : 'bg-white/12 text-white'}`} style={p.goal === x[0] ? undefined : { background: 'rgba(255,255,255,.12)' }}><span className="text-xl" aria-hidden>{x[1]}</span>{x[4][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</button>)}</div>
-        <p className="mt-3 text-[12px] font-bold uppercase tracking-[.16em] text-white/70">{L(lang, 'My sport', 'Mon sport', 'رياضتي')} · {SPORTS.find((x) => x[0] === p.sport)?.[lang === 'en' ? 2 : lang === 'ar' ? 4 : 3]}</p>
-        <div className="-mx-4 mt-1.5 flex gap-2 overflow-x-auto px-4 pb-1">{SPORTS.map(([k, e, en, fr, ar]) => <button key={k} onClick={() => set({ sport: k })} aria-pressed={p.sport === k} className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-bold active:scale-95 ${p.sport === k ? 'bg-white text-forest' : 'text-white'}`} style={p.sport === k ? undefined : { background: 'rgba(255,255,255,.12)' }}><span aria-hidden>{e}</span>{lang === 'en' ? en : lang === 'ar' ? ar : fr}</button>)}</div>
-        <p className="mt-2 text-xs text-white/75">{g[5][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}. {L(lang, 'Changing the mode updates your calories, your training and your meals right away.', 'Changer de mode met à jour vos calories, votre entraînement et vos repas tout de suite.', 'تغيير الوضع يحدّث سعراتك وتمارينك ووجباتك فورًا.')}</p>
+      <section className="rounded-[28px] bg-surface p-4 shadow-soft">
+        <div className="flex items-center gap-3">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[18px] bg-forest text-white shadow-lift">{(() => { const I = MODE_IC[p.goal] ?? Scale; return <I size={28} strokeWidth={2.2} aria-hidden /> })()}</span>
+          <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'My mode', 'Mon mode', 'وضعي')}</p>
+            <b className="block truncate font-display text-[22px] font-extrabold leading-tight">{g[4][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</b></div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-2xl bg-cream px-2 py-2"><Flame size={15} className="mx-auto text-[#e0662a]" aria-hidden /><b className="block font-display text-[18px] tabular-nums leading-tight">{n.kcal}</b><span className="text-[11px] font-semibold text-muted">kcal / {L(lang, 'day', 'jour', 'يوم')}</span></div>
+          <div className="rounded-2xl bg-cream px-2 py-2"><Scale size={15} className="mx-auto text-forest" aria-hidden /><b className="block font-display text-[18px] tabular-nums leading-tight">{g[2] > 0 ? '+' : ''}{g[2]}</b><span className="text-[11px] font-semibold text-muted">{L(lang, 'kcal vs needs', 'kcal vs besoin', 'مقارنة بالحاجة')}</span></div>
+          <div className="rounded-2xl bg-cream px-2 py-2"><Beef size={15} className="mx-auto text-[#c4493d]" aria-hidden /><b className="block font-display text-[18px] tabular-nums leading-tight">{g[3]}</b><span className="text-[11px] font-semibold text-muted">{L(lang, 'g protein/kg', 'g prot./kg', 'بروتين/كغ')}</span></div>
+        </div>
+        <p className="mt-4 text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'Goal', 'Objectif', 'الهدف')}</p>
+        <div className="mt-1.5 grid grid-cols-4 gap-1.5 rounded-[20px] bg-cream p-1">{GOALS.map((x) => { const I = MODE_IC[x[0]] ?? Scale; const on = p.goal === x[0]; return <button key={x[0]} onClick={() => set({ goal: x[0], tw: undefined, kcalO: undefined, protO: undefined } as never)} aria-pressed={on} className={`flex flex-col items-center gap-1 rounded-2xl px-1 py-2 text-[11.5px] font-bold leading-tight transition active:scale-95 ${on ? 'bg-forest text-white shadow-lift' : 'text-ink/70'}`}><I size={20} strokeWidth={on ? 2.4 : 1.9} aria-hidden /><span className="text-center">{MODE_SHORT[x[0]][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</span></button> })}</div>
+        <p className="mt-3 text-[11px] font-bold uppercase tracking-[.16em] text-muted">{L(lang, 'Sport', 'Sport', 'الرياضة')}</p>
+        <div className="mt-1.5 grid grid-cols-3 gap-2">{SPORTS.map(([k, , en, fr, ar]) => { const I = SPORT_IC[k] ?? Dumbbell; const on = p.sport === k; return <button key={k} onClick={() => set({ sport: k })} aria-pressed={on} className={`flex items-center gap-2 rounded-2xl px-3 py-2.5 text-start text-[13px] font-bold transition active:scale-95 ${on ? 'bg-leaf/30 text-forest ring-2 ring-forest' : 'bg-cream text-ink/80'}`}><I size={18} strokeWidth={on ? 2.4 : 1.9} className="shrink-0" aria-hidden /><span className="truncate">{(lang === 'en' ? en : lang === 'ar' ? ar : fr).split(/[,/]/)[0].trim()}</span></button> })}</div>
+        <p className="mt-3 text-xs text-muted">{g[5][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}. {L(lang, 'Changing them updates your calories, training and meals right away.', 'Les changer met à jour vos calories, votre entraînement et vos repas tout de suite.', 'تغييرها يحدّث سعراتك وتمارينك ووجباتك فورًا.')}</p>
       </section>
       <section className="rounded-[24px] bg-surface p-4 shadow-soft">
         <h2 className="font-display text-[17px] font-extrabold">{L(lang, 'My athlete meals', 'Mes repas de sportif', 'Mes repas de sportif')}</h2>
