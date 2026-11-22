@@ -248,7 +248,7 @@ function program(city: string, acts: Act[], day: Day, budget = 600): Step[] {
   const pk = (x: [string, number][], o = 0) => { const y = [...x].sort((u, v) => u[1] - v[1]); const z = budget <= 300 ? y.slice(0, 1) : budget <= 700 ? y.slice(0, Math.ceil(y.length / 2)) : y; return z[(h + o) % z.length] }
   const meal = (t: string, e: string, x: [string, number], d: string): Step => ({ t, e, n: x[0], d, p: x[1] })
   const [l, c, d] = [pk(F.lunch), pk(F.cafe), pk(F.dinner, 1)]
-  const show = budget >= 600 && acts.find((a) => /cin[ée]ma|th[ée]âtre|op[ée]ra|spectacle|concert/i.test(a.n + a.d) && !day.acts.includes(a.id) && a.h <= 2)
+  const show = budget < 600 ? undefined : acts.find((a) => /cin[ée]ma|th[ée]âtre|op[ée]ra|spectacle|concert/i.test(a.n + a.d) && !day.acts.includes(a.id) && a.h <= 2)
   if (day.fmt === 'full') return [meal('09:30', '☕', pk(F.cafe, 2), 'Petit-déjeuner'), A[0] && act('10:15', A[0]), A[1] && act('11:45', A[1]), meal('13:00', '🍽️', l, 'Déjeuner'), A[2] && act('15:00', A[2]), meal('16:45', '🧁', c, 'Goûter'), A[3] && act('17:30', A[3]), meal('20:00', '🌙', d, 'Dîner'), show && act('21:45', show)].filter(Boolean) as Step[]
   if (day.fmt === 'half') return [A[0] && act('14:00', A[0]), A[1] && act('15:30', A[1]), meal('16:45', '☕', c, 'Goûter'), A[2] && act('17:30', A[2])].filter(Boolean) as Step[]
   if (day.fmt === 'eve') return [A[0] && act('17:00', A[0]), meal('18:30', '☕', c, 'Café'), A[1] && act('19:15', A[1])].filter(Boolean) as Step[]
