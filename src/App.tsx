@@ -14,6 +14,7 @@ import { RecipesTab } from './Extra'
 import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Search, Sparkles, Wallet, type LucideIcon } from 'lucide-react'
 import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
+import { Nav } from './Nav'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore, setStoreCountry } from './lib/stores'
 import { CountrySheet } from './Country'
@@ -213,12 +214,12 @@ function Shell() {
   const title = t(tab === 'stores' ? 'tStores' : tab === 'recipes' ? 'tRecipes' : TABS.find((x) => x[0] === tab)![2], lang)
 
   return (
-    <div className="calm min-h-screen">
+    <div className="calm shell min-h-screen">
       <Confetti run={boom} />
       <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.88)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className={`mx-auto flex max-w-2xl items-center gap-2 px-4 py-2.5 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
           <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button>{tab !== 'home' && <span className="min-w-0 truncate font-display text-lg font-extrabold">{title}</span>}
-          <span className="flex-1" /><button className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xl shadow-soft active:scale-90 ${tab === 'home' ? 'hidden' : ''}`} onClick={() => setCtry(true)} aria-label={cname(countryOf(me!.country), lang)}>{countryOf(me!.country).f}</button>
+          <span className="flex-1" /><button className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xl shadow-soft active:scale-90 ${tab === 'home' ? 'hidden' : 'hidden sm:grid'}`} onClick={() => setCtry(true)} aria-label={cname(countryOf(me!.country), lang)}>{countryOf(me!.country).f}</button>
           {space === 'food' && <button className={`${tab === 'home' ? 'grid' : 'hidden sm:grid'} h-10 w-10 shrink-0 place-items-center rounded-full bg-surface shadow-soft active:scale-90`} onClick={() => go('recipes')} aria-label={lang === 'en' ? 'Search recipes' : 'Chercher une recette'}><Search size={18} aria-hidden /></button>}
           {space === 'food' && <button data-tour="budget" className="min-w-[8rem] shrink-0 rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
             <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
@@ -245,19 +246,14 @@ function Shell() {
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
       </main>
-      <><div data-tour="assist" style={space === 'out' || (tab === 'home' && !tour) ? { display: 'none' } : undefined} className="fixed bottom-[5.5rem] start-4 z-40 flex items-center rounded-full bg-ink/90 p-1 text-white shadow-lg backdrop-blur">
+      <><div data-tour="assist" style={space === 'out' || (tab === 'home' && !tour) ? { display: 'none' } : undefined} className="fixed bottom-[6.5rem] start-4 z-40 flex items-center rounded-full bg-ink/90 p-1 text-white shadow-lg backdrop-blur">
         <button className="grid h-11 w-11 place-items-center rounded-full text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}><Sparkles size={18} aria-hidden /></button>
       </div>
       <Assistant open={assist} onClose={() => setAssist(false)} tab={tab} next={help} more={more} undo={undo} onTour={() => setTour(true)} go={go} />
       <Tour run={tour} onEnd={() => setTour(false)} />
-      {cart.length > 0 && !caddie && <button data-tour="caddie" className="caddie-fab fixed bottom-[5.5rem] end-4 z-40 flex h-14 items-center gap-2 rounded-full bg-forest ps-4 pe-5 font-bold text-white shadow-lift active:scale-95" onClick={() => setCaddie(true)} aria-label={lang === 'en' ? 'Store mode' : 'Mode caddie'}>
-        <span className="relative"><ShoppingCart size={22} aria-hidden />{cartLeft > 0 && <span className="absolute -end-2.5 -top-2 grid h-5 min-w-5 place-items-center rounded-full bg-apricot px-1 text-[10px] font-extrabold text-ink tabular-nums">{cartLeft}</span>}</span>
-        <span className="text-sm">{cartLeft ? (lang === 'en' ? 'Shop' : 'Caddie') : '✓'}</span></button>}
       <CartMode open={caddie} onClose={() => setCaddie(false)} items={cart} onFinish={() => endTrip(celebrate)} />
-      {up && <button className="fixed bottom-[9.5rem] end-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
-      <nav data-tour="tabs" className="tabbar" aria-label="Main">
-        {TABS.map(([k, Icon, key]) => { const on = tab === k || (k === 'list' && tab === 'stores') || (k === 'week' && tab === 'recipes'); return <button key={k} onClick={() => go(k)} aria-current={on ? 'page' : undefined} className={`tab ${on ? 'tab-on' : ''}`}><Icon size={22} strokeWidth={on ? 2.4 : 1.8} className={on ? 'pop' : ''} aria-hidden /><span>{t(key, lang)}</span></button> })}
-      </nav></>
+      {up && <button className="fixed bottom-[6.5rem] end-4 lg:bottom-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
+      <Nav tab={tab} go={go} left={cartLeft} hasCart={cart.length > 0} onCaddie={() => setCaddie(true)} openCountry={() => setCtry(true)} /></>
       <CountrySheet open={ctry} onClose={() => setCtry(false)} onPick={setCountry} />
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>
         <Controls setBudget={setBudget} />
