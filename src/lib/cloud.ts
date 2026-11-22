@@ -5,7 +5,7 @@ const KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? ''
 export const cloudOn = !!(URL_ && KEY)
 
 async function rpc<T>(fn: string, body: object): Promise<T> {
-  const r = await fetch(`${URL_}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  const r = await fetch(`${URL_}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json', ...(KEY.startsWith('sb_') ? {} : { Authorization: `Bearer ${KEY}` }) }, body: JSON.stringify(body) })
   if (!r.ok) throw new Error(`${fn} ${r.status}`)
   const txt = await r.text(); return (txt ? JSON.parse(txt) : null) as T
 }
