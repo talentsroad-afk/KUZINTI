@@ -58,3 +58,18 @@ describe('recipe sanity', () => {
     }
   })
 })
+
+import { buildProgram } from '../Program'
+describe('programme', () => {
+  const p = { sex: 'm', age: 30, h: 175, w: 75, sport: 'gym', goal: 'fit', days: 3, lvl: 'mid' } as const
+  it('keeps progressing after 4 weeks and deloads every 4th week', () => {
+    const vol = (w: number) => buildProgram({ ...p }, w).days.reduce((a, d) => a + (d?.min ?? 0), 0)
+    expect(vol(2)).toBeGreaterThan(vol(0))
+    expect(vol(3)).toBeLessThan(vol(2))
+    expect(vol(4)).toBeGreaterThan(vol(0))
+  })
+  it('an endurance goal gives running sessions', () => {
+    const t = buildProgram({ ...p, goal: 'perf' }, 0).days.filter(Boolean).map((d) => d!.t).join(' ')
+    expect(t).toMatch(/Footing|Marche|Fractionn|Sortie/)
+  })
+})

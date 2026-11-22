@@ -60,11 +60,11 @@ export function dayPlan(p: SportProfile & { lvl?: Lvl }, week: number, d: number
   return { items, tk, tp, s }
 }
 
-export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0 }: { wk0?: number; p: SportProfile & { lvl?: Lvl }; set: (o: Partial<SportProfile & { lvl?: Lvl }>) => void; lang: Lang; kcal: number; prot: number }) {
+export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk?: number; wk0?: number; p: SportProfile & { lvl?: Lvl }; set: (o: Partial<SportProfile & { lvl?: Lvl }>) => void; lang: Lang; kcal: number; prot: number }) {
   const today = (new Date().getDay() + 6) % 7
   const [view, setView] = useState<'day' | 'week' | 'month'>('day'); const [w, setW] = useState(wk0); const [d, setD] = useState(today); const [open, setOpen] = useState<number | null>(null); const [am, setAm] = useState(false); const [story, setStory] = useState<{ t: string; ex: [string, string][] } | null>(null)
   const DN = lang === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
-  const day = dayPlan(p, w, d, kcal, lang, am)
+  const day = dayPlan(p, w + blk * 4, d, kcal, lang, am)
   const perWeek = p.goal === 'cut' ? -0.5 : p.goal === 'bulk' ? 0.25 : 0
   return (
     <section className="rounded-[24px] bg-surface p-4 shadow-soft">
@@ -74,7 +74,7 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0 }: { wk0?: number
       {view !== 'month' && <div className="mt-2 flex gap-1.5">{[0, 1, 2, 3].map((i) => <button key={i} onClick={() => setW(i)} className={`flex-1 rounded-xl py-1.5 text-xs font-bold ${w === i ? 'bg-ink text-white' : 'bg-cream text-muted'}`}>{L(lang, 'Wk', 'S')}{i + 1}{i === 3 ? ' · ' + L(lang, 'rec.', 'récup') : ''}</button>)}</div>}
 
       {view === 'day' && <>
-        <div className="mt-3 grid grid-cols-7 gap-1">{DN.map((n, i) => { const has = !!buildProgram(p, w).days[i]; return <button key={i} onClick={() => { setD(i); setOpen(null) }} className={`rounded-xl py-1.5 text-center transition ${d === i ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-extrabold uppercase">{n}</span><span className={`mx-auto mt-1 block h-1.5 w-1.5 rounded-full ${has ? (d === i ? 'bg-apricot' : 'bg-forest') : 'bg-transparent'}`} /></button> })}</div>
+        <div className="mt-3 grid grid-cols-7 gap-1">{DN.map((n, i) => { const has = !!buildProgram(p, w + blk * 4).days[i]; return <button key={i} onClick={() => { setD(i); setOpen(null) }} className={`rounded-xl py-1.5 text-center transition ${d === i ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-extrabold uppercase">{n}</span><span className={`mx-auto mt-1 block h-1.5 w-1.5 rounded-full ${has ? (d === i ? 'bg-apricot' : 'bg-forest') : 'bg-transparent'}`} /></button> })}</div>
         <div className="mt-3 flex items-center justify-between rounded-2xl bg-cream/70 px-3 py-2 text-xs"><span><b className="font-display text-base tabular-nums">{day.tk}</b> kcal · <b className="tabular-nums">{day.tp} g</b> {L(lang, 'protein', 'protéines')}</span>
           {day.s && <span className="flex rounded-full bg-surface p-0.5 font-bold">{[[true, L(lang, 'Morning', 'Matin')], [false, L(lang, 'Evening', 'Soir')]].map(([v, l]) => <button key={String(v)} onClick={() => setAm(v as boolean)} className={`rounded-full px-2.5 py-1 ${am === v ? 'bg-forest text-white' : 'text-muted'}`}>{l as string}</button>)}</span>}</div>
         <ol key={`${w}-${d}-${am}`} className="stagger relative mt-3 space-y-2 before:absolute before:bottom-3 before:start-[52px] before:top-3 before:w-0.5 before:bg-line">{day.items.map((x, i) => (
@@ -89,14 +89,14 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0 }: { wk0?: number
             </button></li>))}</ol>
       </>}
 
-      {view === 'week' && <div key={w} className="stagger mt-3 space-y-1.5">{DN.map((n, i) => { const x = dayPlan(p, w, i, kcal, lang, am); return (
+      {view === 'week' && <div key={w} className="stagger mt-3 space-y-1.5">{DN.map((n, i) => { const x = dayPlan(p, w + blk * 4, i, kcal, lang, am); return (
         <button key={i} onClick={() => { setD(i); setView('day') }} className="flex w-full items-center gap-3 rounded-2xl bg-cream/70 px-3 py-2.5 text-start active:scale-[.99]">
           <span className="w-9 text-[11px] font-extrabold uppercase text-muted">{n}</span>
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: x.s ? ['#25a35a', '#e0a526', '#e5484d'][x.s.hard - 1] : '#9aa3ab' }}>{x.s ? <Dumbbell size={16} aria-hidden /> : <Moon size={16} aria-hidden />}</span>
           <span className="min-w-0 flex-1"><b className="block truncate text-sm">{x.s ? `${x.s.t} · ${x.s.min} min` : L(lang, 'Rest + walk', 'Repos + marche')}</b><span className="block truncate text-xs text-muted">{x.items.filter((y) => y.kcal).length} {L(lang, 'meals', 'repas')} · {x.tk} kcal · {x.tp} g</span></span>
           <Utensils size={15} className="text-muted" aria-hidden /></button>) })}</div>}
 
-      {view === 'month' && <div className="mt-3 space-y-2">{[0, 1, 2, 3].map((i) => { const pr = buildProgram(p, i); const n = pr.days.filter(Boolean).length; const min = pr.days.reduce((a, x) => a + (x?.min ?? 0), 0); return (
+      {view === 'month' && <div className="mt-3 space-y-2">{[0, 1, 2, 3].map((i) => { const pr = buildProgram(p, i + blk * 4); const n = pr.days.filter(Boolean).length; const min = pr.days.reduce((a, x) => a + (x?.min ?? 0), 0); return (
         <button key={i} onClick={() => { setW(i); setView('week') }} className={`w-full rounded-2xl p-3 text-start active:scale-[.99] ${i === 3 ? 'bg-leaf/20' : 'bg-cream/70'}`}>
           <div className="flex items-center justify-between"><b className="font-display">{L(lang, 'Week', 'Semaine')} {i + 1}</b><span className="rounded-full bg-surface px-2 py-0.5 text-[11px] font-bold text-forest">{['Base', '+15 %', '+30 %', L(lang, 'Recovery', 'Récupération')][i]}</span></div>
           <p className="mt-1 text-xs text-muted">{n} {L(lang, 'sessions', 'séances')} · {min} min · {kcal} kcal/{L(lang, 'day', 'jour')} · {prot} g {L(lang, 'protein', 'protéines')}</p>

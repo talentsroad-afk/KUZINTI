@@ -11,8 +11,9 @@ const L = (l: Lang, en: string, fr: string) => (l === 'en' ? en : fr)
 /** A personal 4-week programme: sport, goal, level, sessions per week and body (low-impact when BMI is high). Week 4 is a lighter recovery week. */
 export function buildProgram(p: SportProfile & { lvl?: Lvl }, week: number) {
   const lvl: Lvl = p.lvl ?? 'beg'; const bmi = p.w / (p.h / 100) ** 2; const soft = bmi >= 30 || p.age >= 60
-  const k = [1, 1.15, 1.3, 0.7][week] // volume progression, then deload
-  const base = { beg: 2, mid: 3, adv: 4 }[lvl]; const sets = (x = 0) => Math.max(2, Math.round((base + x) * (week === 3 ? 0.7 : 1)))
+  const cyc = week % 4, blk = Math.floor(week / 4)
+  const k = [1, 1.15, 1.3, 0.7][cyc] * (1 + 0.08 * Math.min(blk, 3)) // 4-week blocks: build, build, build, deload; each block starts a bit higher
+  const base = { beg: 2, mid: 3, adv: 4 }[lvl]; const sets = (x = 0) => Math.max(2, Math.round((base + x) * (cyc === 3 ? 0.7 : 1)))
   const reps = p.goal === 'bulk' ? '8-10' : p.goal === 'cut' ? '12-15' : '10-12'
   const m = (x: number) => Math.round(x * k / 5) * 5
   const fin: Ex = p.goal === 'cut' ? ['Finisher HIIT 30 s / 30 s', `${lvl === 'beg' ? 6 : 10} tours`] : p.goal === 'perf' ? ['Gainage dynamique', '3 × 45 s'] : ['Étirements', '5 min']
@@ -52,9 +53,10 @@ export function buildProgram(p: SportProfile & { lvl?: Lvl }, week: number) {
       { t: 'Mobilité et détente', icon: Moon, min: m(30), hard: 1, ex: [['Étirements profonds', '20 min'], ['Relaxation', '10 min']] },
     ],
   }
-  let pool = S[p.sport] ?? S.gym
-  if (p.sport === 'gym' && p.days <= 3) pool = pool.slice(0, 2)
-  if (p.sport === 'gym' && p.days >= 4) pool = [pool[2], pool[3], pool[0], pool[1]]
+  const sport = p.goal === 'perf' ? 'run' : p.sport // an endurance goal means running sessions
+  let pool = S[sport] ?? S.gym
+  if (sport === 'gym' && p.days <= 3) pool = pool.slice(0, 2)
+  if (sport === 'gym' && p.days >= 4) pool = [pool[2], pool[3], pool[0], pool[1]]
   const n = Math.max(1, Math.min(6, p.days))
   const extra: Sess = { t: p.goal === 'cut' ? 'Cardio brûle-graisse' : 'Récupération active', icon: p.goal === 'cut' ? Flame : Footprints, min: m(30), hard: 1, ex: [[cardio + (p.goal === 'cut' ? ' zone 2' : ' léger'), `${m(30)} min`], ['10 000 pas dans la journée', 'objectif']] }
   const sess = Array.from({ length: n }, (_, i) => i < pool.length ? pool[i] : i % 2 ? extra : pool[i % pool.length])
