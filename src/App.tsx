@@ -7,6 +7,7 @@ import { Controls, HomeTab, usePrefs, WeekTab } from './Screens'
 import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
+import { RecipesTab } from './Extra'
 import { Logo, Sheet } from './ui'
 import { FoodTile } from './ui'
 
@@ -107,8 +108,8 @@ function Onboarding() {
   )
 }
 
-type Tab = 'home' | 'week' | 'list' | 'stores' | 'profile'
-const TABS: [Tab, string, string][] = [['home', '🏡', 'tHome'], ['week', '🗓️', 'tWeek'], ['list', '🛒', 'list'], ['stores', '🏬', 'tStores'], ['profile', '👤', 'profile']]
+type Tab = 'home' | 'recipes' | 'week' | 'list' | 'stores' | 'profile'
+const TABS: [Tab, string, string][] = [['home', '🏡', 'tHome'], ['recipes', '📖', 'tRecipes'], ['week', '🗓️', 'tWeek'], ['list', '🛒', 'list'], ['profile', '👤', 'profile']]
 
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
@@ -137,7 +138,7 @@ function Shell() {
   }
   const setBudget = (b: number) => { patchMe({ budget: b }); if (hasPlan && total > b) adapt(b) }
   const makeHealthy = () => { const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`); award(10, '🥗'); celebrate() }
-  const title = t(TABS.find((x) => x[0] === tab)![2], lang)
+  const title = t(tab === 'stores' ? 'tStores' : TABS.find((x) => x[0] === tab)![2], lang)
 
   return (
     <div className="calm min-h-screen">
@@ -153,16 +154,17 @@ function Shell() {
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><button className="w-full rounded-2xl bg-forest px-4 py-2 text-start text-sm font-semibold text-white" onClick={() => setNote(null)}>{note}</button></div>}
       </header>
       <main className="mx-auto w-full max-w-2xl px-4 pb-28 pt-2">
-        <div key={tab + lang} className="slide-l">
+        <div key={tab + lang} className="fade-up">
           {tab === 'home' && <HomeTab compose={compose} go={setTab} total={total} items={items.length} />}
           {tab === 'week' && <WeekTab compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => setTab('stores')} />}
-          {tab === 'stores' && <StoresStep onShop={() => setTab('list')} />}
+          {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => setTab('list')} /></>}
+          {tab === 'recipes' && <RecipesTab say={say} />}
           {tab === 'profile' && <ProfileScreen celebrate={celebrate} />}
         </div>
       </main>
       <nav className="tabbar" aria-label="Main">
-        {TABS.map(([k, e, key]) => <button key={k} onClick={() => setTab(k)} aria-current={tab === k ? 'page' : undefined} className={`tab ${tab === k ? 'tab-on' : ''}`}><span className={`text-[22px] leading-none ${tab === k ? 'pop' : 'grayscale-[.6] opacity-70'}`}>{e}</span><span>{t(key, lang)}</span></button>)}
+        {TABS.map(([k, e, key]) => <button key={k} onClick={() => setTab(k)} aria-current={tab === k || (k === 'list' && tab === 'stores') ? 'page' : undefined} className={`tab ${tab === k ? 'tab-on' : ''}`}><span className={`text-[22px] leading-none ${tab === k ? 'pop' : 'grayscale-[.6] opacity-70'}`}>{e}</span><span>{t(key, lang)}</span></button>)}
       </nav>
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>
         <Controls setBudget={setBudget} />

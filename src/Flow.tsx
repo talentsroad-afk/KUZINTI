@@ -8,6 +8,8 @@ import { SIDE } from './data/sides'
 import { HOME, HOME_BY } from './data/home'
 import { STORES, splitTotal, storeTotal } from './lib/stores'
 import { Sheet } from './ui'
+import { dayName } from './lib/i18n'
+import { FridgeSheet } from './Extra'
 
 const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
 const AISLE: Record<Aisle, [string, string, string, string]> = {
@@ -49,7 +51,17 @@ export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goS
   const budget = me!.budget; const chk = house!.checked
   const done = items.filter((x) => chk[x.key]).length
   const pace = total; const left = budget - spent; const over = pace > budget
-  const buy = lines.filter((l) => l.buy > 0 || l.auto > 0)
+  const day = house!.listDay ?? -1; const [fridge, setFridge] = useState(false)
+  const dayLines = useMemo(() => day < 0 ? lines : buildList(Object.fromEntries(Object.entries(house!.plan).filter(([k]) => k.startsWith(day + '-'))), house!.pantry, {}, {}), [day, lines, house])
+  const buy = dayLines.filter((l) => l.buy > 0 || l.auto > 0)
+  const setDay = (d: number) => upHouse((h) => { h.listDay = d })
+  const share = async () => {
+    const L = (n: string, q: string, p: number) => `${chk[n] ? '✅' : '⬜'} ${q} · ${p.toFixed(2)}`
+    const txt = [`🛒 KUZINTI · ${day < 0 ? t('lWeek', lang) : dayName(day, lang)}`, ...buy.map((l) => L(l.id, `${l.ing.n[li(lang)]} — ${fmtQty(l.buy, l.ing.base)}`, price(l.id, l.cost * mul(l.ing.aisle)))),
+      ...(day < 0 ? [...homeRows.map((x) => L('h:' + x.id, `${x.n[li(lang)]} — ×${x.q}`, price('h:' + x.id, x.q * x.p * mul('grocery')))), ...custom.map((c) => L('c:' + c.id, `${c.name}${c.qty ? ' — ' + c.qty : ''}${c.note ? ' (' + c.note + ')' : ''}`, price('c:' + c.id, c.price)))] : []),
+      `TOTAL ≈ ${money(day < 0 ? total : buy.reduce((a, l) => a + price(l.id, l.cost * mul(l.ing.aisle)), 0), lang)}`].join('\n')
+    try { if (navigator.share) await navigator.share({ text: txt }); else { await navigator.clipboard.writeText(txt); toast(t('shared', lang)) } } catch { /* user cancelled */ }
+  }
   const groups = (Object.keys(AISLE) as Aisle[]).map((a) => [a, buy.filter((l) => l.ing.aisle === a)] as const).filter(([, v]) => v.length)
   const toggle = (key: string, name: string) => {
     const on = !chk[key]; upHouse((h) => { h.checked[key] = on }, on ? `✔ ${name}` : `↩ ${name}`)
@@ -59,10 +71,11 @@ export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goS
   const savePaid = () => { if (!edit) return; const v = parseFloat(val.replace(',', '.')); upHouse((h) => { const p = { ...(h.paid ?? {}) }; if (isNaN(v)) delete p[edit.key]; else p[edit.key] = v; h.paid = p; if (!isNaN(v)) h.checked[edit.key] = true }); setEdit(null) }
   const finish = () => { upHouse((h) => { for (const l of lines) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.checked = {}; h.qty = {}; h.home = {}; h.custom = []; h.paid = {} }, 'finished the trip'); toast(t('pantry', lang) + ' ✓') }
   const saveCustom = () => { if (!f.name.trim()) return; upHouse((h) => { h.custom = [...(h.custom ?? []), { id: Math.random().toString(36).slice(2, 8), name: f.name.trim(), qty: f.qty.trim(), price: Math.max(0, parseFloat(f.price.replace(',', '.')) || 0), note: f.note.trim() }] }, `+ ${f.name.trim()}`); setF({ name: '', qty: '', price: '', note: '' }); setAdding(false) }
-  const Row = ({ k, name, sub, est, line }: { k: string; name: string; sub: string; est: number; line?: Line }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; return (
+  const Row = ({ k, name, sub, est, line, q }: { k: string; name: string; sub: string; est: number; line?: Line; q?: string }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; return (
     <div className="flex items-center gap-3 py-2">
       <button className="check !h-8 !w-8" data-on={on} onClick={() => toggle(k, name)} aria-pressed={on} aria-label={name}>{on && '✓'}</button>
-      <button className="min-w-0 flex-1 text-start" onClick={() => openEdit(k, name, est, line)}><span className={`block truncate font-semibold ${on ? 'text-muted line-through' : ''}`}>{name}</span><span className="block truncate text-xs text-muted">{sub}</span></button>
+      <button className="min-w-0 flex-1 text-start" onClick={() => openEdit(k, name, est, line)}><span className={`block truncate font-semibold ${on ? 'text-muted line-through' : ''}`}>{name}</span>{sub && <span className="block truncate text-xs text-muted">{sub}</span>}</button>
+      {q && <span className="shrink-0 rounded-lg bg-cream px-2 py-1 text-sm font-extrabold tabular-nums text-forest">{q}</span>}
       <button className={`shrink-0 rounded-lg px-2 py-1 text-sm font-bold tabular-nums ${paid !== undefined ? 'bg-leaf/30 text-forest' : ''}`} onClick={() => openEdit(k, name, est, line)}>{price(k, est).toFixed(2)}</button>
     </div>) }
   return (
@@ -80,19 +93,26 @@ export function CoursesTab({ celebrate, goStores }: { celebrate: () => void; goS
         <p className="mt-2 text-xs" style={{ color: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}><b>{t('pace', lang)}: {money(pace, lang)}</b> · {over ? `${t('overBy', lang)} ${money(pace - budget, lang)}` : `${money(budget - pace, lang)} ${t('saving', lang)}`}</p>
         <button className="mt-2 text-xs font-semibold text-muted underline" onClick={goStores}>{t('pricesAt', lang)}: {store ? store.name : t('avgPrice', lang)} ›</button>
       </div>
+      <div className="flex items-center gap-2">
+        <div className="flex rounded-full bg-surface p-1 shadow-soft">{[-1, (new Date().getDay() + 6) % 7].map((d, i) => <button key={i} className={`rounded-full px-3 py-1.5 text-xs font-bold ${(i === 0 ? day < 0 : day >= 0) ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{i === 0 ? t('lWeek', lang) : t('lDay', lang)}</button>)}</div>
+        <button className="ms-auto rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}>📸</button>
+        <button className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold text-forest shadow-soft" onClick={share}>↗ {t('share', lang)}</button>
+      </div>
+      {day >= 0 && <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`chip shrink-0 capitalize ${d === day ? '!bg-forest !text-white' : ''}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 3)}</button>)}</div>}
+      <FridgeSheet open={fridge} onClose={() => setFridge(false)} />
       <p className="px-1 text-xs text-muted">{done}/{items.length} · {t('paid', lang).replace(' (MAD)', '')} → {t('ok', lang)}</p>
       {groups.map(([a, rows]) => (
         <div key={a} className="card px-4 py-2"><h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>
-          <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} sub={`${fmtQty(l.buy, l.ing.base)} · ${l.uses.map((u) => useName(u, lang)).join(', ')}`} est={l.cost * mul(a)} line={l} />)}</div></div>
+          <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} q={fmtQty(l.buy, l.ing.base)} sub={l.uses.map((u) => useName(u, lang)).join(', ')} est={l.cost * mul(a)} line={l} />)}</div></div>
       ))}
       <div className="card px-4 py-2">
         <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted">🏠 {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>
         {homeOpen && <div className="grid grid-cols-4 gap-1.5 pb-2">{HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return <button key={x.id} className={`rounded-xl border p-1.5 text-center active:scale-95 ${q ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => upHouse((h) => { h.home = { ...(h.home ?? {}), [x.id]: q ? 0 : 1 } })} aria-pressed={q > 0}><div className="text-xl">{x.e}</div><div className="line-clamp-2 text-[10px] font-semibold leading-tight">{x.n[li(lang)]}</div></button> })}</div>}
-        <div className="divide-y divide-line/60">{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} name={`${x.e} ${HOME_BY[x.id].n[li(lang)]}`} sub={`×${x.q}`} est={x.q * x.p * mul('grocery')} />)}</div>
+        <div className="divide-y divide-line/60">{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} name={`${x.e} ${HOME_BY[x.id].n[li(lang)]}`} q={`×${x.q}`} sub='' est={x.q * x.p * mul('grocery')} />)}</div>
       </div>
       <div className="card px-4 py-2">
         <h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">✍️ {t('mine', lang)}</h3>
-        <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} name={c.name} sub={[c.qty, c.note].filter(Boolean).join(' · ')} est={c.price} />)}</div>
+        <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} name={c.name} q={c.qty || undefined} sub={c.note} est={c.price} />)}</div>
         <button className="w-full py-2.5 text-start text-sm font-bold text-forest" onClick={() => setAdding(true)}>＋ {t('addProd', lang)}</button>
       </div>
       {done > 0 && <button className="btn btn-primary w-full !min-h-14" onClick={finish}>✓ {t('finish', lang)}</button>}
