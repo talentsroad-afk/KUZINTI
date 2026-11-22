@@ -1,4 +1,6 @@
 import { BookOpen, Coffee, Dices, Moon, RefreshCw, Shuffle, Sun, Sunrise, type LucideIcon } from 'lucide-react'
+import { E3 } from './E3'
+import { StepScene, actOf, ACT_LABEL } from './StepScene'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { HEALTH as HP, NUT, healthOk, nutName, nutrientsOf, type Health } from './lib/nutri'
@@ -63,17 +65,19 @@ function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => v
           {i === 0 && <><div className="story-pop mb-6 flex items-center gap-4" style={{ transform: 'translateZ(50px)' }}><Dish r={r} w={240} className="h-24 w-24 shrink-0 rounded-full shadow-[0_24px_40px_-12px_rgba(0,0,0,.8)] ring-4 ring-white/15" /><div><p className="font-display text-[26px] font-extrabold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-sm text-white/70">👥 {sv} · ⏱ {r.t} min</p></div></div><p className="text-[12px] font-bold uppercase tracking-[.22em] text-white/60">{lang === 'en' ? 'You need' : 'Il vous faut'} · {ings.length}</p>
             <div className="mt-4 grid grid-cols-3 gap-3" style={{ transformStyle: 'preserve-3d' }}>{ings.slice(0, 12).map((x, k) => (
               <div key={k} className="ing3d relative flex flex-col items-center rounded-[20px] border border-white/15 bg-white/[.08] px-2 pb-2.5 pt-3 text-center shadow-[0_18px_40px_-12px_rgba(0,0,0,.6)] backdrop-blur-md" style={{ animationDelay: `${k * 260}ms`, ['--fz' as string]: `${(k % 3) * 8}px` }}>
-                <span className="ing-emoji text-[40px] leading-none drop-shadow-[0_10px_8px_rgba(0,0,0,.45)]" style={{ animationDelay: `${k * 260 + 700}ms` }}>{x.e}</span>
+                <span className="ing-emoji text-[40px] leading-none drop-shadow-[0_10px_8px_rgba(0,0,0,.45)]" style={{ animationDelay: `${k * 260 + 700}ms` }}><E3 e={x.e} /></span>
                 <span className="mt-1.5 line-clamp-1 text-[11px] font-semibold text-white/85">{x.n}</span>
                 <span className="qty-pop mt-1 rounded-full bg-white px-2 py-0.5 font-display text-[13px] font-extrabold text-ink tabular-nums" style={{ animationDelay: `${k * 260 + 420}ms` }}>{x.q}</span>
               </div>))}</div></>}
-          {i > 0 && i <= steps.length && <div className="rounded-[28px] border border-white/15 bg-white/[.07] p-6 shadow-[0_30px_60px_-20px_rgba(0,0,0,.7)] backdrop-blur-md" style={{ transform: 'translateZ(40px)' }}>
-            <p className="font-display text-[96px] font-extrabold leading-none text-white/15">{i}</p>
-            <p className="-mt-8 font-display text-[25px] font-bold leading-snug">{steps[i - 1]}</p>
-            <div className="mt-5 flex flex-wrap gap-1.5">{ings.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5))).slice(0, 4).map((x, k) => <span key={k} className="qty-pop inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-bold text-ink" style={{ animationDelay: `${300 + k * 120}ms` }}>{x.e} {x.q}</span>)}</div>
-            <p className="mt-4 text-xs text-white/55">{lang === 'en' ? 'Step' : 'Étape'} {i}/{steps.length} · {lang === 'en' ? 'tap to continue' : 'touchez pour continuer'}</p></div>}
+          {i > 0 && i <= steps.length && (() => { const si = ings.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5))); const act = actOf(steps[i - 1]); return <>
+            <StepScene text={steps[i - 1]} ings={si.map((x) => x.e)} />
+            <div className="-mt-2 rounded-[28px] border border-white/15 bg-white/[.07] p-5 shadow-[0_30px_60px_-20px_rgba(0,0,0,.7)] backdrop-blur-md" style={{ transform: 'translateZ(40px)' }}>
+            <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[.2em] text-apricot"><span className="grid h-6 w-6 place-items-center rounded-full bg-apricot font-display text-[12px] text-ink">{i}</span>{ACT_LABEL[act][lang === 'en' ? 0 : lang === 'ar' ? 2 : 1]}</p>
+            <p className="mt-2 font-display text-[21px] font-bold leading-snug">{steps[i - 1]}</p>
+            <div className="mt-4 flex flex-wrap gap-1.5">{si.slice(0, 4).map((x, k) => <span key={k} className="qty-pop inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-bold text-ink" style={{ animationDelay: `${300 + k * 120}ms` }}><E3 e={x.e} /> {x.q}</span>)}</div>
+            <p className="mt-4 text-xs text-white/55">{lang === 'en' ? 'Step' : 'Étape'} {i}/{steps.length} · {lang === 'en' ? 'tap to continue' : 'touchez pour continuer'}</p></div></> })()}
           {i === N - 1 && <div className="relative grid place-items-center" style={{ height: 380, transformStyle: 'preserve-3d' }}>
-            <div className="orbit absolute" style={{ transformStyle: 'preserve-3d', width: 0, height: 0 }}>{ings.slice(0, 10).map((x, k, a) => <span key={k} className="absolute -ml-5 -mt-5 text-[38px]" style={{ transform: `rotateY(${(360 / a.length) * k}deg) translateZ(${R}px)` }}>{x.e}</span>)}</div>
+            <div className="orbit absolute" style={{ transformStyle: 'preserve-3d', width: 0, height: 0 }}>{ings.slice(0, 10).map((x, k, a) => <span key={k} className="absolute -ml-5 -mt-5 text-[38px]" style={{ transform: `rotateY(${(360 / a.length) * k}deg) translateZ(${R}px)` }}><E3 e={x.e} /></span>)}</div>
             <div className="story-pop text-center" style={{ transform: 'translateZ(60px)' }}><Dish r={r} w={300} className="mx-auto h-36 w-36 rounded-full shadow-[0_30px_50px_-15px_rgba(0,0,0,.8)] ring-4 ring-white/20" />
               <p className="mt-4 font-display text-3xl font-extrabold">{lang === 'en' ? 'Enjoy your meal!' : lang === 'ar' ? 'بالصحة والعافية' : 'Bon appétit !'}</p><p className="mt-1 text-white/70">{rname(r.n, lang)}</p></div>
           </div>}
@@ -187,12 +191,12 @@ export function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => vo
     <Sheet open onClose={onClose} title={`${dayName(+d, lang)} · ${SLOT_E[slot]} ${t(slot, lang)}`}>
       <button className="btn btn-warm mb-3 w-full !min-h-12" onClick={() => put(surpriseOne(k, plan, p))}><Dices size={18} className="inline -mt-0.5" aria-hidden /> {t('surprise', lang)}</button>
       <div className="-mx-1 mb-2 flex gap-1.5 overflow-x-auto px-1 pb-1">{[['same', 'fSame'], ['all', 'fAll'], ['cheaper', 'fCheaper'], ['healthier', 'fHealthier'], ['quick', 'fQuick'], ['veg', 'veg']].map(([id, key]) => <button key={id} className="chip shrink-0" aria-pressed={f === id} onClick={() => setF(id)}>{t(key, lang)}</button>)}</div>
-      {!q && list.length > 2 && <div className="mb-3 grid grid-cols-3 gap-2">{list.slice(0, 3).map((r) => { const e = { r: r.id, n: cur?.n ?? p.size, x: composeSides(r.id, slot) }; return <button key={r.id} className="flex flex-col items-center gap-1 rounded-2xl bg-cream/70 p-2 text-center transition active:scale-95" onClick={() => put(e)}><span className="grid h-14 w-14 place-items-center rounded-2xl text-3xl" style={{ background: `hsl(${r.h} 80% 90%)` }}>{r.e}</span><span className="line-clamp-2 text-[12px] font-bold leading-tight">{rname(r.n, lang)}</span><span className="text-[10px] text-muted">{r.t} min</span></button> })}</div>}
+      {!q && list.length > 2 && <div className="mb-3 grid grid-cols-3 gap-2">{list.slice(0, 3).map((r) => { const e = { r: r.id, n: cur?.n ?? p.size, x: composeSides(r.id, slot) }; return <button key={r.id} className="flex flex-col items-center gap-1 rounded-2xl bg-cream/70 p-2 text-center transition active:scale-95" onClick={() => put(e)}><span className="grid h-14 w-14 place-items-center rounded-2xl text-3xl" style={{ background: `hsl(${r.h} 80% 90%)` }}><E3 e={r.e} /></span><span className="line-clamp-2 text-[12px] font-bold leading-tight">{rname(r.n, lang)}</span><span className="text-[10px] text-muted">{r.t} min</span></button> })}</div>}
       <input className="input mb-2 !min-h-10" placeholder={t('search', lang)} value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="divide-y divide-line/70">
         {list.map((r) => { const e = { r: r.id, n: cur?.n ?? p.size, x: composeSides(r.id, slot) }; const c = entryCost(e) / e.n; const dc = c - curCost; return (
           <button key={r.id} className="flex w-full items-center gap-3 py-2.5 text-start active:bg-cream" onClick={() => put(e)}>
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}>{r.e}</span>
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}><E3 e={r.e} /></span>
             <span className="min-w-0 flex-1"><span className="block truncate text-[15px] font-semibold">{FLAG[['it', 'fr', 'es', 'tr', 'in', 'jp'].find((x) => r.tags.includes(x)) ?? 'ma']} {rname(r.n, lang)}</span><span className="block truncate text-xs text-muted">{t('with', lang)} {sideNames(e.x, lang) || '—'}</span></span>
             <span className="shrink-0 text-end text-xs"><span className="block font-semibold tabular-nums">{Math.round(entryKcal(e))} kcal</span>{cur && <span className={`tabular-nums ${dc < 0 ? 'text-forest' : 'text-muted'}`}>{dc < 0 ? '−' : '+'}{money2(Math.abs(dc), lang)}</span>}</span>
           </button>) })}
@@ -223,7 +227,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
     return (
       <div key={s} className="px-4 py-3">
         <div className="flex gap-3">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}>{r.e}</span>
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl" style={{ background: `hsl(${r.h} 80% 90%)` }}><E3 e={r.e} /></span>
           <div className="min-w-0 flex-1"><p className="text-[11px] font-bold uppercase tracking-wide text-muted">{SLOT_E[s]} {t(s, lang)}</p><p className="font-semibold leading-tight">{rname(r.n, lang)}</p>{(e.x ?? []).length > 0 && <p className="mt-0.5 text-xs text-muted">+ {sideNames(e.x, lang)}</p>}</div>
           <span className="shrink-0 text-xs text-muted tabular-nums">{Math.round(entryKcal(e))} kcal</span>
         </div>
@@ -256,7 +260,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
             <span />{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => <button key={d} onClick={() => setDay(d)} className={`rounded-xl py-1 text-center text-[10px] font-extrabold uppercase transition ${d === day ? 'bg-forest text-white' : d === today ? 'text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 3)}</button>)}
             {slots.map((s) => [<span key={s} className="grid place-items-center text-[13px]" title={t(s, lang)}>{SLOT_E[s]}</span>, ...Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => { const e = plan[`${d}-${s}`]; const r = e ? REC[e.r] : null; return (
               <button key={s + d} onClick={() => setDay(d)} className={`cal-cell flex min-h-[64px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl px-0.5 py-1 transition active:scale-90 ${d === day ? 'ring-2 ring-forest ring-offset-1 ring-offset-surface' : ''}`} style={{ background: SLOT_BG[s] ?? '#F4F1E8' }} aria-label={r ? rname(r.n, lang) : t(s, lang)}>
-                {r ? <><span className="text-[22px] leading-none drop-shadow-sm" aria-hidden>{r.e}</span>{rname(r.n, lang).split(/[ ,(]/).filter((w) => w.length > 2).slice(0, 2).map((w, i) => <span key={i} className="block w-full truncate text-center text-[8.5px] font-bold leading-[1.15] text-ink/80">{w}</span>)}</> : <span className="text-muted">＋</span>}</button>) })])}
+                {r ? <><span className="text-[22px] leading-none drop-shadow-sm" aria-hidden><E3 e={r.e} /></span>{rname(r.n, lang).split(/[ ,(]/).filter((w) => w.length > 2).slice(0, 2).map((w, i) => <span key={i} className="block w-full truncate text-center text-[8.5px] font-bold leading-[1.15] text-ink/80">{w}</span>)}</> : <span className="text-muted">＋</span>}</button>) })])}
           </div>
         </div>
         <div key={day} className="fade-up overflow-hidden rounded-[22px] bg-surface shadow-soft">

@@ -1,4 +1,5 @@
 import { Camera, History, Share2, ShoppingCart, Store } from 'lucide-react'
+import { E3 } from './E3'
 import { CartMode, iconOf, type CartItem } from './Cart'
 import { PRODUCTS, norm } from './data/products'
 import { CATALOG } from './data/catalog'
@@ -131,7 +132,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   const Row = ({ k, name, sub, est, line, q, e }: { k: string; name: string; sub: string; est: number; line?: Line; q?: string; e?: string }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; const no = !!house!.missing?.[k]; return (
     <Swipe onDelete={() => remove(k, name, line)} label={lang === 'en' ? 'Remove' : lang === 'ar' ? 'حذف' : 'Supprimer'} rtl={lang === 'ar'}>
     <div className={`flex items-center gap-3 py-2 transition-opacity ${on || no ? 'opacity-70' : ''}`}>
-      <button data-on={on} className={`chk relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl transition active:scale-90 ${on ? 'bg-leaf/35' : 'bg-cream'}`} onClick={() => toggle(k, name)} aria-pressed={on} aria-label={name}><span className={on ? 'pop' : ''}>{e ?? '🛒'}</span>{on && <span className="pop absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-forest text-xs font-bold text-white ring-2 ring-surface">✓</span>}{no && !on && <span className="absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-muted text-xs font-bold text-white ring-2 ring-surface">✕</span>}</button>
+      <button data-on={on} className={`chk relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl transition active:scale-90 ${on ? 'bg-leaf/35' : 'bg-cream'}`} onClick={() => toggle(k, name)} aria-pressed={on} aria-label={name}><span className={on ? 'pop' : ''}><E3 e={e ?? '🛒'} /></span>{on && <span className="pop absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-forest text-xs font-bold text-white ring-2 ring-surface">✓</span>}{no && !on && <span className="absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-muted text-xs font-bold text-white ring-2 ring-surface">✕</span>}</button>
       <button className="min-w-0 flex-1 text-start" onClick={() => openEdit(k, name, est, line)}><span className={`block truncate font-semibold ${on ? 'text-muted line-through' : ''}`}>{name}</span>{sub && <span className="block truncate text-xs text-muted">{sub}</span>}</button>
       <button className={`shrink-0 rounded-xl px-2.5 py-1 text-end tabular-nums ${paid !== undefined ? 'bg-leaf/30' : 'bg-cream'}`} onClick={() => openEdit(k, name, est, line)}>
         {q && <span className="block text-[15px] font-extrabold leading-tight text-forest">{q}</span>}
@@ -181,7 +182,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       ))}
       <div className="card px-4 py-2">
         <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted">🏠 {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>
-        {homeOpen && <div className="grid grid-cols-4 gap-1.5 pb-2">{HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return <button key={x.id} className={`rounded-xl border p-1.5 text-center active:scale-95 ${q ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => upHouse((h) => { h.home = { ...(h.home ?? {}), [x.id]: q ? 0 : 1 } })} aria-pressed={q > 0}><div className="text-xl">{x.e}</div><div className="line-clamp-2 text-[10px] font-semibold leading-tight">{x.n[li(lang)]}</div></button> })}</div>}
+        {homeOpen && <div className="grid grid-cols-4 gap-1.5 pb-2">{HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return <button key={x.id} className={`rounded-xl border p-1.5 text-center active:scale-95 ${q ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => upHouse((h) => { h.home = { ...(h.home ?? {}), [x.id]: q ? 0 : 1 } })} aria-pressed={q > 0}><div className="text-xl"><E3 e={x.e} /></div><div className="line-clamp-2 text-[10px] font-semibold leading-tight">{x.n[li(lang)]}</div></button> })}</div>}
         <div className="divide-y divide-line/60">{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} e={x.e} name={HOME_BY[x.id].n[li(lang)]} q={`×${x.q}`} sub='' est={x.q * x.p * mul('grocery')} />)}</div>
       </div>
       <div className="card px-4 py-2">
@@ -239,7 +240,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
           <div className="mt-2 max-h-[52vh] divide-y divide-line/60 overflow-y-auto">
             {found.map((x) => { const n = custom.filter((c) => c.name === x.name).length; return (
               <button key={x.key} className="flex w-full items-center gap-3 py-2.5 text-start active:bg-cream" onClick={() => quickAdd(x.name, x.e, x.p, x.u)}>
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cream text-2xl">{x.e}</span>
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-cream text-2xl"><E3 e={x.e} /></span>
                 <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{x.name}</span><span className="text-xs text-muted">≈ {m2(x.p, lang)} / {x.u === 'kg' ? 'kg' : x.u === 'bunch' ? (lang === 'en' ? 'bunch' : 'botte') : (lang === 'en' ? 'unit' : 'unité')}</span></span>
                 {n > 0 ? <span className="pop grid h-8 min-w-8 place-items-center rounded-full bg-forest px-2 text-sm font-bold text-white">×{n}</span> : <span className="grid h-8 w-8 place-items-center rounded-full bg-leaf/30 text-lg font-bold text-forest">＋</span>}
               </button>) })}

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { E3 } from './E3'
+import { StoreLogo } from './Flow'
 import { createPortal } from 'react-dom'
 import { useApp } from './lib/store'
 import { money, type Lang } from './lib/i18n'
@@ -25,9 +27,9 @@ export function BasketStory({ open, lines, onClose, go }: { open: boolean; lines
       <div className="absolute inset-0 bg-[#0d1f17]/70 backdrop-blur-sm transition-opacity" onClick={phase === 'fly' ? undefined : onClose} />
       {phase === 'fly' && <>
         {ems.map((e, i) => { const x = W / 2 + Math.cos(i * 2.4) * (60 + (i % 4) * 26) - 18; const y = H * 0.36 + Math.sin(i * 2.4) * (50 + (i % 3) * 24); return (
-          <span key={i} className="fly-in absolute text-[34px]" style={{ left: x, top: y, animationDelay: `${i * 45}ms`, ['--tx' as string]: `${W / 2 - x - 18}px`, ['--ty' as string]: `${H - 70 - y}px` }} aria-hidden>{e}</span>) })}
+          <span key={i} className="fly-in absolute text-[34px]" style={{ left: x, top: y, animationDelay: `${i * 45}ms`, ['--tx' as string]: `${W / 2 - x - 18}px`, ['--ty' as string]: `${H - 70 - y}px` }} aria-hidden><E3 e={e} /></span>) })}
         <div className="absolute inset-x-0 top-[18%] text-center text-white"><p className="fade-up font-display text-2xl font-extrabold">{L(lang, 'Into the basket…', 'Direction le panier…', 'إلى السلة…')}</p><p className="text-sm text-white/75">{buy.length} {L(lang, 'products from your meals', 'produits tirés de vos repas', 'منتج')}</p></div>
-        <span className="basket-catch absolute bottom-6 left-1/2 grid h-20 w-20 -translate-x-1/2 place-items-center rounded-full bg-apricot text-4xl shadow-lift" aria-hidden>🛒</span>
+        <span className="basket-catch absolute bottom-6 left-1/2 grid h-20 w-20 -translate-x-1/2 place-items-center rounded-full bg-apricot text-4xl shadow-lift" aria-hidden><E3 e="🛒" /></span>
       </>}
       {phase !== 'fly' && <div className="sheet-up absolute inset-x-0 bottom-0 mx-auto max-w-lg rounded-t-[30px] bg-surface p-5 pb-8 shadow-lift">
         <div className="mb-4 flex items-center gap-2"><button className="grid h-9 w-9 place-items-center rounded-full bg-cream text-lg font-bold active:scale-90" onClick={() => (phase === 'partner' ? setPhase('store') : onClose())} aria-label={L(lang, 'Back', 'Retour', 'رجوع')}>‹</button>{(['store', 'partner'] as const).map((p) => <span key={p} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${phase === p || (p === 'store' && phase === 'partner') ? 'bg-forest' : 'bg-line'}`} aria-hidden />)}<button className="grid h-9 w-9 place-items-center rounded-full bg-cream text-sm active:scale-90" onClick={onClose} aria-label="Close">✕</button></div>
@@ -36,7 +38,7 @@ export function BasketStory({ open, lines, onClose, go }: { open: boolean; lines
           <div className="stagger max-h-[46vh] space-y-2 overflow-y-auto">{ranked.map((r, i) => { const on = pick === r.s.id; return (
             <button key={r.s.id} onClick={() => setPick(r.s.id)} aria-pressed={on} className={`flex w-full items-center gap-3 rounded-2xl border-2 px-3.5 py-3 text-start transition active:scale-[.98] ${on ? 'border-forest bg-forest/[.06]' : 'border-line bg-surface'}`}>
               <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${on ? 'border-forest bg-forest' : 'border-line'}`}>{on && <span className="h-2 w-2 rounded-full bg-white" />}</span>
-              <span className="min-w-0 flex-1"><b className="block truncate">{r.s.name}</b>{i === 0 ? <span className="text-[11px] font-bold text-forest">✓ {L(lang, 'Cheapest', 'Le moins cher', 'الأرخص')}</span> : <span className="text-[11px] text-muted">+{money(r.tot - best.tot, lang)}</span>}</span>
+              <StoreLogo id={r.s.id} w={84} /><span className="min-w-0 flex-1">{i === 0 ? <span className="text-[11px] font-bold text-forest">✓ {L(lang, 'Cheapest', 'Le moins cher', 'الأرخص')}</span> : <span className="text-[11px] text-muted">+{money(r.tot - best.tot, lang)}</span>}</span>
               <b className="font-display tabular-nums">{money(r.tot, lang)}</b></button>) })}</div>
           <button disabled={!pick} className="btn btn-primary w-full !min-h-14 text-base disabled:opacity-40" onClick={() => { const s = ranked.find((r) => r.s.id === pick)?.s; if (!s) return; upHouse((h) => { h.store = s.id }, `🏪 ${s.name}`); setPhase('partner') }}>{L(lang, 'Continue', 'Continuer', 'متابعة')} ›</button>
         </div>}

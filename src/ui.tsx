@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type ComponentType, type ReactNode } from "react"
 import { createPortal } from 'react-dom'
+import { Trash2 } from 'lucide-react'
 import { useApp } from './lib/store'
 import type { Recipe } from './data/recipes'
 import { photoOf, photoSrc } from './data/photos'
+import { E3 } from './E3'
 
 export const Logo = ({ size = 36 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 96 96" aria-hidden><rect width="96" height="96" rx="26" fill="#245B43" /><path d="M30 66c0-22 14-36 38-38 0 22-12 38-34 38" fill="#8DBB91" /><path d="M30 66c8-14 18-24 30-30" stroke="#F4F1E8" strokeWidth="4" strokeLinecap="round" fill="none" /><circle cx="66" cy="66" r="7" fill="#F2B96B" /></svg>
@@ -14,7 +16,7 @@ export function FoodTile({ r, className = '' }: { r: Recipe; className?: string 
   return (
     <div className={`relative grid place-items-center overflow-hidden ${className}`} style={{ background: `linear-gradient(135deg, hsl(${r.h} 80% 88%), hsl(${(r.h + 30) % 360} 70% 78%))` }}>
       <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/40 blur-xl" />
-      <span className="relative text-5xl drop-shadow-sm" role="img" aria-hidden>{r.e}</span>
+      <E3 e={r.e} className="relative text-5xl drop-shadow-[0_8px_10px_rgba(0,0,0,.18)]" />
     </div>
   )
 }
@@ -90,12 +92,12 @@ export function Swipe({ onDelete, label, rtl, children }: { onDelete: () => void
     <div ref={box} data-noswipe className={`swipe relative select-none overflow-hidden transition-[max-height,opacity] duration-200 ${gone ? 'max-h-0 opacity-0' : 'max-h-40'}`}
       onTouchStart={(e) => start(e.touches[0].clientX, e.touches[0].clientY)} onTouchMove={(e) => move(e.touches[0].clientX, e.touches[0].clientY, e)} onTouchEnd={end}
       onMouseDown={(e) => start(e.clientX, e.clientY)} onMouseMove={(e) => s.current && move(e.clientX, e.clientY)} onMouseUp={end} onMouseLeave={() => s.current && end()}>
-      <button aria-label={label} onClick={() => { setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} className={`absolute inset-y-0 ${rtl ? 'start-0' : 'end-0'} flex w-full items-center justify-end gap-1.5 bg-[#e5484d] px-5 text-sm font-bold text-white`} style={{ justifyContent: rtl ? 'flex-start' : 'flex-end', opacity: dx ? 1 : 0 }} tabIndex={dx ? 0 : -1}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg>{label}
+      <button aria-label={label} onClick={() => { setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} className={`absolute inset-y-0 ${rtl ? 'start-0' : 'end-0'} flex w-full items-center justify-end bg-[#e5484d] px-3 font-semibold text-white`} style={{ justifyContent: rtl ? 'flex-start' : 'flex-end', opacity: dx ? 1 : 0 }} tabIndex={dx ? 0 : -1}>
+        <span className="flex w-[64px] flex-col items-center gap-0.5"><Trash2 size={20} strokeWidth={2} aria-hidden /><span className="text-[11px]">{label}</span></span>
       </button>
       <div className="relative bg-surface" style={{ transform: `translateX(${dx}px)`, transition: drag ? 'none' : 'transform .32s cubic-bezier(.2,.9,.25,1)' }}>{children}
-        <button className="del-h absolute end-0 top-1/2 h-10 -translate-y-1/2 place-items-center gap-1 rounded-xl bg-[#e5484d] px-3 text-xs font-bold text-white shadow-lift" onClick={(e) => { e.stopPropagation(); setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} aria-label={label} tabIndex={-1}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" /></svg></button></div>
+        <button className="del-h absolute end-2 top-1/2 h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-surface text-[#e5484d] ring-1 ring-line transition hover:bg-[#e5484d] hover:text-white hover:ring-[#e5484d]" onClick={(e) => { e.stopPropagation(); setDx(dir * 400); setTimeout(() => setGone(true), 160); setTimeout(onDelete, 360) }} aria-label={label} title={label} tabIndex={-1}>
+          <Trash2 size={16} strokeWidth={2} aria-hidden /></button></div>
     </div>)
 }
 
