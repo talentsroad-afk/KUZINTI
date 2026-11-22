@@ -2,7 +2,7 @@ import { ING, type Base, type Ing, type Unit } from '../data/catalog'
 import { REC } from '../data/recipes'
 
 export interface PlanEntry { r: string; n: number }
-export interface Line { id: string; ing: Ing; need: number; have: number; buy: number; cost: number; uses: string[] }
+export interface Line { id: string; ing: Ing; need: number; have: number; buy: number; cost: number; uses: string[]; auto: number }
 
 /** Convert "qty unit" to the ingredient's base unit. Throws if the conversion is not defined (no guessing). */
 export function toBase(ing: Ing, qty: number, unit?: Unit): number {
@@ -36,7 +36,7 @@ export function recipeCost(rid: string, servings = REC[rid].s): number {
   return Object.entries(scaleRecipe(rid, servings)).reduce((a, [id, q]) => a + q * ING[id].p, 0)
 }
 /** Deterministic shopping list: sum the week, subtract the pantry, round to purchase sizes. */
-export function buildList(plan: Record<string, PlanEntry>, pantry: Record<string, number>, extras: Record<string, number> = {}): Line[] {
+export function buildList(plan: Record<string, PlanEntry>, pantry: Record<string, number>, extras: Record<string, number> = {}, qty: Record<string, number> = {}): Line[] {
   const need: Record<string, number> = {}
   const uses: Record<string, Set<string>> = {}
   for (const e of Object.values(plan)) {
@@ -47,8 +47,9 @@ export function buildList(plan: Record<string, PlanEntry>, pantry: Record<string
     .map(([id, n]) => {
       const ing = ING[id]
       const have = pantry[id] ?? 0
-      const buy = roundBuy(Math.max(0, n - have), ing.base)
-      return { id, ing, need: n, have: Math.min(have, n), buy, cost: buy * ing.p, uses: [...uses[id]] }
+      const auto = roundBuy(Math.max(0, n - have), ing.base)
+      const buy = id in qty ? Math.max(0, qty[id]) : auto
+      return { id, ing, need: n, have: Math.min(have, n), buy, auto, cost: Math.round(buy * ing.p * 100) / 100, uses: [...uses[id]] }
     })
     .sort((a, b) => a.ing.aisle.localeCompare(b.ing.aisle) || a.id.localeCompare(b.id))
 }

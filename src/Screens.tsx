@@ -3,11 +3,9 @@ import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
 import { RECIPES, REC, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
-import { buildList, dailyKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
-import { adaptToBudget, listCost, randomPlan } from './lib/plan'
+import { dailyKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
 import { FoodTile, Sheet, Stepper } from './ui'
 
-export interface Props { go: (t: 'plan' | 'list' | 'profile') => void; celebrate: () => void }
 const SLOTS: Meal[] = ['b', 'l', 'd']
 const UNIT: Record<string, [string, string, string]> = { bunch: ['bunch', 'botte', 'botte'], glass: ['glass', 'verre', 'كأس'], pinch: ['pinch', 'pincée', 'رشة'], tbsp: ['tbsp', 'c. à s.', 'م.ك'], tsp: ['tsp', 'c. à c.', 'م.ص'], clove: ['clove', 'gousse', 'فص'], pc: ['', '', ''], g: ['g', 'g', 'غ'], ml: ['ml', 'ml', 'مل'] }
 const li = (l: Lang) => (l === 'en' ? 0 : l === 'fr' ? 1 : 2)
@@ -44,49 +42,57 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
   )
 }
 
-export function PlannerScreen({ go, celebrate }: Props) {
-  const { lang, me, house, patchMe, upHouse, award, toast } = useApp()
+
+const FILTERS = ['all', 'moroccan', 'healthy', 'budget', 'quick', 'vegetarian']
+
+/** Step 1: the budget drives everything. */
+export function BudgetStep({ cost, setBudget, compose, hasPlan, go }: { cost: number; setBudget: (b: number) => void; compose: () => void; hasPlan: boolean; go: (s: number) => void }) {
+  const { lang, me, patchMe } = useApp()
+  const b = me!.budget
+  const perDay = b / 7
+  return (
+    <div className="space-y-5">
+      <h1 className="rise text-center text-2xl font-extrabold leading-tight text-forest sm:text-3xl">{t('bTitle', lang)}</h1>
+      <div className="card rise space-y-5 p-6 text-center">
+        <div className="flex items-center justify-center gap-4">
+          <button className="btn btn-soft !h-12 !w-12 !min-h-12 !px-0 text-xl" onClick={() => setBudget(Math.max(200, b - 50))} aria-label="−50">−</button>
+          <div><div className="font-display text-5xl font-extrabold tabular-nums text-forest">{b}</div><div className="text-sm font-semibold text-muted">MAD / {t('week2', lang).toLowerCase()}</div></div>
+          <button className="btn btn-soft !h-12 !w-12 !min-h-12 !px-0 text-xl" onClick={() => setBudget(Math.min(5000, b + 50))} aria-label="+50">+</button>
+        </div>
+        <input type="range" min={200} max={3000} step={50} value={Math.min(b, 3000)} onChange={(e) => setBudget(+e.target.value)} className="w-full accent-[#245B43]" aria-label={t('budgetBar', lang)} />
+        <p className="text-sm text-muted">≈ {money(perDay, lang)} {t('perDay', lang)} · {money(perDay / Math.max(1, me!.size), lang)} / 👤</p>
+      </div>
+      <div className="card rise space-y-3 p-5">
+        <div className="flex items-center justify-between"><span className="font-bold">{t('people', lang)}</span><Stepper v={me!.size} set={(n) => patchMe({ size: n })} max={12} /></div>
+        <div className="flex flex-wrap gap-2">{['vegetarian', 'healthy', 'budget'].map((d) => <button key={d} className="chip" aria-pressed={me!.diet.includes(d)} onClick={() => patchMe({ diet: me!.diet.includes(d) ? me!.diet.filter((x) => x !== d) : [...me!.diet, d] })}>{t(d === 'budget' ? 'budgetT' : d, lang)}</button>)}</div>
+      </div>
+      <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>✨ {t('compose', lang)}</button>
+      {hasPlan && <button className="btn btn-soft w-full" onClick={() => go(2)}>{t('keepWeek', lang)} · {money(cost, lang)}</button>}
+    </div>
+  )
+}
+
+/** Step 2: the week. */
+export function WeekStep({ cost, compose, adapt }: { cost: number; compose: () => void; adapt: () => void }) {
+  const { lang, me, house, upHouse, award } = useApp()
   const [pick, setPick] = useState<{ d: number; s: Meal } | null>(null)
   const [view, setView] = useState<string | null>(null)
   const [q, setQ] = useState(''); const [f, setF] = useState('all')
-  const plan = house!.plan, pantry = house!.pantry, extras = house!.extras ?? {}
-  const hh = Math.max(1, me!.size), budget = me!.budget
-  const cost = useMemo(() => listCost(plan, pantry, extras), [plan, pantry, extras])
-  const nItems = useMemo(() => buildList(plan, pantry, extras).filter((l) => l.buy > 0).length, [plan, pantry, extras])
-  const planned = Object.keys(plan).length
-  const kc = Math.round(dailyKcal(plan)); const hl = healthLevel(kc)
-  const pct = Math.min(100, (cost / budget) * 100); const over = cost > budget
-  const barCol = over ? 'rgb(var(--danger))' : pct > 88 ? 'rgb(var(--apricot))' : 'rgb(var(--forest))'
+  const plan = house!.plan; const hh = Math.max(1, me!.size); const budget = me!.budget
+  const planned = Object.keys(plan).length; const kc = Math.round(dailyKcal(plan)); const hl = healthLevel(kc); const over = cost > budget
   const setEntry = (k: string, r: string, n: number, log: string) => upHouse((h) => { h.plan[k] = { r, n } }, log)
   const cands = useMemo(() => RECIPES.filter((r) => pick && r.m.includes(pick.s) && (f === 'all' || r.tags.includes(f)) && (rname(r.n, lang) + ' ' + r.n[0]).toLowerCase().includes(q.toLowerCase())), [pick, q, f, lang])
-
-  const surprise = () => {
-    const next = randomPlan(hh, me!.diet, budget, pantry, extras); const c = listCost(next, pantry, extras)
-    upHouse((h) => { h.plan = next }, 'shuffled the week'); award(10, '✨'); celebrate()
-    toast(c <= budget ? `🎉 ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang))
-  }
-  const adapt = () => {
-    const next = adaptToBudget(plan, budget, pantry, extras, me!.diet); const c = listCost(next, pantry, extras)
-    upHouse((h) => { h.plan = next }, 'fitted the budget'); toast(c <= budget ? `✅ ${t('fitted', lang)}` : t('tight', lang))
-  }
   const cur = view ? plan[view] : null
-  const FILTERS = ['all', 'moroccan', 'healthy', 'budget', 'quick', 'vegetarian', 'sweet']
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between"><div><p className="text-sm text-muted">{t('hello', lang)},</p><h1 className="text-2xl font-extrabold text-forest">{me!.name} 👋</h1></div>
-        <div className="flex gap-2 text-sm font-bold"><span className="rounded-full bg-surface px-3 py-1.5 shadow-soft">🔥 {me!.streak}</span><span className="rounded-full bg-surface px-3 py-1.5 shadow-soft">⭐ {Math.floor(me!.xp / 100) + 1}</span></div></div>
-
-      <div className="card space-y-3 p-4">
-        <div className="flex items-end justify-between"><span className="font-bold">{t('budgetBar', lang)}</span><span className="text-sm tabular-nums"><b>{money(cost, lang)}</b> / {money(budget, lang)}</span></div>
-        <div className="h-4 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, background: barCol }} /></div>
-        <div className="flex items-center justify-between gap-2 text-sm"><span className="font-semibold" style={{ color: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}>{over ? `${money(cost - budget, lang)} ${t('over', lang)}` : `${money(budget - cost, lang)} ${t('margin', lang)}`}</span>
-          {over && <button className="btn btn-warm !min-h-9 !px-4 text-sm" onClick={adapt}>{t('adapt', lang)}</button>}</div>
-        <input type="range" min={200} max={3000} step={50} value={budget} onChange={(e) => patchMe({ budget: +e.target.value })} className="w-full accent-[#245B43]" aria-label={t('budgetBar', lang)} />
-        {planned > 0 && <div className="flex items-center gap-3 rounded-2xl bg-cream p-3"><span className="text-3xl" aria-hidden>{HEALTH[hl]}</span><div><p className="text-sm font-bold">{t(hl, lang)}</p><p className="text-xs text-muted">≈ {kc} {t('kcal', lang)}</p></div></div>}
-      </div>
-
-      <div className="flex gap-2"><button className="btn btn-primary flex-1" onClick={surprise}>🎲 {t('surprise', lang)}</button>{planned > 0 && <button className="btn btn-soft" onClick={() => upHouse((h) => { h.plan = {} }, 'cleared the week')}>{t('clear', lang)}</button>}</div>
-
+      <div className="flex items-center justify-between gap-2"><h1 className="text-2xl font-extrabold text-forest">{t('weekTitle', lang)}</h1><button className="btn btn-soft !min-h-11" onClick={compose}>🎲 {t('reshuffle', lang)}</button></div>
+      {planned > 0 && (
+        <div className="card flex items-center gap-3 p-3">
+          <span className="text-3xl" aria-hidden>{HEALTH[hl]}</span>
+          <div className="flex-1"><p className="text-sm font-bold">{t(hl, lang)}</p><p className="text-xs text-muted">≈ {kc} {t('kcal', lang)} · {planned}/21 {t('meals', lang)}</p></div>
+          {over && <button className="btn btn-warm !min-h-9 !px-4 text-sm" onClick={adapt}>{t('adapt', lang)}</button>}
+        </div>
+      )}
       {Array.from({ length: 7 }, (_, d) => (
         <div key={d} className="card p-4">
           <h3 className="mb-3 font-bold capitalize">{dayName(d, lang)}</h3>
@@ -106,9 +112,6 @@ export function PlannerScreen({ go, celebrate }: Props) {
           </div>
         </div>
       ))}
-
-      {planned > 0 && <div className="sticky bottom-20 z-30 sm:bottom-4"><button className="btn btn-primary w-full !min-h-14 shadow-lift" onClick={() => go('list')}>🛒 {t('seeList', lang)} · {nItems} {t('items', lang)} · {money(cost, lang)}</button></div>}
-
       <Sheet open={!!pick} onClose={() => setPick(null)} title={pick ? `${dayName(pick.d, lang)} · ${t(pick.s, lang)}` : ''}>
         <input className="input mb-2" placeholder={t('search', lang)} value={q} onChange={(e) => setQ(e.target.value)} />
         <div className="mb-3 flex gap-2 overflow-x-auto pb-1">{FILTERS.map((k) => <button key={k} className="chip" aria-pressed={f === k} onClick={() => setF(k)}>{k === 'budget' ? t('budgetT', lang) : t(k, lang)}</button>)}</div>
@@ -119,7 +122,7 @@ export function PlannerScreen({ go, celebrate }: Props) {
       </Sheet>
       {cur && view && <RecipeSheet r={REC[cur.r]} servings={cur.n} onServings={(n) => setEntry(view, cur.r, n, `set ${REC[cur.r].n[0]} to ${n}`)} onClose={() => setView(null)} />}
       {cur && view && (
-        <div className="fixed inset-x-0 bottom-20 z-[75] flex justify-center gap-2 sm:bottom-6">
+        <div className="fixed inset-x-0 bottom-24 z-[75] flex justify-center gap-2">
           <button className="btn btn-soft shadow-lift" onClick={() => { const [d, s] = view.split('-'); setView(null); setPick({ d: +d, s: s as Meal }); setQ(''); setF('all') }}>↻</button>
           <button className="btn shadow-lift" style={{ background: 'rgb(var(--danger))', color: '#fff' }} onClick={() => { upHouse((h) => { delete h.plan[view] }, `removed ${REC[cur.r].n[0]}`); setView(null) }}>{t('remove', lang)}</button>
         </div>

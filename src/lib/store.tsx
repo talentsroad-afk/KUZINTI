@@ -4,7 +4,7 @@ import { STAPLES } from '../data/catalog'
 import type { PlanEntry } from './engine'
 
 export interface User { id: string; name: string; email: string; onboarded: boolean; country: string; city: string; size: number; budget: number; diet: string[]; favs: string[]; xp: number; streak: number; lastDay: string; houseCode?: string }
-export interface House { code: string; name: string; members: { id: string; name: string; role: 'owner' | 'member' }[]; plan: Record<string, PlanEntry>; pantry: Record<string, number>; checked: Record<string, boolean>; extras?: Record<string, number>; log: { who: string; msg: string; t: number }[] }
+export interface House { code: string; name: string; members: { id: string; name: string; role: 'owner' | 'member' }[]; plan: Record<string, PlanEntry>; pantry: Record<string, number>; checked: Record<string, boolean>; extras?: Record<string, number>; qty?: Record<string, number>; store?: string; log: { who: string; msg: string; t: number }[] }
 interface DB { users: User[]; houses: Record<string, House> }
 export interface Toast { id: number; msg: string; kind: 'xp' | 'info' }
 

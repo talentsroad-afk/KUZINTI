@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import { useApp } from './lib/store'
-import { t, type Lang } from './lib/i18n'
+import { money, t, type Lang } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
-import { PlannerScreen } from './Screens'
-import { ListScreen, ProfileScreen } from './ListScreen'
+import { BudgetStep, WeekStep } from './Screens'
+import { ProfileScreen } from './ListScreen'
+import { BasketStep, ShopMode, StoresStep, useLines } from './Flow'
+import { STORES, storeTotal } from './lib/stores'
+import { adaptToBudget, listCost, randomPlan } from './lib/plan'
 import { FoodTile } from './ui'
 
 function LangSwitch() {
@@ -107,35 +110,79 @@ function Onboarding() {
   )
 }
 
-type Tab = 'plan' | 'list' | 'profile'
-const ICON: Record<Tab, string> = { plan: '🗓️', list: '🛒', profile: '👤' }
-const LABEL: Record<Tab, string> = { plan: 'week2', list: 'list', profile: 'me' }
+const money0 = (n: number, l: Lang) => money(n, l)
 
 function Shell() {
-  const { lang, me } = useApp()
-  const [tab, setTab] = useState<Tab>('plan')
+  const { lang, me, house, patchMe, upHouse, award, toast } = useApp()
+  const [step, setStep] = useState(Object.keys(house!.plan).length ? 2 : 1)
+  const [view, setView] = useState<'flow' | 'profile' | 'shop'>('flow')
   const [boom, setBoom] = useState(0)
-  const tabs: Tab[] = ['plan', 'list', 'profile']
+  const lines = useLines()
+  const total = lines.reduce((a, l) => a + l.cost, 0)
+  const budget = me!.budget; const hasPlan = Object.keys(house!.plan).length > 0
   const celebrate = () => setBoom((b) => b + 1)
-  const props = { go: setTab, celebrate }
+  const h = house!
+
+  const compose = () => {
+    const next = randomPlan(Math.max(1, me!.size), me!.diet, budget, h.pantry, h.extras ?? {})
+    const c = listCost(next, h.pantry, h.extras ?? {})
+    upHouse((x) => { x.plan = next; x.qty = {} }, 'built the week'); award(10, '✨'); celebrate()
+    toast(c <= budget ? `🎉 ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang)); setStep(2)
+  }
+  const adapt = (b = budget) => {
+    const next = adaptToBudget(h.plan, b, h.pantry, h.extras ?? {}, me!.diet); const c = listCost(next, h.pantry, h.extras ?? {})
+    upHouse((x) => { x.plan = next; x.qty = {} }, 'fitted the budget'); toast(c <= b ? `✅ ${t('fitted', lang)}` : t('tight', lang))
+  }
+  const setBudget = (b: number) => { patchMe({ budget: b }); if (hasPlan && listCost(h.plan, h.pantry, h.extras ?? {}, h.qty ?? {}) > b) adapt(b) }
+  const goNext = () => {
+    if (step < 4) return setStep(step + 1)
+    if (!h.store) upHouse((x) => { x.store = STORES.slice().sort((p, q) => storeTotal(lines, p) - storeTotal(lines, q))[0].id })
+    setView('shop')
+  }
+  const labels = ['st1', 'st2', 'st3', 'st4']
+  const nextLabel = step < 4 ? `${t('next', lang)} · ${t(labels[step], lang)}` : `🏬 ${t('shopAt', lang)}`
+  const showBar = hasPlan
+  const over = total > budget
+
+  if (view === 'shop') return <><Confetti run={boom} /><ShopMode onExit={() => setView('flow')} celebrate={celebrate} /></>
   return (
-    <div className="calm min-h-screen sm:flex">
+    <div className="calm min-h-screen">
       <Confetti run={boom} />
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-line bg-surface/90 backdrop-blur sm:static sm:inset-auto sm:min-h-screen sm:w-60 sm:flex-col sm:justify-start sm:gap-1 sm:border-0 sm:border-e sm:p-5" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }} aria-label="Main">
-        <div className="mb-6 hidden sm:block"><Brand /></div>
-        {tabs.map((k) => (
-          <button key={k} onClick={() => setTab(k)} aria-current={tab === k ? 'page' : undefined} className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold sm:flex-none sm:flex-row sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base ${tab === k ? 'text-forest sm:bg-leaf/25' : 'text-muted'}`}>
-            <span className={`text-xl ${tab === k ? 'pop' : ''}`}>{ICON[k]}</span>{t(LABEL[k], lang)}
-          </button>
-        ))}
-        <div className="mt-auto hidden rounded-2xl bg-leaf/20 p-4 text-sm sm:block"><b>{t('level', lang)} {Math.floor(me!.xp / 100) + 1}</b><div className="mt-2 h-2 rounded-full bg-white"><div className="h-full rounded-full bg-apricot" style={{ width: `${me!.xp % 100}%` }} /></div><p className="mt-2 text-xs text-muted">🔥 {me!.streak} {t('streak', lang)}</p></div>
-      </nav>
-      <main className="mx-auto w-full max-w-3xl px-4 pb-28 pt-6 sm:pb-10" style={{ paddingTop: 'max(24px, env(safe-area-inset-top))' }} key={tab + lang}>
-        {tab === 'plan' && <PlannerScreen {...props} />}
-        {tab === 'list' && <ListScreen {...props} />}
-        {tab === 'profile' && <ProfileScreen {...props} />}
+      <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.85)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
+          <button onClick={() => setView('flow')} aria-label="KUZINTI"><Brand /></button>
+          <div className="flex items-center gap-2 text-sm font-bold">
+            <span className="rounded-full bg-surface px-3 py-1.5 shadow-soft">🔥 {me!.streak}</span><span className="rounded-full bg-surface px-3 py-1.5 shadow-soft">⭐ {Math.floor(me!.xp / 100) + 1}</span>
+            <button className="grid h-10 w-10 place-items-center rounded-full bg-forest font-display font-extrabold text-white" onClick={() => setView(view === 'profile' ? 'flow' : 'profile')} aria-label={t('myAccount', lang)}>{me!.name[0]?.toUpperCase()}</button>
+          </div>
+        </div>
+        {view === 'flow' && (
+          <nav className="mx-auto flex max-w-2xl gap-1.5 px-4 pb-3" aria-label="Steps">
+            {labels.map((k, i) => { const n = i + 1; const on = n === step; const done = n < step; return (
+              <button key={k} onClick={() => setStep(n)} aria-current={on ? 'step' : undefined} className="flex-1 text-start">
+                <div className={`h-1.5 rounded-full transition-all ${on || done ? 'bg-forest' : 'bg-line'}`} />
+                <span className={`mt-1 block text-[11px] font-bold ${on ? 'text-forest' : 'text-muted'}`}>{n}. {t(k, lang)}</span>
+              </button>) })}
+          </nav>
+        )}
+      </header>
+      <main className="mx-auto w-full max-w-2xl px-4 pb-40 pt-3" key={view + step + lang}>
+        {view === 'profile' ? <ProfileScreen celebrate={celebrate} /> : <>
+          {step === 1 && <BudgetStep cost={total} setBudget={setBudget} compose={compose} hasPlan={hasPlan} go={setStep} />}
+          {step === 2 && (hasPlan ? <WeekStep cost={total} compose={compose} adapt={() => adapt()} /> : <div className="card p-8 text-center"><p className="mb-4 text-muted">{t('nothing', lang)}</p><button className="btn btn-primary" onClick={compose}>✨ {t('compose', lang)}</button></div>)}
+          {step === 3 && <BasketStep adapt={() => adapt()} />}
+          {step === 4 && <StoresStep />}
+        </>}
       </main>
-      
+      {view === 'flow' && showBar && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/92 backdrop-blur" style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
+          <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 pt-3">
+            <div className="min-w-0 flex-1"><p className="text-sm tabular-nums"><b className={over ? 'text-danger' : 'text-forest'}>{money0(total, lang)}</b> <span className="text-muted">/ {money0(budget, lang)}</span></p>
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></div></div>
+            <button className="btn btn-primary !px-5" onClick={goNext}>{nextLabel}</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

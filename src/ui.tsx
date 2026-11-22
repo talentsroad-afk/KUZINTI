@@ -28,7 +28,7 @@ export function Ring({ value, size = 84, children }: { value: number; size?: num
 export function Toasts() {
   const { toasts } = useApp()
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-[90] flex flex-col items-center gap-2 px-4" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }} aria-live="polite">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[90] flex flex-col items-center gap-2 px-4" style={{ paddingBottom: 'calc(92px + env(safe-area-inset-bottom))' }} aria-live="polite">
       {toasts.map((x) => (
         <div key={x.id} className={`toast rounded-full px-4 py-2.5 text-sm font-semibold shadow-lift ${x.kind === 'xp' ? 'bg-apricot text-[#3c280a]' : 'bg-forest text-white'}`}>{x.msg}</div>
       ))}

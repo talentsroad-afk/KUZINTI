@@ -3,7 +3,7 @@ import { buildList, kcalPerServing, recipeCost, type PlanEntry } from './engine'
 
 type Plan = Record<string, PlanEntry>
 const SLOTS: Meal[] = ['b', 'l', 'd']
-export const listCost = (plan: Plan, pantry: Record<string, number>, extras: Record<string, number>) => buildList(plan, pantry, extras).reduce((a, l) => a + l.cost, 0)
+export const listCost = (plan: Plan, pantry: Record<string, number>, extras: Record<string, number>, qty: Record<string, number> = {}) => buildList(plan, pantry, extras, qty).reduce((a, l) => a + l.cost, 0)
 const pool = (slot: Meal, diet: string[]): Recipe[] => RECIPES.filter((r) => r.m.includes(slot) && (!diet.includes('vegetarian') || r.tags.includes('vegetarian')))
 
 /** A different random week on every call: weighted random with variety, nudged by diet, then fitted to the budget. */
