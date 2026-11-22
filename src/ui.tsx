@@ -18,14 +18,14 @@ export function FoodTile({ r, className = '' }: { r: Recipe; className?: string 
     </div>
   )
 }
-/** Real food photo when the dish family has one (free Unsplash License), the drawn tile otherwise or if it fails to load. */
+/** Real food photo when the dish family has one (Wikimedia Commons), the drawn tile otherwise or if it fails to load. */
 export function Dish({ r, className = '', w = 600, credit = false }: { r: Recipe; className?: string; w?: number; credit?: boolean }) {
   const p = photoOf(r); const [bad, setBad] = useState(false); const [ok, setOk] = useState(false)
   if (!p || bad) return <FoodTile r={r} className={className} />
   return (
     <div className={`relative overflow-hidden bg-cream ${className}`}>
       <img src={photoSrc(p, w)} alt="" loading="lazy" decoding="async" onLoad={() => setOk(true)} onError={() => setBad(true)} className={`h-full w-full object-cover transition-[opacity,transform] duration-700 ${ok ? 'scale-100 opacity-100' : 'scale-105 opacity-0'}`} />
-      {credit && <span className="absolute bottom-2 end-3 text-[9px] font-medium text-white/75">Photo {p.by} · Unsplash</span>}
+      {credit && <span className="absolute bottom-2 end-3 text-[9px] font-medium text-white/75">{p.by} · {p.lic} · Wikimedia Commons</span>}
     </div>
   )
 }
