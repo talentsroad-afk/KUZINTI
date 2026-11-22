@@ -2,7 +2,7 @@ import type { Aisle } from '../data/catalog'
 import type { Line } from './engine'
 // DEMO price index per aisle relative to the average estimate. NOT live prices; shown as such in the UI.
 export interface Store { id: string; name: string; m: Record<Aisle, number> }
-export const STORES: Store[] = [
+const STORES_MA: Store[] = [
   { id: 'bim', name: 'BIM', m: { produce: 0.98, meat: 1.05, dairy: 0.97, grocery: 0.92, bakery: 1.0, spices: 0.95 } },
   { id: 'marjane', name: 'Marjane', m: { produce: 1.04, meat: 0.95, dairy: 1.0, grocery: 0.97, bakery: 1.05, spices: 1.0 } },
   { id: 'carrefour', name: 'Carrefour', m: { produce: 1.08, meat: 1.0, dairy: 1.03, grocery: 1.02, bakery: 1.06, spices: 1.05 } },
@@ -15,6 +15,21 @@ export const STORES: Store[] = [
   { id: 'souk', name: 'Souk', m: { produce: 0.82, meat: 0.92, dairy: 1.08, grocery: 1.05, bakery: 0.92, spices: 0.8 } },
   { id: 'atacadao', name: 'Atacadão', m: { produce: 1.0, meat: 0.96, dairy: 0.95, grocery: 0.9, bakery: 1.1, spices: 0.9 } },
 ]
+const F = (produce: number, meat: number, dairy: number, grocery: number, bakery: number, spices: number) => ({ produce, meat, dairy, grocery, bakery, spices })
+const STORES_FR: Store[] = [
+  { id: 'leclerc', name: 'E.Leclerc', m: F(0.95, 0.97, 0.94, 0.93, 0.98, 0.95) },
+  { id: 'lidl', name: 'Lidl', m: F(0.92, 0.95, 0.9, 0.88, 0.95, 0.92) },
+  { id: 'carrefour-fr', name: 'Carrefour', m: F(1.02, 1.0, 1.0, 0.99, 1.02, 1.0) },
+  { id: 'auchan', name: 'Auchan', m: F(1.0, 0.98, 0.98, 0.97, 1.0, 0.98) },
+  { id: 'intermarche', name: 'Intermarché', m: F(1.0, 1.02, 1.0, 1.0, 0.98, 1.0) },
+  { id: 'monoprix', name: 'Monoprix', m: F(1.15, 1.12, 1.1, 1.12, 1.1, 1.12) },
+  { id: 'marche-fr', name: 'Marché', m: F(0.9, 1.05, 1.05, 1.1, 0.95, 1.0) },
+]
+let COUNTRY = 'MA'
+export const setStoreCountry = (c: string) => { COUNTRY = c }
+/** Stores of the user's country (demo price index). */
+export const storesNow = () => (COUNTRY === 'FR' ? STORES_FR : STORES_MA)
+export const STORES = STORES_MA
 export const storeTotal = (lines: Line[], s: Store) => lines.reduce((a, l) => a + l.cost * s.m[l.ing.aisle], 0)
-export const splitTotal = (lines: Line[]) => lines.reduce((a, l) => a + l.cost * Math.min(...STORES.map((s) => s.m[l.ing.aisle])), 0)
-export const bestStore = (lines: Line[], extra: (s: Store) => number) => STORES.map((s) => ({ s, tot: storeTotal(lines.filter((l) => l.buy > 0), s) + extra(s) })).sort((a, b) => a.tot - b.tot)[0].s
+export const splitTotal = (lines: Line[]) => lines.reduce((a, l) => a + l.cost * Math.min(...storesNow().map((s) => s.m[l.ing.aisle])), 0)
+export const bestStore = (lines: Line[], extra: (s: Store) => number) => storesNow().map((s) => ({ s, tot: storeTotal(lines.filter((l) => l.buy > 0), s) + extra(s) })).sort((a, b) => a.tot - b.tot)[0].s

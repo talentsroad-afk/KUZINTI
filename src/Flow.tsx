@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
-import { money, rname, t, type Lang } from './lib/i18n'
+import { curRate, money, money2, rname, t, type Lang } from './lib/i18n'
 import { buildList, fmtQty, type Line } from './lib/engine'
 import type { Aisle } from './data/catalog'
 import { REC } from './data/recipes'
 import { SIDE } from './data/sides'
 import { HOME, HOME_BY } from './data/home'
-import { STORES, splitTotal, storeTotal } from './lib/stores'
+import { storesNow, splitTotal, storeTotal } from './lib/stores'
 import { Sheet } from './ui'
 import { dayName } from './lib/i18n'
 import { FridgeSheet } from './Extra'
@@ -16,16 +16,16 @@ const AISLE: Record<Aisle, [string, string, string, string]> = {
   produce: ['Fruit & veg', 'Fruits & légumes', 'خضر وفواكه', '🥬'], meat: ['Meat & fish', 'Viande & poisson', 'لحوم وأسماك', '🥩'], dairy: ['Dairy & eggs', 'Laitier & œufs', 'ألبان وبيض', '🥚'],
   grocery: ['Grocery', 'Épicerie', 'بقالة', '🫙'], bakery: ['Bakery', 'Boulangerie', 'مخبزة', '🥖'], spices: ['Spices', 'Épices', 'توابل', '🧂'],
 }
-const m2 = (n: number, l: Lang) => `${n.toFixed(2)} ${l === 'ar' ? 'د.م.' : 'MAD'}`
+const m2 = (n: number, l: Lang) => money2(n, l)
 const stepOf = (l: Line) => (l.ing.base === 'pc' ? 1 : l.buy < 100 && l.ing.aisle === 'spices' ? 10 : 50)
-const unitP = (l: Line, m: number) => l.ing.base === 'pc' ? `${(l.ing.p * m).toFixed(2)} MAD/u` : `${(l.ing.p * m * 1000).toFixed(2)} MAD/${l.ing.base === 'g' ? 'kg' : 'L'}`
+const unitP = (l: Line, m: number) => l.ing.base === 'pc' ? `${money2(l.ing.p * m, 'fr')}/u` : `${money2(l.ing.p * m * 1000, 'fr')}/${l.ing.base === 'g' ? 'kg' : 'L'}`
 const useName = (u: string, lang: Lang) => (u === 'basics' ? t('basics', lang) : SIDE[u] ? SIDE[u].n[li(lang)] : REC[u] ? rname(REC[u].n, lang) : u)
 
 /** Everything in the basket with one total. Estimates use the chosen store's price index when one is picked. */
 export function useBasket() {
   const { house } = useApp(); const h = house!
   const lines = useMemo(() => buildList(h.plan, h.pantry, h.extras ?? {}, h.qty ?? {}), [h.plan, h.pantry, h.extras, h.qty])
-  const store = STORES.find((s) => s.id === h.store)
+  const store = storesNow().find((s) => s.id === h.store)
   const mul = (a: Aisle) => (store ? store.m[a] : 1)
   const homeRows = HOME.filter((x) => (h.home?.[x.id] ?? 0) > 0).map((x) => ({ ...x, q: h.home![x.id] }))
   const custom = h.custom ?? []
@@ -69,8 +69,8 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
     const on = !chk[key]; upHouse((h) => { h.checked[key] = on }, on ? `✔ ${name}` : `↩ ${name}`)
     if (on) { if (done + 1 === items.length) { celebrate(); award(40, t('tripDone', lang)) } else award(2, name) }
   }
-  const openEdit = (key: string, name: string, est: number, line?: Line) => { setEdit({ key, name, est, line }); setVal(house!.paid?.[key] !== undefined ? String(house!.paid![key]) : '') }
-  const savePaid = () => { if (!edit) return; const v = parseFloat(val.replace(',', '.')); upHouse((h) => { const p = { ...(h.paid ?? {}) }; if (isNaN(v)) delete p[edit.key]; else p[edit.key] = v; h.paid = p; if (!isNaN(v)) h.checked[edit.key] = true }); setEdit(null) }
+  const openEdit = (key: string, name: string, est: number, line?: Line) => { setEdit({ key, name, est, line }); setVal(house!.paid?.[key] !== undefined ? String(Math.round(house!.paid![key] * curRate() * 100) / 100) : '') }
+  const savePaid = () => { if (!edit) return; const v = parseFloat(val.replace(',', '.')) / curRate(); upHouse((h) => { const p = { ...(h.paid ?? {}) }; if (isNaN(v)) delete p[edit.key]; else p[edit.key] = v; h.paid = p; if (!isNaN(v)) h.checked[edit.key] = true }); setEdit(null) }
   const finish = () => { upHouse((h) => { for (const l of lines) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.checked = {}; h.qty = {}; h.home = {}; h.custom = []; h.paid = {} }, 'finished the trip'); toast(t('pantry', lang) + ' ✓') }
   const saveCustom = () => { if (!f.name.trim()) return; upHouse((h) => { h.custom = [...(h.custom ?? []), { id: Math.random().toString(36).slice(2, 8), name: f.name.trim(), qty: f.qty.trim(), price: Math.max(0, parseFloat(f.price.replace(',', '.')) || 0), note: f.note.trim() }] }, `+ ${f.name.trim()}`); setF({ name: '', qty: '', price: '', note: '' }); setAdding(false) }
   const Row = ({ k, name, sub, est, line, q }: { k: string; name: string; sub: string; est: number; line?: Line; q?: string }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; return (
@@ -84,7 +84,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
     </div>) }
   return (
     <div className="space-y-3">
-      {!store && <button className="card fade-up flex w-full items-center gap-3 border-2 border-apricot p-4 text-start" onClick={goStores}><span className="text-3xl">🏬</span><span className="flex-1"><b className="block font-display">{lang === 'en' ? 'First, pick your store' : 'D’abord, choisis ton magasin'}</b><span className="text-xs text-muted">{lang === 'en' ? 'Your list will use its prices.' : 'Ta liste utilisera ses prix. Compare 11 magasins en un coup d’œil.'}</span></span><span className="text-xl text-forest">→</span></button>}
+      {!store && <button className="card fade-up flex w-full items-center gap-3 border-2 border-apricot p-4 text-start" onClick={goStores}><span className="text-3xl">🏬</span><span className="flex-1"><b className="block font-display">{lang === 'en' ? 'First, pick your store' : 'D’abord, choisis ton magasin'}</b><span className="text-xs text-muted">{lang === 'en' ? 'Your list will use its prices.' : 'Ta liste utilisera ses prix. Compare les magasins en un coup d’œil.'}</span></span><span className="text-xl text-forest">→</span></button>}
       <div className="card p-4">
         <div className="grid grid-cols-4 gap-1 text-center">
           {([[t('budgetW', lang), budget, 'ink'], [t('taken', lang), spent, 'forest'], [t('toTake', lang), pace - spent, 'ink'], [t('solde', lang), budget - pace, budget - pace < 0 ? 'danger' : 'forest']] as [string, number, string][]).map(([l, v, c]) => (
@@ -158,11 +158,18 @@ const BRAND: Record<string, { bg: string; fg: string; font: string; txt: string 
   supeco: { bg: '#ffd400', fg: '#e2001a', font: '900 1.05rem Manrope', txt: 'Supeco' },
   hanout: { bg: '#245B43', fg: '#F4F1E8', font: '800 .95rem Manrope', txt: '🏪 Hanout' },
   souk: { bg: '#F2B96B', fg: '#3c280a', font: '800 .95rem Manrope', txt: '🧺 Souk' },
+  leclerc: { bg: '#fff', fg: '#0060a9', font: '800 .95rem Manrope', txt: 'E.Leclerc' },
+  lidl: { bg: '#0050aa', fg: '#fff200', font: '900 1.2rem Manrope', txt: 'LIDL' },
+  'carrefour-fr': { bg: '#fff', fg: '#1d5fa8', font: '800 1rem Manrope', txt: 'Carrefour' },
+  auchan: { bg: '#fff', fg: '#e2001a', font: '800 1.05rem Manrope', txt: 'Auchan' },
+  intermarche: { bg: '#e30613', fg: '#fff', font: '800 .78rem Manrope', txt: 'Intermarché' },
+  monoprix: { bg: '#111', fg: '#fff', font: '800 .9rem Manrope', txt: 'Monoprix' },
+  'marche-fr': { bg: '#F2B96B', fg: '#3c280a', font: '800 .95rem Manrope', txt: '🧺 Marché' },
   atacadao: { bg: '#f2c200', fg: '#1d3f8f', font: '800 .95rem Manrope', txt: 'Atacadão' },
 }
 export function StoreLogo({ id, w = 92 }: { id: string; w?: number }) {
   const b = BRAND[id]
-  return <span className="grid shrink-0 place-items-center rounded-xl px-2 text-center leading-none shadow-soft" style={{ width: w, height: 44, background: b.bg, color: b.fg, font: b.font, boxShadow: '0 0 0 1px rgb(0 0 0 / .08)' }} aria-label={STORES.find((s) => s.id === id)?.name}>{b.txt}</span>
+  return <span className="grid shrink-0 place-items-center rounded-xl px-2 text-center leading-none shadow-soft" style={{ width: w, height: 44, background: b.bg, color: b.fg, font: b.font, boxShadow: '0 0 0 1px rgb(0 0 0 / .08)' }} aria-label={storesNow().find((s) => s.id === id)?.name}>{b.txt}</span>
 }
 
 /** Step 4: store comparison with a clear recommendation. Prices per store are a labelled demo index. */
@@ -171,11 +178,11 @@ export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
   const { lines, homeRows, custom, homeCost, customCost } = useBasket()
   const [open, setOpen] = useState<string | null>(null)
   const buy = lines.filter((l) => l.buy > 0)
-  const tot = (s: (typeof STORES)[number]) => storeTotal(buy, s) + homeCost * s.m.grocery + customCost
-  const rows = STORES.map((s) => ({ s, tot: tot(s) })).sort((a, b) => a.tot - b.tot)
-  const best = rows[0], worst = rows[rows.length - 1]; const split = splitTotal(buy) + homeCost * Math.min(...STORES.map((s) => s.m.grocery)) + customCost
+  const tot = (s: ReturnType<typeof storesNow>[number]) => storeTotal(buy, s) + homeCost * s.m.grocery + customCost
+  const rows = storesNow().map((s) => ({ s, tot: tot(s) })).sort((a, b) => a.tot - b.tot)
+  const best = rows[0], worst = rows[rows.length - 1]; const split = splitTotal(buy) + homeCost * Math.min(...storesNow().map((s) => s.m.grocery)) + customCost
   const chosen = house!.store ?? best.s.id
-  const st = STORES.find((s) => s.id === open)
+  const st = storesNow().find((s) => s.id === open)
   const r2 = (n: number) => Math.round(n * 100) / 100
   return (
     <div className="space-y-3">

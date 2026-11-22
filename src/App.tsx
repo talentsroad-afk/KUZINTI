@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from './lib/store'
-import { money, t, type Lang } from './lib/i18n'
+import { money, setCurrency, t, type Lang } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
 import { Controls, HomeTab, usePrefs, WeekTab } from './Screens'
@@ -11,7 +11,7 @@ import { RecipesTab } from './Extra'
 import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, type LucideIcon } from 'lucide-react'
 import { SortiesTab } from './Sorties'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
-import { bestStore } from './lib/stores'
+import { bestStore, setStoreCountry } from './lib/stores'
 import { Logo, Sheet } from './ui'
 import { FoodTile } from './ui'
 
@@ -96,7 +96,7 @@ function Onboarding() {
         <div className="h-1.5 rounded-full bg-line"><div className="h-full rounded-full bg-forest transition-all" style={{ width: step === 1 ? '50%' : '100%' }} /></div>
         {step === 1 ? (<>
           <div className="grid grid-cols-2 gap-3">
-            <div><label htmlFor="co" className="mb-1 block text-sm font-semibold">{t('country', lang)}</label><select id="co" className="input" value={me!.country} onChange={(e) => patchMe({ country: e.target.value })}><option value="MA">Maroc · MAD</option><option value="FR">France · EUR</option></select></div>
+            <div><label htmlFor="co" className="mb-1 block text-sm font-semibold">{t('country', lang)}</label><select id="co" className="input" value={me!.country} onChange={(e) => patchMe({ country: e.target.value, cuisine: e.target.value === 'FR' ? 'fr' : 'ma' })}><option value="MA">Maroc · MAD</option><option value="FR">France · EUR</option></select></div>
             <div><label htmlFor="ci" className="mb-1 block text-sm font-semibold">{t('city', lang)}</label><input id="ci" className="input" value={me!.city} onChange={(e) => patchMe({ city: e.target.value })} /></div>
           </div>
           <div><span className="mb-1 block text-sm font-semibold">{t('size', lang)}</span><div className="flex gap-2">{[1, 2, 3, 4, 5, 6].map((n) => <button key={n} className="chip" aria-pressed={me!.size === n} onClick={() => patchMe({ size: n })}>{n}</button>)}</div></div>
@@ -116,6 +116,8 @@ const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', Cal
 
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
+  setCurrency(me!.country); setStoreCountry(me!.country)
+  useEffect(() => { document.documentElement.dataset.country = me!.country }, [me!.country]) // eslint-disable-line react-hooks/exhaustive-deps
   const h = house!; const hasPlan = Object.keys(h.plan).length > 0
   const [tab, setTab] = useState<Tab>(hasPlan ? 'week' : 'home')
   const [sheet, setSheet] = useState(false)

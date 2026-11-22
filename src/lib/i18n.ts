@@ -108,7 +108,7 @@ const D: D = {
   nextStep: ['Next step', 'Étape suivante', 'الخطوة التالية'],
   ns_week: ['See my week', 'Voir ma semaine', 'شاهد أسبوعي'], ns_weekD: ['Check your meals and swap what you don’t like.', 'Vérifie tes repas et change ce qui ne te plaît pas.', 'راجع وجباتك وغيّر ما لا يعجبك.'],
   ns_list: ['Go to my shopping list', 'Passer à ma liste de courses', 'إلى قائمة التسوق'], ns_listD: ['Every ingredient with its quantity and price, ready.', 'Tous les ingrédients avec quantité et prix, prêts.', 'كل المكونات بالكمية والسعر.'],
-  ns_store: ['Choose my store', 'Choisir mon magasin', 'اختر متجري'], ns_storeD: ['Compare 11 stores and pick the cheapest.', 'Compare 11 magasins et prends le moins cher.', 'قارن 11 متجرًا واختر الأرخص.'],
+  ns_store: ['Choose my store', 'Choisir mon magasin', 'اختر متجري'], ns_storeD: ['Compare stores and pick the cheapest.', 'Compare les magasins et prends le moins cher.', 'قارن 11 متجرًا واختر الأرخص.'],
   ns_shop: ['Start shopping', 'Faire mes courses', 'ابدأ التسوق'], ns_shopD: ['Tick each product as you put it in the basket.', 'Coche chaque produit en le mettant dans le panier.', 'ضع علامة على كل منتج.'],
   ns_done: ['Finish my shopping', 'Terminer mes courses', 'أنهِ التسوق'], ns_doneD: ['Tick everything, then “Finish” at the bottom.', 'Coche tout, puis « Terminer » en bas de la liste.', 'ضع علامة على الكل ثم «إنهاء».'],
   stepHint0: ['Plan: pick your goal and tap “Plan my week”', 'Composer : choisis ton objectif et touche « Composer ma semaine »', 'خطط: اختر هدفك واضغط «خطط أسبوعي»'], stepHint1: ['Week: check and swap your meals', 'Semaine : vérifie et change tes repas', 'الأسبوع: راجع وجباتك'], stepHint2: ['Shopping: tick your products in the store', 'Courses : coche tes produits en magasin', 'التسوق: ضع علامة على منتجاتك'], stepHint3: ['Store: pick where to shop', 'Magasin : choisis où faire tes courses', 'المتجر: اختر أين تتسوق'], stepHint4: ['Done: tick everything and finish', 'Fini : coche tout et termine', 'تم: ضع علامة على الكل وأنهِ'],
@@ -117,4 +117,9 @@ const D: D = {
 export const t = (k: string, l: Lang) => (D[k] ?? [k, k, k])[l === 'en' ? 0 : l === 'fr' ? 1 : 2]
 export const rname = (n: [string, string, string], l: Lang) => n[l === 'en' ? 0 : l === 'fr' ? 1 : 2]
 export const dayName = (i: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l, { weekday: 'long' }).format(new Date(2024, 0, 1 + i))
-export const money = (n: number, l: Lang) => `${Math.round(n)} ${l === 'ar' ? 'د.م.' : 'MAD'}`
+// Amounts are stored in MAD; France shows an estimated euro equivalent (local price level, not a bank rate).
+let CUR: 'MAD' | 'EUR' = 'MAD'
+export const setCurrency = (c: string) => { CUR = c === 'FR' ? 'EUR' : 'MAD' }
+export const curRate = () => (CUR === 'EUR' ? 0.16 : 1)
+export const money2 = (n: number, l: Lang) => CUR === 'EUR' ? `${(n * 0.16).toFixed(2)} €` : `${n.toFixed(2)} ${l === 'ar' ? 'د.م.' : 'MAD'}`
+export const money = (n: number, l: Lang) => CUR === 'EUR' ? `${Math.round(n * 0.16)} €` : `${Math.round(n)} ${l === 'ar' ? 'د.م.' : 'MAD'}`
