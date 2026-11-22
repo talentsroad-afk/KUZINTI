@@ -5,20 +5,19 @@ import { money, type Lang } from './lib/i18n'
 import { storesNow, storeTotal } from './lib/stores'
 import { iconOf } from './Cart'
 import type { Line } from './lib/engine'
-import { Num } from './ui'
 
 const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
 
 /** The basket story: my choices fly into the basket, then 1) best store, 2) shop together with my partner, 3) go. */
 export function BasketStory({ open, lines, onClose, go }: { open: boolean; lines: Line[]; onClose: () => void; go: (k: 'list' | 'stores') => void }) {
   const { lang, house, upHouse } = useApp()
-  const [phase, setPhase] = useState<'fly' | 'store' | 'partner'>('fly')
+  const [phase, setPhase] = useState<'fly' | 'store' | 'partner'>('fly'); const [pick, setPick] = useState<string | null>(null)
   const buy = lines.filter((l) => l.buy > 0)
   const ems = useMemo(() => [...new Set(buy.map((l) => iconOf(l.id, l.ing.aisle)))].slice(0, 18), [buy.length]) // eslint-disable-line react-hooks/exhaustive-deps
   const ranked = useMemo(() => storesNow().map((s) => ({ s, tot: storeTotal(buy, s) })).sort((a, b) => a.tot - b.tot), [buy.length]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { if (!open) return; setPhase('fly'); const id = setTimeout(() => setPhase('store'), 1500); return () => clearTimeout(id) }, [open])
+  useEffect(() => { if (!open) return; setPhase('fly'); setPick(null); const id = setTimeout(() => setPhase('store'), 1500); return () => clearTimeout(id) }, [open])
   if (!open || !house) return null
-  const best = ranked[0]; const worst = ranked[ranked.length - 1]; const save = worst && best ? worst.tot - best.tot : 0
+  const best = ranked[0]
   const W = typeof window !== 'undefined' ? window.innerWidth : 390; const H = typeof window !== 'undefined' ? window.innerHeight : 800
   const share = () => { const m = L(lang, 'Join my KUZINTI household to shop together: code ', 'Rejoins mon foyer KUZINTI pour faire les courses ensemble : code ', 'انضم إلى أسرتي في كوزينتي: الرمز ') + house.code + ' · ' + location.origin; window.open('https://wa.me/?text=' + encodeURIComponent(m), '_blank') }
   return createPortal(
@@ -31,16 +30,15 @@ export function BasketStory({ open, lines, onClose, go }: { open: boolean; lines
         <span className="basket-catch absolute bottom-6 left-1/2 grid h-20 w-20 -translate-x-1/2 place-items-center rounded-full bg-apricot text-4xl shadow-lift" aria-hidden>🛒</span>
       </>}
       {phase !== 'fly' && <div className="sheet-up absolute inset-x-0 bottom-0 mx-auto max-w-lg rounded-t-[30px] bg-surface p-5 pb-8 shadow-lift">
-        <div className="mb-4 flex items-center gap-2">{(['store', 'partner'] as const).map((p, i) => <span key={p} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${phase === p || (p === 'store' && phase === 'partner') ? 'bg-forest' : 'bg-line'}`} aria-hidden />)}<button className="ms-2 grid h-8 w-8 place-items-center rounded-full bg-cream text-sm" onClick={onClose} aria-label="Close">✕</button></div>
-        {phase === 'store' && best && <div key="s" className="fade-up space-y-4">
-          <div className="flex items-center gap-3"><span className="pop grid h-14 w-14 place-items-center rounded-2xl bg-apricot text-3xl">🛒</span><div><p className="text-[11px] font-bold uppercase tracking-[.16em] text-terracotta">1/2 · {L(lang, 'Your basket is ready', 'Votre panier est prêt', 'سلتك جاهزة')}</p><p className="font-display text-xl font-extrabold">{buy.length} {L(lang, 'products', 'produits', 'منتج')} · <Num v={best.tot} fmt={(n) => money(n, lang)} /></p></div></div>
-          <div className="relative overflow-hidden rounded-[22px] bg-forest p-4 text-white"><span className="zellige pointer-events-none absolute inset-0 opacity-[.07]" aria-hidden />
-            <p className="relative text-[11px] font-bold uppercase tracking-[.16em] text-apricot">🏆 {L(lang, 'Best store for this basket', 'Meilleur magasin pour ce panier', 'أفضل متجر')}</p>
-            <p className="relative mt-1 font-display text-2xl font-extrabold">{best.s.name}</p>
-            {save > 1 && <p className="relative text-sm text-white/85">{L(lang, `${money(save, lang)} less than ${worst.s.name}`, `${money(save, lang)} de moins que ${worst.s.name}`, `أرخص بـ ${money(save, lang)}`)}</p>}
-            <div className="relative mt-3 space-y-1">{ranked.slice(0, 3).map((r, i) => <div key={r.s.id} className="flex items-center gap-2 text-xs"><span className="w-20 truncate font-semibold">{r.s.name}</span><span className="h-2 flex-1 overflow-hidden rounded-full bg-white/15"><span className="grow-x block h-full rounded-full" style={{ width: `${(best.tot / r.tot) * 100}%`, background: i ? 'rgba(255,255,255,.5)' : '#F2B96B', animationDelay: `${i * 120}ms` }} /></span><b className="w-16 text-end tabular-nums">{money(r.tot, lang)}</b></div>)}</div></div>
-          <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => { upHouse((h) => { h.store = best.s.id }, `🏪 ${best.s.name}`); setPhase('partner') }}>{L(lang, `Shop at ${best.s.name}`, `Je fais mes courses chez ${best.s.name}`, `أتسوق في ${best.s.name}`)} ›</button>
-          <button className="w-full text-sm font-bold text-forest" onClick={() => { onClose(); go('stores') }}>{L(lang, 'Compare all stores', 'Comparer tous les magasins', 'قارن كل المتاجر')}</button>
+        <div className="mb-4 flex items-center gap-2"><button className="grid h-9 w-9 place-items-center rounded-full bg-cream text-lg font-bold active:scale-90" onClick={() => (phase === 'partner' ? setPhase('store') : onClose())} aria-label={L(lang, 'Back', 'Retour', 'رجوع')}>‹</button>{(['store', 'partner'] as const).map((p) => <span key={p} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${phase === p || (p === 'store' && phase === 'partner') ? 'bg-forest' : 'bg-line'}`} aria-hidden />)}<button className="grid h-9 w-9 place-items-center rounded-full bg-cream text-sm active:scale-90" onClick={onClose} aria-label="Close">✕</button></div>
+        {phase === 'store' && best && <div key="s" className="fade-up space-y-3">
+          <div><p className="text-[11px] font-bold uppercase tracking-[.16em] text-terracotta">1/2 · {buy.length} {L(lang, 'products', 'produits', 'منتج')}</p><p className="font-display text-xl font-extrabold">{L(lang, 'Where do you want to shop?', 'Où voulez-vous faire vos courses ?', 'أين تريد التسوق؟')}</p></div>
+          <div className="stagger max-h-[46vh] space-y-2 overflow-y-auto">{ranked.map((r, i) => { const on = pick === r.s.id; return (
+            <button key={r.s.id} onClick={() => setPick(r.s.id)} aria-pressed={on} className={`flex w-full items-center gap-3 rounded-2xl border-2 px-3.5 py-3 text-start transition active:scale-[.98] ${on ? 'border-forest bg-forest/[.06]' : 'border-line bg-surface'}`}>
+              <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${on ? 'border-forest bg-forest' : 'border-line'}`}>{on && <span className="h-2 w-2 rounded-full bg-white" />}</span>
+              <span className="min-w-0 flex-1"><b className="block truncate">{r.s.name}</b>{i === 0 ? <span className="text-[11px] font-bold text-forest">✓ {L(lang, 'Cheapest', 'Le moins cher', 'الأرخص')}</span> : <span className="text-[11px] text-muted">+{money(r.tot - best.tot, lang)}</span>}</span>
+              <b className="font-display tabular-nums">{money(r.tot, lang)}</b></button>) })}</div>
+          <button disabled={!pick} className="btn btn-primary w-full !min-h-14 text-base disabled:opacity-40" onClick={() => { const s = ranked.find((r) => r.s.id === pick)?.s; if (!s) return; upHouse((h) => { h.store = s.id }, `🏪 ${s.name}`); setPhase('partner') }}>{L(lang, 'Continue', 'Continuer', 'متابعة')} ›</button>
         </div>}
         {phase === 'partner' && <div key="p" className="fade-up space-y-4">
           <div className="flex items-center gap-3"><span className="pop grid h-14 w-14 place-items-center rounded-2xl bg-leaf/40 text-3xl">👫</span><div><p className="text-[11px] font-bold uppercase tracking-[.16em] text-terracotta">2/2 · {L(lang, 'Shop together', 'Faire les courses à deux', 'التسوق معا')}</p><p className="font-display text-xl font-extrabold">{L(lang, 'Split the list live', 'Partagez la liste en direct', 'شارك القائمة مباشرة')}</p></div></div>

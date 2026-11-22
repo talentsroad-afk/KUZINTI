@@ -10,6 +10,7 @@ import { SIDE } from './data/sides'
 import { dailyKcal, entryCost, entryKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
 import { alternatives, FLAG, surpriseOne, composeSides, type Prefs } from './lib/plan'
 import { Dish, FoodTile, Sheet, Stepper } from './ui'
+const SLOT_BG: Record<string, string> = { b: '#FBEFD9', l: '#E6F0E4', d: '#E7E9F4', g: '#FCE7E1' }
 import { iconOf } from './Cart'
 import { FormeCard } from './Forme'
 
@@ -34,28 +35,49 @@ function NutriBox({ r }: { r: Recipe }) {
 }
 
 /** The recipe told as a story: ingredients come in, then each step full screen, auto-advancing. Tap left/right to move. */
-function CookStory({ r, onClose }: { r: Recipe; onClose: () => void }) {
+function CookStory({ r, sv, onClose }: { r: Recipe; sv: number; onClose: () => void }) {
   const { lang } = useApp()
-  const steps = stepsOf(r, lang); const ings = r.ing.map((s) => { const p = parseIng(s); const ing = ING[p.id]; return ing && ing.aisle !== 'spices' ? { e: iconOf(p.id, ing.aisle), n: ing.n[li(lang)] } : null }).filter(Boolean) as { e: string; n: string }[]
-  const N = steps.length + 2; const [i, setI] = useState(0)
-  useEffect(() => { if (i >= N - 1) return; const id = setTimeout(() => setI(i + 1), i === 0 ? 4200 : 6000); return () => clearTimeout(id) }, [i, N])
-  const hue = r.h
+  const steps = stepsOf(r, lang)
+  // Every ingredient with its real quantity for the chosen servings (grams, ml, pieces or kitchen units).
+  const ings = r.ing.map((s) => { const p = parseIng(s); const ing = ING[p.id]; if (!ing || ing.aisle === 'spices') return null; const q = (p.qty * sv) / r.s
+    return { e: iconOf(p.id, ing.aisle), n: ing.n[li(lang)], q: p.unit && p.unit !== ing.base && UNIT[p.unit] ? `${r1(q)} ${UNIT[p.unit][li(lang)]}` : fmtQty(toBase(ing, q, p.unit), ing.base) } }).filter(Boolean) as { e: string; n: string; q: string }[]
+  const N = steps.length + 2; const [i, setI] = useState(0); const [dir, setDir] = useState(1)
+  const go = (k: number) => { setDir(k > i ? 1 : -1); setI(k) }
+  useEffect(() => { if (i >= N - 1) return; const id = setTimeout(() => go(i + 1), i === 0 ? 2600 + ings.length * 260 : 6500); return () => clearTimeout(id) }, [i, N]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Parallax: the 3D scene follows the finger, the mouse or the phone's tilt.
+  const [tilt, setTilt] = useState({ x: 0, y: 0 })
+  useEffect(() => { const o = (e: DeviceOrientationEvent) => setTilt({ x: Math.max(-12, Math.min(12, ((e.beta ?? 45) - 45) / 3)), y: Math.max(-14, Math.min(14, (e.gamma ?? 0) / 3)) }); addEventListener('deviceorientation', o); return () => removeEventListener('deviceorientation', o) }, [])
+  const onMove = (x: number, y: number) => setTilt({ x: ((y / innerHeight) - 0.5) * -14, y: ((x / innerWidth) - 0.5) * 18 })
+  const hue = r.h; const R = Math.min(150, 60 + ings.length * 11)
   return createPortal(
-    <div className="fixed inset-0 z-[80] flex flex-col text-white" style={{ background: `radial-gradient(120% 80% at 50% 0%, hsl(${hue} 45% 32%), #0c1611 70%)` }} role="dialog" aria-label={rname(r.n, lang)}>
-      <div className="flex gap-1 px-3 pt-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}>{Array.from({ length: N }, (_, k) => <span key={k} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20"><span key={i} className={`block h-full rounded-full bg-white ${k < i ? 'w-full' : k === i ? 'story-bar' : 'w-0'}`} style={k === i ? { animationDuration: i === 0 ? '4.2s' : '6s' } : undefined} /></span>)}</div>
-      <div className="flex items-center gap-3 px-4 py-3"><Dish r={r} w={120} className="h-9 w-9 rounded-full" /><b className="flex-1 truncate">{rname(r.n, lang)}</b><button className="grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close">✕</button></div>
-      <div className="relative flex-1">
-        <button className="absolute inset-y-0 start-0 z-10 w-1/3" onClick={() => setI(Math.max(0, i - 1))} aria-label="‹" />
-        <button className="absolute inset-y-0 end-0 z-10 w-2/3" onClick={() => (i < N - 1 ? setI(i + 1) : onClose())} aria-label="›" />
-        <div key={i} className="story-in flex h-full flex-col justify-center px-7">
-          {i === 0 && <><p className="text-[12px] font-bold uppercase tracking-[.2em] text-white/60">{lang === 'en' ? 'You need' : 'Il vous faut'}</p>
-            <div className="mt-4 grid grid-cols-3 gap-3">{ings.slice(0, 9).map((x, k) => <div key={k} className="story-pop flex flex-col items-center gap-1 rounded-2xl bg-white/10 p-3 text-center backdrop-blur" style={{ animationDelay: `${k * 110}ms` }}><span className="text-4xl">{x.e}</span><span className="line-clamp-2 text-[11px] font-semibold leading-tight">{x.n}</span></div>)}</div>
-            <p className="mt-5 text-sm text-white/70">⏱ {r.t} min · {ings.length} {lang === 'en' ? 'ingredients' : 'ingrédients'}</p></>}
-          {i > 0 && i <= steps.length && <><p className="font-display text-[88px] font-extrabold leading-none text-white/15">{i}</p>
-            <p className="-mt-6 font-display text-[26px] font-bold leading-snug">{steps[i - 1]}</p>
-            <p className="mt-6 text-sm text-white/60">{lang === 'en' ? 'Step' : 'Étape'} {i}/{steps.length} · {lang === 'en' ? 'tap to continue' : 'touchez pour continuer'}</p></>}
-          {i === N - 1 && <div className="text-center"><p className="story-pop text-7xl">🍽️</p><p className="mt-4 font-display text-3xl font-extrabold">{lang === 'en' ? 'Enjoy your meal!' : lang === 'ar' ? 'بالصحة والعافية' : 'Bon appétit !'}</p><p className="mt-2 text-white/70">{rname(r.n, lang)}</p></div>}
-        </div>
+    <div className="fixed inset-0 z-[80] flex flex-col overflow-hidden text-white" style={{ background: `radial-gradient(120% 80% at 50% 0%, hsl(${hue} 50% 30%), #0a130f 72%)` }} role="dialog" aria-label={rname(r.n, lang)}
+      onPointerMove={(e) => onMove(e.clientX, e.clientY)}>
+      <span className="pointer-events-none absolute -top-32 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl" style={{ background: `hsl(${hue} 80% 55% / .35)` }} aria-hidden />
+      <div className="relative flex gap-1 px-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 12px)' }}>{Array.from({ length: N }, (_, k) => <span key={k} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20"><span key={i} className={`block h-full rounded-full bg-white ${k < i ? 'w-full' : k === i && i < N - 1 ? 'story-bar' : k === i ? 'w-full' : 'w-0'}`} style={k === i ? { animationDuration: i === 0 ? `${2.6 + ings.length * 0.26}s` : '6.5s' } : undefined} /></span>)}</div>
+      <div className="relative flex items-center gap-3 px-4 py-3"><Dish r={r} w={120} className="h-9 w-9 rounded-full" /><span className="min-w-0 flex-1"><b className="block truncate">{rname(r.n, lang)}</b><span className="text-[11px] text-white/60">{sv} {t('servings', lang)} · ⏱ {r.t} min</span></span><button className="relative z-20 grid h-9 w-9 place-items-center rounded-full bg-white/15" onClick={onClose} aria-label="Close">✕</button></div>
+      <div className="relative flex-1" style={{ perspective: 1100 }}>
+        <button className="absolute inset-y-0 start-0 z-10 w-1/3" onClick={() => go(Math.max(0, i - 1))} aria-label="‹" />
+        <button className="absolute inset-y-0 end-0 z-10 w-2/3" onClick={() => (i < N - 1 ? go(i + 1) : onClose())} aria-label="›" />
+        <div className="scene3d h-full" style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
+        <div key={i} className={`${dir > 0 ? 'flip-in-r' : 'flip-in-l'} flex h-full flex-col justify-center px-6`}>
+          {i === 0 && <><div className="story-pop mb-6 flex items-center gap-4" style={{ transform: 'translateZ(50px)' }}><Dish r={r} w={240} className="h-24 w-24 shrink-0 rounded-full shadow-[0_24px_40px_-12px_rgba(0,0,0,.8)] ring-4 ring-white/15" /><div><p className="font-display text-[26px] font-extrabold leading-tight">{rname(r.n, lang)}</p><p className="mt-1 text-sm text-white/70">👥 {sv} · ⏱ {r.t} min</p></div></div><p className="text-[12px] font-bold uppercase tracking-[.22em] text-white/60">{lang === 'en' ? 'You need' : 'Il vous faut'} · {ings.length}</p>
+            <div className="mt-4 grid grid-cols-3 gap-3" style={{ transformStyle: 'preserve-3d' }}>{ings.slice(0, 12).map((x, k) => (
+              <div key={k} className="ing3d relative flex flex-col items-center rounded-[20px] border border-white/15 bg-white/[.08] px-2 pb-2.5 pt-3 text-center shadow-[0_18px_40px_-12px_rgba(0,0,0,.6)] backdrop-blur-md" style={{ animationDelay: `${k * 260}ms`, ['--fz' as string]: `${(k % 3) * 8}px` }}>
+                <span className="ing-emoji text-[40px] leading-none drop-shadow-[0_10px_8px_rgba(0,0,0,.45)]" style={{ animationDelay: `${k * 260 + 700}ms` }}>{x.e}</span>
+                <span className="mt-1.5 line-clamp-1 text-[11px] font-semibold text-white/85">{x.n}</span>
+                <span className="qty-pop mt-1 rounded-full bg-white px-2 py-0.5 font-display text-[13px] font-extrabold text-ink tabular-nums" style={{ animationDelay: `${k * 260 + 420}ms` }}>{x.q}</span>
+              </div>))}</div></>}
+          {i > 0 && i <= steps.length && <div className="rounded-[28px] border border-white/15 bg-white/[.07] p-6 shadow-[0_30px_60px_-20px_rgba(0,0,0,.7)] backdrop-blur-md" style={{ transform: 'translateZ(40px)' }}>
+            <p className="font-display text-[96px] font-extrabold leading-none text-white/15">{i}</p>
+            <p className="-mt-8 font-display text-[25px] font-bold leading-snug">{steps[i - 1]}</p>
+            <div className="mt-5 flex flex-wrap gap-1.5">{ings.filter((x) => steps[i - 1].toLowerCase().includes(x.n.toLowerCase().split(' ')[0].slice(0, 5))).slice(0, 4).map((x, k) => <span key={k} className="qty-pop inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[12px] font-bold text-ink" style={{ animationDelay: `${300 + k * 120}ms` }}>{x.e} {x.q}</span>)}</div>
+            <p className="mt-4 text-xs text-white/55">{lang === 'en' ? 'Step' : 'Étape'} {i}/{steps.length} · {lang === 'en' ? 'tap to continue' : 'touchez pour continuer'}</p></div>}
+          {i === N - 1 && <div className="relative grid place-items-center" style={{ height: 380, transformStyle: 'preserve-3d' }}>
+            <div className="orbit absolute" style={{ transformStyle: 'preserve-3d', width: 0, height: 0 }}>{ings.slice(0, 10).map((x, k, a) => <span key={k} className="absolute -ml-5 -mt-5 text-[38px]" style={{ transform: `rotateY(${(360 / a.length) * k}deg) translateZ(${R}px)` }}>{x.e}</span>)}</div>
+            <div className="story-pop text-center" style={{ transform: 'translateZ(60px)' }}><Dish r={r} w={300} className="mx-auto h-36 w-36 rounded-full shadow-[0_30px_50px_-15px_rgba(0,0,0,.8)] ring-4 ring-white/20" />
+              <p className="mt-4 font-display text-3xl font-extrabold">{lang === 'en' ? 'Enjoy your meal!' : lang === 'ar' ? 'بالصحة والعافية' : 'Bon appétit !'}</p><p className="mt-1 text-white/70">{rname(r.n, lang)}</p></div>
+          </div>}
+        </div></div>
       </div>
     </div>, document.body)
 }
@@ -82,7 +104,7 @@ export function RecipeSheet({ r, onClose, servings, onServings }: { r: Recipe | 
         <span className="min-w-0 flex-1"><b className="block">{lang === 'en' ? 'Cook it step by step' : 'Cuisiner pas à pas'}</b><span className="block text-xs text-white/75">{lang === 'en' ? 'Full-screen story, one step at a time' : 'En plein écran, une étape à la fois'}</span></span>
         <span className="flex -space-x-2">{[...new Set(r.ing.slice(0, 4).map((s) => { const p = parseIng(s); return ING[p.id] ? iconOf(p.id, ING[p.id].aisle) : '' }))].map((e, k) => <span key={k} className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-base ring-2 ring-[#10221a]">{e}</span>)}</span>
       </button>
-      {story && <CookStory r={r} onClose={() => setStory(false)} />}
+      {story && <CookStory r={r} sv={sv} onClose={() => setStory(false)} />}
       <div className="mb-3 flex items-center justify-between"><h3 className="font-bold">{t('ingredients', lang)}</h3><span className="flex items-center gap-2 text-sm"><Stepper v={sv} set={setSv} /> {t('servings', lang)}</span></div>
       <ul className="mb-5 space-y-1.5 text-sm">
         {r.ing.map((s) => {
@@ -233,8 +255,8 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
           <div className="grid gap-1" style={{ gridTemplateColumns: `22px repeat(7, minmax(0, 1fr))` }}>
             <span />{Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => <button key={d} onClick={() => setDay(d)} className={`rounded-xl py-1 text-center text-[10px] font-extrabold uppercase transition ${d === day ? 'bg-forest text-white' : d === today ? 'text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 3)}</button>)}
             {slots.map((s) => [<span key={s} className="grid place-items-center text-[13px]" title={t(s, lang)}>{SLOT_E[s]}</span>, ...Array.from({ length: 7 }, (_, i) => (today + i) % 7).map((d) => { const e = plan[`${d}-${s}`]; const r = e ? REC[e.r] : null; return (
-              <button key={s + d} onClick={() => setDay(d)} className={`aspect-square overflow-hidden rounded-xl transition active:scale-90 ${d === day ? 'ring-2 ring-forest ring-offset-1 ring-offset-surface' : ''}`} aria-label={r ? rname(r.n, lang) : t(s, lang)}>
-                {r ? <Dish r={r} w={120} className="h-full w-full" /> : <span className="grid h-full w-full place-items-center bg-cream text-muted">＋</span>}</button>) })])}
+              <button key={s + d} onClick={() => setDay(d)} className={`cal-cell flex min-h-[64px] flex-col items-center justify-center gap-0.5 overflow-hidden rounded-xl px-0.5 py-1 transition active:scale-90 ${d === day ? 'ring-2 ring-forest ring-offset-1 ring-offset-surface' : ''}`} style={{ background: SLOT_BG[s] ?? '#F4F1E8' }} aria-label={r ? rname(r.n, lang) : t(s, lang)}>
+                {r ? <><span className="text-[22px] leading-none drop-shadow-sm" aria-hidden>{r.e}</span>{rname(r.n, lang).split(/[ ,(]/).filter((w) => w.length > 2).slice(0, 2).map((w, i) => <span key={i} className="block w-full truncate text-center text-[8.5px] font-bold leading-[1.15] text-ink/80">{w}</span>)}</> : <span className="text-muted">＋</span>}</button>) })])}
           </div>
         </div>
         <div key={day} className="fade-up overflow-hidden rounded-[22px] bg-surface shadow-soft">
