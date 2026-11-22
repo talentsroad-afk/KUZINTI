@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Share2, RefreshCw, Play, Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, ShoppingBasket, Soup, Sun, Sunrise, type LucideIcon } from 'lucide-react'
+import { Beef, Flame, Share2, RefreshCw, Play, Apple, BedDouble, ChevronDown, Coffee, Droplet, Dumbbell, Moon, Salad, Sandwich, Scale, ShoppingBasket, Soup, Sun, Sunrise, type LucideIcon } from 'lucide-react'
 import type { Lang } from './lib/i18n'
 import { Sheet } from './ui'
 import { buildProgram } from './Program'
@@ -84,7 +84,26 @@ export function mealTags(foods: string[]): Nut[] {
   for (const f of foods) for (const [re, ns] of FOOD_TAGS) if (re.test(f)) for (const n of ns) c[n] = (c[n] ?? 0) + 1
   return (Object.entries(c) as [Nut, number][]).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([n]) => n)
 }
-const Tags = ({ ns, lang }: { ns?: Nut[]; lang: Lang }) => ns && ns.length ? <span className="mt-1 flex flex-wrap gap-1">{ns.map((n) => <span key={n} className="rounded-full bg-surface px-1.5 py-0.5 text-[12px] font-semibold text-forest shadow-soft">{NUT[n][0]} {nutName(n, lang)}</span>)}</span> : null
+/** One meal as a card: time-of-day icon, kcal and protein badges, ingredients as chips, discreet vitamin tags. */
+function MealCard({ y, lang, onSwap }: { y: Item; lang: Lang; onSwap?: () => void }) {
+  return (
+    <div className="flex gap-3 rounded-2xl bg-surface p-3 shadow-soft">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white" style={{ background: y.tone }}><y.icon size={19} strokeWidth={2.2} aria-hidden /></span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start gap-2"><b className="flex-1 text-[14px] font-bold leading-snug">{y.title}</b>
+          {onSwap && <button className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-cream text-forest active:scale-90" onClick={onSwap} aria-label={L(lang, 'Another meal', 'Autre repas')}><RefreshCw size={13} aria-hidden /></button>}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11.5px] font-bold">
+          <span className="tabular-nums text-muted">{y.at}</span>
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 tabular-nums" style={{ background: '#fdebdd', color: '#c4562a' }}><Flame size={11} aria-hidden />{y.kcal} kcal</span>
+          <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 tabular-nums" style={{ background: '#fbe3e0', color: '#b8433a' }}><Beef size={11} aria-hidden />{y.prot} g</span>
+        </div>
+        {y.list && <div className="mt-2 flex flex-wrap gap-1">{y.list.map(([n, q], k) => <span key={k} className="rounded-full bg-cream px-2 py-0.5 text-[12px] leading-snug">{n} <b className="tabular-nums">{q}</b></span>)}</div>}
+        <Tags ns={y.tags} lang={lang} />
+      </div>
+    </div>
+  )
+}
+const Tags = ({ ns, lang }: { ns?: Nut[]; lang: Lang }) => ns && ns.length ? <span className="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] font-semibold text-muted">{ns.map((n) => <span key={n}>{NUT[n][0]} {nutName(n, lang)}</span>)}</span> : null
 
 type Item = { at: string; icon: LucideIcon; tone: string; title: string; sub?: string; kcal?: number; prot?: number; list?: [string, string][]; slot?: string; tags?: Nut[]; how?: string[]; raw?: [string, number, string][] }
 const fmtQ = (q: number, u: string) => u === 'pc' ? (q < 1 ? '½' : `${Math.round(q * 2) / 2}`) : `${Math.round(q / 5) * 5} ${u}`
@@ -168,8 +187,11 @@ export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0, blk = 0 }: { blk
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl text-white" style={{ background: x.s ? ['#25a35a', '#e0a526', '#e5484d'][x.s.hard - 1] : '#9aa3ab' }}>{x.s ? <Dumbbell size={16} aria-hidden /> : <Moon size={16} aria-hidden />}</span>
             <span className="min-w-0 flex-1"><b className="block truncate text-sm">{x.s ? `${x.s.t} · ${x.s.min} min` : L(lang, 'Rest + walk', 'Repos + marche')}</b><span className="block truncate text-xs text-muted">{x.items.filter((y) => y.kcal).length} {L(lang, 'meals', 'repas')} · {x.tk} kcal · {x.tp} g</span></span>
             <ChevronDown size={16} className={`text-muted transition-transform ${op ? 'rotate-180' : ''}`} aria-hidden /></button>
-          {op && <ul className="fade-up space-y-1 border-t border-line/60 px-3 py-2">{x.items.filter((y) => y.kcal).map((y, j) => <li key={j} className="flex items-center gap-2 text-[13px]"><span className="w-10 shrink-0 tabular-nums text-muted">{y.at}</span><span className="min-w-0 flex-1 leading-snug">{y.title}<span className="block text-xs text-muted">{y.kcal} kcal · {y.prot} g</span>{y.list && <span className="mt-0.5 block text-xs leading-snug text-ink/80">{y.list.map(([n, q]) => `${n} ${q}`).join(' · ')}</span>}<Tags ns={y.tags} lang={lang} /></span>{y.slot && <button className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-surface text-forest shadow-soft active:scale-90" onClick={() => swap(wa, i, y.slot!)} aria-label={L(lang, 'Another meal', 'Autre repas')}><RefreshCw size={13} aria-hidden /></button>}</li>)}
-            <li><button className="mt-1 w-full text-center text-xs font-bold text-forest" onClick={() => { setD(i); setView('day') }}>{L(lang, 'Open the day ›', 'Ouvrir la journée ›')}</button></li></ul>}
+          {op && <div className="fade-up space-y-2 border-t border-line/60 p-3">
+            {(() => { const se = x.items.find((y) => y.icon === Dumbbell && y.list); return se ? <div className="rounded-2xl bg-forest p-3 text-white"><div className="flex items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/15"><Dumbbell size={20} aria-hidden /></span><div className="min-w-0 flex-1"><b className="block truncate text-[14px]">{se.title}</b><span className="text-xs text-white/75">{se.sub} · {se.list!.length} {L(lang, 'exercises', 'exercices')}</span></div></div>
+              <button className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-full bg-apricot py-2 text-sm font-extrabold text-ink active:scale-95" onClick={() => setStory({ t: se.title, ex: se.list! })}><Play size={15} aria-hidden /> {L(lang, 'Start with the coach', 'Démarrer avec le coach')}</button></div> : null })()}
+            {x.items.filter((y) => y.kcal).map((y, j) => <MealCard key={j} y={y} lang={lang} onSwap={y.slot ? () => swap(wa, i, y.slot!) : undefined} />)}
+            <button className="w-full text-center text-xs font-bold text-forest" onClick={() => { setD(i); setView('day') }}>{L(lang, 'Open the day ›', 'Ouvrir la journée ›')}</button></div>}
         </div>) })}</div>}
 
       {view === 'month' && <div className="mt-3 space-y-2">{[0, 1, 2, 3].map((i) => { const pr = buildProgram(p, i + blk * 4); const n = pr.days.filter(Boolean).length; const min = pr.days.reduce((a, x) => a + (x?.min ?? 0), 0); const op = mOpen === i; return (
