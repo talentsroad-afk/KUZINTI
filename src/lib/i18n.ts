@@ -99,6 +99,7 @@ const D: D = {
   compareStores: ['Compare stores', 'Comparer les magasins', 'قارن المتاجر'], shareList: ['Share list', 'Partager la liste', 'شارك القائمة'], qtyHint: ['bold = quantity to buy', 'en gras = quantité à acheter', 'بالخط العريض = الكمية'], fridgeS: ['Fridge', 'Frigo', 'الثلاجة'],
   v_day: ['Day', 'Jour', 'يوم'], v_week: ['Week', 'Semaine', 'أسبوع'], v_month: ['Month', 'Mois', 'شهر'], tapSwap: ['Tap a dish to swap it', 'Touche un plat pour le changer', 'اضغط على طبق لتغييره'], monthNote: ['Your week repeats; tap a day to edit it', 'Ta semaine se répète ; touche un jour pour le modifier', 'أسبوعك يتكرر؛ اضغط على يوم لتعديله'],
   st_compose: ['Plan', 'Composer', 'خطط'], st_week: ['Week', 'Semaine', 'الأسبوع'], st_list: ['Shop', 'Courses', 'التسوق'], st_store: ['Store', 'Magasin', 'المتجر'], st_done: ['Done', 'Fini', 'تم'],
+  h_budget: ['Fit my budget', 'Ajuster à mon budget', 'عدّل حسب الميزانية'], h_shop: ['Go shopping', 'Passer aux courses', 'إلى التسوق'], h_store: ['Pick the cheapest store', 'Choisir le magasin le moins cher', 'اختر المتجر الأرخص'], bestPicked: ['cheapest for your list', 'le moins cher pour ta liste', 'الأرخص لقائمتك'],
   share: ['Share', 'Partager', 'مشاركة'], shared: ['List copied', 'Liste copiée', 'تم نسخ القائمة'], lWeek: ['Week', 'Semaine', 'الأسبوع'], lDay: ['Day', 'Jour', 'اليوم'],
 }
 export const t = (k: string, l: Lang) => (D[k] ?? [k, k, k])[l === 'en' ? 0 : l === 'fr' ? 1 : 2]

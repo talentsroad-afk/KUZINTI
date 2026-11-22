@@ -6,8 +6,9 @@ import { RECIPES } from './data/recipes'
 import { Controls, HomeTab, usePrefs, WeekTab } from './Screens'
 import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
-import { adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
+import { adaptToBudget, adaptToMode, composeWeek, listCost, offMode } from './lib/plan'
 import { RecipesTab } from './Extra'
+import { bestStore } from './lib/stores'
 import { Logo, Sheet } from './ui'
 import { FoodTile } from './ui'
 
@@ -119,7 +120,7 @@ function Shell() {
   const [note, setNote] = useState<string | null>(null)
   const [boom, setBoom] = useState(0)
   const p = usePrefs()
-  const { extraCost, total, items } = useBasket()
+  const { extraCost, total, items, lines, homeCost, customCost } = useBasket()
   const budget = me!.budget; const over = total > budget
   const celebrate = () => setBoom((b) => b + 1)
   const say = (m: string) => { setNote(m); setTimeout(() => setNote((x) => (x === m ? null : x)), 5000) }
@@ -144,6 +145,14 @@ function Shell() {
   const nChk = Object.values(h.checked).filter(Boolean).length
   const steps: [string, Tab, boolean][] = [['st_compose', 'home', hasPlan], ['st_week', 'week', hasPlan], ['st_list', 'list', nChk > 0], ['st_store', 'stores', !!h.store], ['st_done', 'list', items.length > 0 && nChk >= items.length]]
   const cur = steps.findIndex((x) => !x[2])
+
+  const pickBest = () => { const b = bestStore(lines, (s) => homeCost * s.m.grocery + customCost); upHouse((x) => { x.store = b.id }, `🏬 ${b.name}`); say(`👑 ${b.name} · ${t('bestPicked', lang)}`); go('list') }
+  const help: [string, () => void] = !hasPlan || tab === 'home' || tab === 'recipes' ? [t('composeAuto', lang), compose]
+    : over ? [t('h_budget', lang), () => adapt()]
+    : tab === 'week' ? (offMode(h.plan, 'light') > 3 && p.goals.includes('healthy') ? [t('makeHealthy', lang), makeHealthy] : [t('h_shop', lang), () => go('list')])
+    : tab === 'list' && !h.store ? [t('h_store', lang), pickBest]
+    : tab === 'stores' ? [t('h_store', lang), pickBest]
+    : [t('h_shop', lang), () => go('list')]
   const title = t(tab === 'stores' ? 'tStores' : TABS.find((x) => x[0] === tab)![2], lang)
 
   return (
@@ -172,7 +181,8 @@ function Shell() {
           {tab === 'profile' && <ProfileScreen celebrate={celebrate} />}
         </div>
       </main>
-      {up && <button className="fixed bottom-24 end-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
+      <button className="fixed bottom-[5.5rem] start-4 z-40 flex max-w-[70vw] items-center gap-2 rounded-full bg-ink/90 px-4 py-2.5 text-sm font-bold text-white shadow-lg backdrop-blur active:scale-95" onClick={help[1]}><span className="text-base">✨</span><span className="truncate">{help[0]}</span></button>
+      {up && <button className="fixed bottom-[5.5rem] end-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
       <nav className="tabbar" aria-label="Main">
         {TABS.map(([k, e, key]) => <button key={k} onClick={() => go(k === 'list' && tab === 'stores' ? 'list' : k)} aria-current={tab === k || (k === 'list' && tab === 'stores') ? 'page' : undefined} className={`tab ${tab === k ? 'tab-on' : ''}`}><span className={`text-[22px] leading-none ${tab === k ? 'pop' : 'grayscale-[.6] opacity-70'}`}>{e}</span><span>{t(key, lang)}</span></button>)}
       </nav>

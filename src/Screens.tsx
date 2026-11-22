@@ -154,6 +154,9 @@ function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => void; say
 }
 
 /** My week: compact days, expand one to act on its meals. Three one-tap actions per meal. */
+const STOP = new Set(['de', 'du', 'des', 'au', 'aux', 'à', 'la', 'le', 'les', 'et', 'with', 'and', 'the', 'of', 'en'])
+const short = (n: string) => n.replace(/\s*\(.*\)/, "").split(/[\s,]+/).filter((w) => w && !STOP.has(w.toLowerCase())).slice(0, 2).join(' ')
+
 export function WeekTab({ compose, makeHealthy, say }: { compose: () => void; makeHealthy: () => void; say: (m: string) => void }) {
   const { lang, me, house, upHouse } = useApp()
   const p = usePrefs(); const plan = house!.plan
@@ -199,16 +202,16 @@ export function WeekTab({ compose, makeHealthy, say }: { compose: () => void; ma
         </div>
       </>}
       {view === 'week' && <div className="card p-2">
-        <div className="grid grid-cols-[2rem_repeat(7,1fr)] gap-1 text-center">
+        <div className="grid grid-cols-[1.25rem_repeat(7,minmax(0,1fr))] gap-[3px] text-center">
           <span />{Array.from({ length: 7 }, (_, d) => <button key={d} onClick={() => { setDay(d); setView('day') }} className={`rounded-lg py-1 text-[10px] font-bold uppercase ${d === today ? 'bg-leaf/40 text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 2)}</button>)}
-          {slots.map((s) => [<span key={s} className="grid place-items-center text-base">{SLOT_E[s]}</span>, ...Array.from({ length: 7 }, (_, d) => { const e = plan[`${d}-${s}`]; return <button key={s + d} onClick={() => setRep(`${d}-${s}`)} className="grid aspect-square place-items-center rounded-xl text-xl active:scale-90" style={{ background: e ? `hsl(${REC[e.r].h} 80% 90%)` : 'rgb(var(--cream))' }} aria-label={e ? rname(REC[e.r].n, lang) : '+'}>{e ? REC[e.r].e : '＋'}</button> })])}
+          {slots.map((s) => [<span key={s} className="grid place-items-center text-base">{SLOT_E[s]}</span>, ...Array.from({ length: 7 }, (_, d) => { const e = plan[`${d}-${s}`]; return <button key={s + d} onClick={() => setRep(`${d}-${s}`)} className="flex min-h-[4.25rem] flex-col items-center justify-start gap-0.5 rounded-xl px-0.5 pt-1 active:scale-90" style={{ background: e ? `hsl(${REC[e.r].h} 80% 91%)` : 'rgb(var(--cream))' }} aria-label={e ? rname(REC[e.r].n, lang) : '+'}>{e ? <><span className="text-lg leading-none">{REC[e.r].e}</span><span className="line-clamp-3 break-words text-[8.5px] font-semibold leading-[1.15]">{short(rname(REC[e.r].n, lang))}</span></> : '＋'}</button> })])}
         </div>
         <p className="mt-2 text-center text-[11px] text-muted">{t('tapSwap', lang)}</p>
       </div>}
       {view === 'month' && <div className="card p-3">
         <p className="mb-2 font-display font-extrabold capitalize">{new Intl.DateTimeFormat(lang === 'ar' ? 'ar-MA' : lang, { month: 'long', year: 'numeric' }).format(new Date())}</p>
         <div className="grid grid-cols-7 gap-1 text-center">{Array.from({ length: 7 }, (_, d) => <span key={d} className="text-[10px] font-bold uppercase text-muted">{dayName(d, lang).slice(0, 2)}</span>)}
-          {monthCells.map((c, i) => c ? <button key={i} onClick={() => { setDay(c.wd); setView('day') }} className={`rounded-xl py-1 ${c.today ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-bold">{c.n}</span><span className="block text-xs leading-tight">{slots.map((s) => plan[`${c.wd}-${s}`] ? REC[plan[`${c.wd}-${s}`].r].e : '').join('').slice(0, 4)}</span></button> : <span key={i} />)}
+          {monthCells.map((c, i) => c ? <button key={i} onClick={() => { setDay(c.wd); setView('day') }} className={`rounded-xl py-1 ${c.today ? 'bg-forest text-white' : 'bg-cream'}`}><span className="block text-[10px] font-bold">{c.n}</span>{plan[`${c.wd}-l`] && <span className="block truncate px-0.5 text-[8.5px] font-semibold leading-tight">{REC[plan[`${c.wd}-l`].r].e} {short(rname(REC[plan[`${c.wd}-l`].r].n, lang)).split(' ')[0]}</span>}</button> : <span key={i} />)}
         </div>
         <p className="mt-2 text-center text-[11px] text-muted">{t('monthNote', lang)}</p>
       </div>}

@@ -148,6 +148,12 @@ const BRAND: Record<string, { bg: string; fg: string; font: string; txt: string 
   marjane: { bg: '#fff', fg: '#c8102e', font: '800 1.1rem Manrope', txt: 'Marjane' },
   carrefour: { bg: '#fff', fg: '#1d5fa8', font: '800 1rem Manrope', txt: 'Carrefour' },
   aswak: { bg: '#e08a1e', fg: '#fff', font: '800 .85rem Manrope', txt: 'Aswak Assalam' },
+  labelvie: { bg: '#fff', fg: '#e30613', font: '800 1rem Manrope', txt: "Label'Vie" },
+  carrefourmkt: { bg: '#1d5fa8', fg: '#fff', font: '800 .78rem Manrope', txt: 'Carrefour Market' },
+  acima: { bg: '#00953a', fg: '#fff', font: '900 1.1rem Manrope', txt: 'ACIMA' },
+  supeco: { bg: '#ffd400', fg: '#e2001a', font: '900 1.05rem Manrope', txt: 'Supeco' },
+  hanout: { bg: '#245B43', fg: '#F4F1E8', font: '800 .95rem Manrope', txt: '🏪 Hanout' },
+  souk: { bg: '#F2B96B', fg: '#3c280a', font: '800 .95rem Manrope', txt: '🧺 Souk' },
   atacadao: { bg: '#f2c200', fg: '#1d3f8f', font: '800 .95rem Manrope', txt: 'Atacadão' },
 }
 export function StoreLogo({ id, w = 92 }: { id: string; w?: number }) {
