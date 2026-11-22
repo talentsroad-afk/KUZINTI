@@ -13,7 +13,8 @@ function LangSwitch() {
 }
 
 function Landing({ go }: { go: (m: 'signup' | 'login') => void }) {
-  const { lang } = useApp()
+  const { lang, signup, login } = useApp()
+  const demo = () => { if (!login('demo@kuzinti.app')) signup('Sara', 'demo@kuzinti.app') }
   const steps = ['s1', 's2', 's3', 's4']
   const showcase = RECIPES.filter((r) => ['tajine-poulet', 'zaalouk', 'harira', 'couscous-7'].includes(r.id))
   return (
@@ -26,6 +27,7 @@ function Landing({ go }: { go: (m: 'signup' | 'login') => void }) {
         <p className="mx-auto mt-5 max-w-xl text-lg text-muted">{t('heroSub', lang)}</p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <button className="btn btn-primary !min-h-14 !px-8 text-base" onClick={() => go('signup')}>{t('cta1', lang)}</button>
+          <button className="btn btn-warm !min-h-14 !px-8 text-base" onClick={demo}>▶ {{ en: 'Try the demo', fr: 'Essayer la démo', ar: 'جرّب العرض' }[lang]}</button>
           <a className="btn btn-soft !min-h-14 !px-8 text-base" href="#how">{t('cta2', lang)}</a>
         </div>
         <div className="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">
@@ -57,7 +59,7 @@ function Auth({ mode, setMode, close }: { mode: 'signup' | 'login'; setMode: (m:
   const submit = (e: React.FormEvent) => {
     e.preventDefault(); if (!ok) return
     if (mode === 'signup') signup(name.trim(), email.trim())
-    else if (!login(email.trim())) toast(t('noUser', lang))
+    else if (!login(email.trim())) { signup(email.split('@')[0], email.trim()); toast(t('welcome', lang) + ' 🌿') }
   }
   return (
     <div className="calm grid min-h-screen place-items-center px-5 py-10">
