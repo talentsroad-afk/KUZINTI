@@ -1,3 +1,4 @@
+import { cloudOn, getHouse, putHouse } from './cloud'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { Lang } from './i18n'
 import { STAPLES } from '../data/catalog'
@@ -15,7 +16,7 @@ const wr = (k: string, v: string, s = false) => { try { (s ? sessionStorage : lo
 const loadDB = (): DB => { try { return JSON.parse(rd(K) ?? '') as DB } catch { return { users: [], houses: {} } } }
 const today = () => new Date().toISOString().slice(0, 10)
 const uid = () => Math.random().toString(36).slice(2, 10)
-const mkCode = () => 'KZ-' + Math.random().toString(36).slice(2, 6).toUpperCase()
+const mkCode = () => 'KZ-' + Math.random().toString(36).slice(2, 8).toUpperCase()
 
 interface Ctx {
   lang: Lang; setLang: (l: Lang) => void
@@ -26,7 +27,7 @@ interface Ctx {
   patchMe: (p: Partial<User>) => void
   upHouse: (fn: (h: House) => void, log?: string) => void
   createHouse: (name: string) => void
-  joinHouse: (code: string) => boolean
+  joinHouse: (code: string) => Promise<boolean>
   award: (xp: number, msg: string) => void
   toasts: Toast[]; toast: (msg: string, kind?: Toast['kind']) => void
 }
@@ -47,6 +48,34 @@ export function Provider({ children }: { children: ReactNode }) {
     window.addEventListener('storage', on)
     return () => window.removeEventListener('storage', on)
   }, [])
+  // Cloud sync: poll the shared household every 3 s; local writes are re-applied on the latest copy, then pushed.
+  const pending = useRef(0)
+  const code = db.users.find((u) => u.id === id)?.houseCode
+  useEffect(() => {
+    if (!cloudOn || !code) return
+    let stop = false
+    const pull = async () => {
+      if (pending.current) return
+      try {
+        const remote = await getHouse<House>(code)
+        if (stop || pending.current) return
+        if (!remote) { const h = dbRef.current.houses[code]; if (h) await putHouse(code, h); return }
+        if (JSON.stringify(remote) !== JSON.stringify(dbRef.current.houses[code])) commit((d) => { d.houses[code] = remote })
+      } catch { /* offline: keep local */ }
+    }
+    pull(); const t = setInterval(pull, 3000)
+    return () => { stop = true; clearInterval(t) }
+  }, [code]) // eslint-disable-line react-hooks/exhaustive-deps
+  const pushHouse = useCallback(async (c: string, fn?: (h: House) => void) => {
+    if (!cloudOn) return
+    pending.current++
+    try {
+      let h = dbRef.current.houses[c]
+      if (fn) { const remote = await getHouse<House>(c).catch(() => null); if (remote) { fn(remote); h = remote; commit((d) => { d.houses[c] = remote }) } }
+      if (h) await putHouse(c, h)
+    } catch { /* retry on next change */ } finally { pending.current-- }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => { document.documentElement.lang = lang; document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr' }, [lang])
 
   const commit = useCallback((fn: (d: DB) => void) => {
@@ -85,26 +114,28 @@ export function Provider({ children }: { children: ReactNode }) {
     },
     login: (email) => { const u = dbRef.current.users.find((x) => x.email === email.toLowerCase()); if (!u) return false; wr('kuzinti-uid', u.id, true); setId(u.id); return true },
     logout: () => { try { sessionStorage.removeItem('kuzinti-uid') } catch { /* ignore */ } setId(null) },
-    upHouse: (fn, log) => commit((d) => {
-      const u = d.users.find((x) => x.id === meId); const h = u?.houseCode ? d.houses[u.houseCode] : undefined
-      if (!u || !h) return
-      fn(h); if (log) h.log = [{ who: u.name, msg: log, t: Date.now() }, ...h.log].slice(0, 20)
-    }),
+    upHouse: (fn, log) => {
+      const u = dbRef.current.users.find((x) => x.id === meId); const c = u?.houseCode; if (!u || !c || !dbRef.current.houses[c]) return
+      const apply = (h: House) => { fn(h); if (log) h.log = [{ who: u.name, msg: log, t: Date.now() }, ...h.log].slice(0, 20) }
+      commit((d) => apply(d.houses[c])); pushHouse(c, apply)
+    },
     createHouse: (name) => commit((d) => {
       const u = d.users.find((x) => x.id === meId); if (!u) return
       const code = mkCode()
       d.houses[code] = { code, name, members: [{ id: u.id, name: u.name, role: 'owner' }], plan: {}, pantry: { ...STAPLES }, checked: {}, extras: { tea: 200, mint: 80, bread: 7, milk: 1000 }, log: [] }
-      u.houseCode = code
+      u.houseCode = code; setTimeout(() => pushHouse(code))
     }),
-    joinHouse: (code) => {
-      const c = code.trim().toUpperCase(); if (!dbRef.current.houses[c]) return false
+    joinHouse: async (code) => {
+      const c = code.trim().toUpperCase()
+      if (cloudOn) { const remote = await getHouse<House>(c).catch(() => null); if (remote) commit((d) => { d.houses[c] = remote }) }
+      if (!dbRef.current.houses[c]) return false
       commit((d) => {
         const u = d.users.find((x) => x.id === meId); if (!u) return
         u.houseCode = c; const h = d.houses[c]
         if (!h.members.some((m) => m.id === u.id)) h.members.push({ id: u.id, name: u.name, role: 'member' })
         h.log = [{ who: u.name, msg: 'joined', t: Date.now() }, ...h.log].slice(0, 20)
-      }); return true
+      }); pushHouse(c, (h) => { const u = dbRef.current.users.find((x) => x.id === meId)!; if (!h.members.some((m) => m.id === u.id)) h.members.push({ id: u.id, name: u.name, role: 'member' }) }); return true
     },
-  }), [lang, me, house, toasts, toast, award, patchMe, commit, meId])
+  }), [lang, me, house, toasts, toast, award, patchMe, commit, meId, pushHouse])
   return <C.Provider value={value}>{children}</C.Provider>
 }
