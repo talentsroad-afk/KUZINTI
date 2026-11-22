@@ -172,7 +172,7 @@ function Shell() {
     upHouse((x) => { x.plan = next; x.qty = {} }, `budget ${b}`)
     say(c <= b ? `✅ ${t('fitB', lang)} ${money(b, lang)} · ${money(b - c, lang)} ${t('margin', lang)}` : `⚠️ ${t('minB', lang)} ${money(c, lang)} (+${money(c - b, lang)}). ${t('minHint', lang)}`, u)
   }
-  const clearWeek = () => { const u = snap(lang === 'en' ? 'Clear' : 'Vider'); upHouse((x) => { x.plan = {}; x.qty = {}; x.checked = {}; x.store = undefined }, '🗑 semaine vidée'); say(lang === 'en' ? '🗑 Week cleared. Compose a new one when you like.' : '🗑 Semaine vidée. Composez-en une nouvelle quand vous voulez.', u); go('home') }
+  const clearWeek = () => { const s0 = snap(lang === 'en' ? 'Clear' : 'Vider'); const prevHome = h.home; const prevEx = h.extras; const u: [string, () => void] = [s0[0], () => { s0[1](); upHouse((x) => { x.home = prevHome; x.extras = prevEx }, '↩') }]; upHouse((x) => { x.plan = {}; x.qty = {}; x.checked = {}; x.store = undefined; x.home = {}; x.extras = {} }, '🗑 semaine vidée'); say(lang === 'en' ? '🗑 Week cleared, the shopping list followed.' : '🗑 Semaine vidée, la liste de courses a suivi.', u); if (tab !== 'list') go('home') }
   const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
   const [ctry, setCtry] = useState(false)
   // Three worlds side by side: swipe left/right (or tap the pill) to move between Meals, Outings and Budget.
@@ -252,7 +252,7 @@ function Shell() {
           {tab === 'home' && <HomeTab composeFor={(o) => composeWith(o)} clear={clearWeek} openCountry={() => setCtry(true)} compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
           {tab === 'week' && <button className="mb-2 flex w-full items-center justify-between rounded-2xl bg-surface px-4 py-2.5 text-sm font-bold text-forest shadow-soft active:scale-[.99]" onClick={() => go('recipes')}><span>📖 {L3(lang, 'Browse all recipes', 'Parcourir toutes les recettes', 'تصفح الوصفات')}</span><span aria-hidden>›</span></button>}
           {tab === 'week' && <WeekTab toBasket={() => setBask(true)} clear={clearWeek} compose={compose} makeHealthy={makeHealthy} say={say} />}
-          {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
+          {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} setBudget={setBudget} clear={clearWeek} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
           {tab === 'recipes' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => go('week')}>‹ {L3(lang, 'My week', 'Ma semaine', 'أسبوعي')}</button><RecipesTab say={say} /></>}
           {tab === 'sport' && <SportTab apply={(k) => { patchMe({ kcal: k, health: 'sport' }); if (hasPlan) composeWith({ kcal: k, health: 'sport' }, true); else composeWith({ kcal: k, health: 'sport' }); go('week') }} />}
