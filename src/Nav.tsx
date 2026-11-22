@@ -26,10 +26,10 @@ export function Nav({ tab, go, left, onCaddie, hasCart, openCountry }: { tab: Ta
   const [all, setAll] = useState(false)
   const g = items(lang)
   const c = countryOf(me!.country)
-  const Bar = ({ k, Icon, label, on, onClick }: { k: string; Icon: LucideIcon; label: string; on: boolean; onClick: () => void }) => (
+  const Bar = ({ k, Icon, label, on, onClick, badge = 0 }: { k: string; Icon: LucideIcon; label: string; on: boolean; onClick: () => void; badge?: number }) => (
     <button key={k} onClick={onClick} aria-current={on ? 'page' : undefined} className={`relative flex flex-1 flex-col items-center gap-1 pb-1.5 pt-2 text-[10.5px] font-semibold transition ${on ? 'text-forest' : 'text-cream/75'}`}>
       {on && <span className="arch-on absolute top-[4px] h-[26px] w-11 bg-cream" aria-hidden />}
-      <Icon size={21} strokeWidth={on ? 2.4 : 1.8} className="relative" aria-hidden /><span className={`relative ${on ? 'font-extrabold text-cream' : ''}`}>{label}</span>
+      <Icon size={21} strokeWidth={on ? 2.4 : 1.8} className="relative" aria-hidden />{badge > 0 && <span key={bump} className="cart-bump absolute end-[22%] top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-apricot px-1 text-[9.5px] font-extrabold text-forest">{badge}</span>}<span className={`relative ${on ? 'font-extrabold text-cream' : ''}`}>{label}</span>
     </button>)
   const Caddie = ({ big }: { big?: boolean }) => (
     <button data-tour="caddie" key={bump} onClick={hasCart ? onCaddie : () => go('list')} aria-label={L(lang, 'Store mode: tick your list in the aisles', 'Mode magasin : cochez votre liste en rayon', 'وضع المتجر')} className={`relative grid place-items-center rounded-full bg-apricot text-forest shadow-lift transition active:scale-90 ${big ? 'h-[62px] w-[62px] -translate-y-4 ring-[5px] ring-[rgb(var(--bg))]' : 'h-12 w-12'}`}>
@@ -51,11 +51,11 @@ export function Nav({ tab, go, left, onCaddie, hasCart, openCountry }: { tab: Ta
     <nav data-tour="tabs" className="navbar lg:hidden" aria-label="Main">
       <div className="zellige pointer-events-none absolute inset-0 rounded-[26px] opacity-[.06]" aria-hidden />
       <Bar k="home" Icon={Home} label={t('tHome', lang)} on={tab === 'home' || tab === 'profile'} onClick={() => go('home')} />
-      <Bar k="food" Icon={UtensilsCrossed} label={L(lang, 'Meals', 'Repas', 'الوجبات')} on={['week', 'recipes', 'list', 'stores', 'sport'].includes(tab)} onClick={() => go(['week', 'recipes', 'list', 'stores', 'sport'].includes(tab) ? tab : 'week')} />
-      <div className="flex flex-1 flex-col items-center"><Caddie big /><span className="-mt-3 whitespace-nowrap text-[10.5px] font-bold text-apricot">{hasCart && left > 0 ? `${left} ${L(lang, 'to grab', 'à prendre', 'للأخذ')}` : L(lang, 'In store', 'En magasin', 'في المتجر')}</span></div>
+      <Bar k="food" badge={hasCart && left > 0 ? left : 0} Icon={UtensilsCrossed} label={L(lang, 'Meals', 'Repas', 'الوجبات')} on={['week', 'recipes', 'list', 'stores', 'sport'].includes(tab)} onClick={() => go(['week', 'recipes', 'list', 'stores', 'sport'].includes(tab) ? tab : 'week')} />
       <Bar k="sorties" Icon={Ticket} label={t('tSorties', lang)} on={tab === 'sorties'} onClick={() => go('sorties')} />
       <Bar k="budget" Icon={Wallet} label={t('tBudget', lang)} on={tab === 'budget'} onClick={() => go('budget')} />
     </nav>
+    {tab === 'list' && <div className="fixed bottom-[92px] end-4 z-30 lg:hidden"><Caddie /></div>}
     <Sheet open={all} onClose={() => setAll(false)} title={L(lang, 'Everything in KUZINTI', 'Tout KUZINTI', 'كل كوزينتي')}>
       <p className="mb-2 text-[11px] font-bold uppercase tracking-[.16em] text-terracotta">{L(lang, 'Kitchen', 'Cuisine', 'المطبخ')}</p>
       <div className="grid grid-cols-2 gap-2">{g.food.map(Tile)}</div>
