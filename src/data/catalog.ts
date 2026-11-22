@@ -8,10 +8,11 @@ export interface Ing {
   aisle: Aisle
   p: number // estimated price in MAD per base unit (estimate, not a live price)
   conv: Partial<Record<Unit, number>> // how much of the base unit one "unit" is
+  k: number // kcal per base unit (approximate, for the health indicator)
 }
 const spice = { tsp: 2.5, tbsp: 7.5, pinch: 0.5 }
 const herb = { bunch: 50 }
-const I = (id: string, en: string, fr: string, ar: string, base: Base, aisle: Aisle, p: number, conv: Ing['conv'] = {}): Ing => ({ id, n: [en, fr, ar], base, aisle, p, conv })
+const I = (id: string, en: string, fr: string, ar: string, base: Base, aisle: Aisle, p: number, conv: Ing['conv'] = {}): Ing => ({ id, n: [en, fr, ar], base, aisle, p, conv, k: 0 })
 
 export const CATALOG: Ing[] = [
   I('chicken', 'Chicken', 'Poulet', 'دجاج', 'g', 'meat', 0.035),
@@ -55,6 +56,17 @@ export const CATALOG: Ing[] = [
   I('sugar', 'Sugar', 'Sucre', 'سكر', 'g', 'grocery', 0.008, { tbsp: 12 }),
   I('almonds', 'Almonds', 'Amandes', 'لوز', 'g', 'grocery', 0.12),
   I('dates', 'Dates', 'Dattes', 'تمر', 'g', 'grocery', 0.05),
+  I('tea', 'Green tea', 'Thé vert', 'شاي أخضر', 'g', 'grocery', 0.25, { tsp: 3, tbsp: 8 }),
+  I('coffee', 'Coffee', 'Café', 'قهوة', 'g', 'grocery', 0.15),
+  I('orange', 'Oranges', 'Oranges', 'برتقال', 'pc', 'produce', 1.2),
+  I('apple', 'Apples', 'Pommes', 'تفاح', 'pc', 'produce', 1.2),
+  I('fish', 'White fish', 'Poisson blanc', 'سمك أبيض', 'g', 'meat', 0.04),
+  I('vermicelli', 'Vermicelli', 'Vermicelle', 'شعرية', 'g', 'grocery', 0.014),
+  I('warqa', 'Warqa pastry sheets', 'Feuilles de warqa', 'ورقة البسطيلة', 'pc', 'bakery', 1),
+  I('sesame', 'Sesame seeds', 'Graines de sésame', 'سمسم', 'g', 'grocery', 0.06),
+  I('whitebeans', 'Dried white beans', 'Haricots blancs secs', 'لوبيا يابسة', 'g', 'grocery', 0.02),
+  I('raisins', 'Raisins', 'Raisins secs', 'زبيب', 'g', 'grocery', 0.04),
+  I('prunes', 'Prunes', 'Pruneaux', 'برقوق مجفف', 'g', 'grocery', 0.05),
   I('salt', 'Salt', 'Sel', 'ملح', 'g', 'spices', 0.005, { pinch: 1, tsp: 6 }),
   I('cumin', 'Cumin', 'Cumin', 'كمون', 'g', 'spices', 0.12, spice),
   I('paprika', 'Paprika', 'Paprika', 'فلفل أحمر حلو', 'g', 'spices', 0.12, spice),
@@ -62,5 +74,7 @@ export const CATALOG: Ing[] = [
   I('ginger', 'Ground ginger', 'Gingembre moulu', 'زنجبيل', 'g', 'spices', 0.12, spice),
   I('cinnamon', 'Cinnamon', 'Cannelle', 'قرفة', 'g', 'spices', 0.12, spice),
 ]
+const KC: Record<string, number> = { chicken: 1.65, beef: 2.5, lamb: 2.9, sardine: 2.1, tuna: 150, egg: 72, onion: 0.4, tomato: 0.18, potato: 0.77, carrot: 0.41, zucchini: 0.17, eggplant: 0.25, pumpkin: 0.26, pepper: 0.27, garlic: 1.5, lemon: 20, plemon: 15, olives: 1.5, banana: 105, coriander: 0.23, parsley: 0.36, mint: 0.44, oil: 8, flour: 3.6, semolina: 3.6, couscous: 3.6, rice: 3.6, pasta: 3.6, lentils: 3.5, chickpeas: 3.6, fava: 3.4, oats: 3.7, bread: 150, milk: 0.5, butter: 7.2, yogurt: 60, cheese: 3.5, honey: 3, sugar: 4, almonds: 5.8, dates: 2.8, cumin: 2.8, paprika: 2.8, turmeric: 2.8, ginger: 2.8, cinnamon: 2.8, tea: 0, coffee: 1, orange: 60, apple: 80, fish: 0.9, vermicelli: 3.6, warqa: 40, sesame: 5.7, whitebeans: 3.4, raisins: 3, prunes: 2.4, salt: 0 }
+for (const i of CATALOG) i.k = KC[i.id] ?? 0
 export const ING: Record<string, Ing> = Object.fromEntries(CATALOG.map((i) => [i.id, i]))
 export const STAPLES: Record<string, number> = { salt: 500, cumin: 100, paprika: 100, turmeric: 100, ginger: 100, cinnamon: 100, oil: 500, sugar: 500, flour: 500 }

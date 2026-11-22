@@ -4,7 +4,7 @@ import { STAPLES } from '../data/catalog'
 import type { PlanEntry } from './engine'
 
 export interface User { id: string; name: string; email: string; onboarded: boolean; country: string; city: string; size: number; budget: number; diet: string[]; favs: string[]; xp: number; streak: number; lastDay: string; houseCode?: string }
-export interface House { code: string; name: string; members: { id: string; name: string; role: 'owner' | 'member' }[]; plan: Record<string, PlanEntry>; pantry: Record<string, number>; checked: Record<string, boolean>; log: { who: string; msg: string; t: number }[] }
+export interface House { code: string; name: string; members: { id: string; name: string; role: 'owner' | 'member' }[]; plan: Record<string, PlanEntry>; pantry: Record<string, number>; checked: Record<string, boolean>; extras?: Record<string, number>; log: { who: string; msg: string; t: number }[] }
 interface DB { users: User[]; houses: Record<string, House> }
 export interface Toast { id: number; msg: string; kind: 'xp' | 'info' }
 
@@ -93,7 +93,7 @@ export function Provider({ children }: { children: ReactNode }) {
     createHouse: (name) => commit((d) => {
       const u = d.users.find((x) => x.id === meId); if (!u) return
       const code = mkCode()
-      d.houses[code] = { code, name, members: [{ id: u.id, name: u.name, role: 'owner' }], plan: {}, pantry: { ...STAPLES }, checked: {}, log: [] }
+      d.houses[code] = { code, name, members: [{ id: u.id, name: u.name, role: 'owner' }], plan: {}, pantry: { ...STAPLES }, checked: {}, extras: { tea: 200, mint: 80, bread: 7, milk: 1000 }, log: [] }
       u.houseCode = code
     }),
     joinHouse: (code) => {

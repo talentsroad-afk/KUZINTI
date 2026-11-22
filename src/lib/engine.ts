@@ -2,7 +2,7 @@ import { ING, type Base, type Ing, type Unit } from '../data/catalog'
 import { REC } from '../data/recipes'
 
 export interface PlanEntry { r: string; n: number }
-export interface Line { id: string; ing: Ing; need: number; have: number; buy: number; cost: number }
+export interface Line { id: string; ing: Ing; need: number; have: number; buy: number; cost: number; uses: string[] }
 
 /** Convert "qty unit" to the ingredient's base unit. Throws if the conversion is not defined (no guessing). */
 export function toBase(ing: Ing, qty: number, unit?: Unit): number {
@@ -36,17 +36,19 @@ export function recipeCost(rid: string, servings = REC[rid].s): number {
   return Object.entries(scaleRecipe(rid, servings)).reduce((a, [id, q]) => a + q * ING[id].p, 0)
 }
 /** Deterministic shopping list: sum the week, subtract the pantry, round to purchase sizes. */
-export function buildList(plan: Record<string, PlanEntry>, pantry: Record<string, number>): Line[] {
+export function buildList(plan: Record<string, PlanEntry>, pantry: Record<string, number>, extras: Record<string, number> = {}): Line[] {
   const need: Record<string, number> = {}
+  const uses: Record<string, Set<string>> = {}
   for (const e of Object.values(plan)) {
-    for (const [id, q] of Object.entries(scaleRecipe(e.r, e.n))) need[id] = (need[id] ?? 0) + q
+    for (const [id, q] of Object.entries(scaleRecipe(e.r, e.n))) { need[id] = (need[id] ?? 0) + q; (uses[id] ??= new Set()).add(e.r) }
   }
+  for (const [id, q] of Object.entries(extras)) { need[id] = (need[id] ?? 0) + q; (uses[id] ??= new Set()).add('basics') }
   return Object.entries(need)
     .map(([id, n]) => {
       const ing = ING[id]
       const have = pantry[id] ?? 0
       const buy = roundBuy(Math.max(0, n - have), ing.base)
-      return { id, ing, need: n, have: Math.min(have, n), buy, cost: buy * ing.p }
+      return { id, ing, need: n, have: Math.min(have, n), buy, cost: buy * ing.p, uses: [...uses[id]] }
     })
     .sort((a, b) => a.ing.aisle.localeCompare(b.ing.aisle) || a.id.localeCompare(b.id))
 }
@@ -55,3 +57,15 @@ export function fmtQty(q: number, base: Base): string {
   if (q >= 1000) return `${Math.round(q / 100) / 10} ${base === 'g' ? 'kg' : 'L'}`
   return `${Math.round(q)} ${base}`
 }
+
+export function recipeKcal(rid: string, servings = REC[rid].s): number {
+  return Object.entries(scaleRecipe(rid, servings)).reduce((a, [id, q]) => a + q * ING[id].k, 0)
+}
+/** kcal for one person for one serving of the recipe. */
+export const kcalPerServing = (rid: string) => recipeKcal(rid, REC[rid].s) / REC[rid].s
+/** Rough daily kcal per person = average planned meal x 3 meals. */
+export function dailyKcal(plan: Record<string, PlanEntry>): number {
+  const v = Object.values(plan); if (!v.length) return 0
+  return (v.reduce((a, e) => a + kcalPerServing(e.r), 0) / v.length) * 3
+}
+export const healthLevel = (kcal: number): 'fit' | 'balanced' | 'belly' => (kcal <= 2000 ? 'fit' : kcal <= 2450 ? 'balanced' : 'belly')

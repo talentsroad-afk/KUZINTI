@@ -3,7 +3,7 @@ import { useApp } from './lib/store'
 import { t, type Lang } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
-import { HomeScreen, PlannerScreen, RecipesScreen } from './Screens'
+import { PlannerScreen } from './Screens'
 import { ListScreen, ProfileScreen } from './ListScreen'
 import { FoodTile } from './ui'
 
@@ -107,14 +107,15 @@ function Onboarding() {
   )
 }
 
-type Tab = 'home' | 'plan' | 'recipes' | 'list' | 'profile'
-const ICON: Record<Tab, string> = { home: '🏡', plan: '🗓️', recipes: '🍋', list: '🛒', profile: '👤' }
+type Tab = 'plan' | 'list' | 'profile'
+const ICON: Record<Tab, string> = { plan: '🗓️', list: '🛒', profile: '👤' }
+const LABEL: Record<Tab, string> = { plan: 'week2', list: 'list', profile: 'me' }
 
 function Shell() {
   const { lang, me } = useApp()
-  const [tab, setTab] = useState<Tab>('home')
+  const [tab, setTab] = useState<Tab>('plan')
   const [boom, setBoom] = useState(0)
-  const tabs: Tab[] = ['home', 'plan', 'recipes', 'list', 'profile']
+  const tabs: Tab[] = ['plan', 'list', 'profile']
   const celebrate = () => setBoom((b) => b + 1)
   const props = { go: setTab, celebrate }
   return (
@@ -124,15 +125,13 @@ function Shell() {
         <div className="mb-6 hidden sm:block"><Brand /></div>
         {tabs.map((k) => (
           <button key={k} onClick={() => setTab(k)} aria-current={tab === k ? 'page' : undefined} className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold sm:flex-none sm:flex-row sm:gap-3 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base ${tab === k ? 'text-forest sm:bg-leaf/25' : 'text-muted'}`}>
-            <span className={`text-xl ${tab === k ? 'pop' : ''}`}>{ICON[k]}</span>{t(k, lang)}
+            <span className={`text-xl ${tab === k ? 'pop' : ''}`}>{ICON[k]}</span>{t(LABEL[k], lang)}
           </button>
         ))}
         <div className="mt-auto hidden rounded-2xl bg-leaf/20 p-4 text-sm sm:block"><b>{t('level', lang)} {Math.floor(me!.xp / 100) + 1}</b><div className="mt-2 h-2 rounded-full bg-white"><div className="h-full rounded-full bg-apricot" style={{ width: `${me!.xp % 100}%` }} /></div><p className="mt-2 text-xs text-muted">🔥 {me!.streak} {t('streak', lang)}</p></div>
       </nav>
       <main className="mx-auto w-full max-w-3xl px-4 pb-28 pt-6 sm:pb-10" style={{ paddingTop: 'max(24px, env(safe-area-inset-top))' }} key={tab + lang}>
-        {tab === 'home' && <HomeScreen {...props} />}
         {tab === 'plan' && <PlannerScreen {...props} />}
-        {tab === 'recipes' && <RecipesScreen {...props} />}
         {tab === 'list' && <ListScreen {...props} />}
         {tab === 'profile' && <ProfileScreen {...props} />}
       </main>

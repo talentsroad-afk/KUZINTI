@@ -3,6 +3,8 @@ import { useApp } from './lib/store'
 import { money, t, type Lang } from './lib/i18n'
 import { buildList, fmtQty } from './lib/engine'
 import { CATALOG, type Aisle } from './data/catalog'
+import { REC } from './data/recipes'
+import { rname } from './lib/i18n'
 import type { Props } from './Screens'
 import { Stepper } from './ui'
 
@@ -12,11 +14,12 @@ const AISLE: Record<Aisle, [string, string, string, string]> = {
   grocery: ['Grocery', 'Épicerie', 'بقالة', '🫙'], bakery: ['Bakery', 'Boulangerie', 'مخبزة', '🥖'], spices: ['Spices', 'Épices', 'توابل', '🧂'],
 }
 
-export function ListScreen({ celebrate }: Props) {
+export function ListScreen({ go, celebrate }: Props) {
   const { lang, house, upHouse, award, toast } = useApp()
   const [shop, setShop] = useState(false)
   const [pantryOpen, setPantryOpen] = useState(false)
-  const lines = useMemo(() => buildList(house!.plan, house!.pantry), [house])
+  const extras = house!.extras ?? {}
+  const lines = useMemo(() => buildList(house!.plan, house!.pantry, extras), [house]) // eslint-disable-line
   const toBuy = lines.filter((l) => l.buy > 0), have = lines.filter((l) => l.buy === 0)
   const done = toBuy.filter((l) => house!.checked[l.id]).length
   const total = toBuy.reduce((a, l) => a + l.cost, 0)
@@ -33,11 +36,11 @@ export function ListScreen({ celebrate }: Props) {
     upHouse((h) => { for (const l of toBuy) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.checked = {} }, 'finished the trip')
     toast(t('pantry', lang) + ' ✓'); setShop(false)
   }
-  if (!toBuy.length && !have.length) return <div className="card p-8 text-center"><div className="mb-3 text-5xl">🛒</div><p className="text-muted">{t('emptyList', lang)}</p></div>
+  
 
   return (
     <div className={`space-y-4 ${shop ? 'text-lg' : ''}`}>
-      <div className="flex items-center justify-between gap-2"><h1 className="text-3xl font-extrabold text-forest">{t('list', lang)}</h1>
+      <div className="flex items-center justify-between gap-2"><button className="text-2xl" aria-label="back" onClick={() => go('plan')}>←</button><h1 className="text-3xl font-extrabold text-forest">{t('list', lang)}</h1>
         <button className={`btn ${shop ? 'btn-warm' : 'btn-primary'} !min-h-11`} onClick={() => setShop(!shop)}>{shop ? t('exit', lang) : `🏬 ${t('shopMode', lang)}`}</button></div>
       <div className="card p-4"><div className="mb-2 flex justify-between text-sm font-semibold"><span>{done}/{toBuy.length}</span>{!shop && <span>{t('estTotal', lang)}: {money(total, lang)}</span>}</div>
         <div className="h-3 rounded-full bg-cream"><div className="h-full rounded-full bg-forest transition-all duration-500" style={{ width: `${toBuy.length ? (done / toBuy.length) * 100 : 0}%` }} /></div>
@@ -50,18 +53,32 @@ export function ListScreen({ celebrate }: Props) {
             return (
               <li key={l.id}><button className={`flex w-full items-center gap-3 border-b border-line/60 text-start last:border-0 ${shop ? 'min-h-16' : 'min-h-14'}`} onClick={() => toggle(l.id, name)} aria-pressed={on}>
                 <span className="check" data-on={on}>{on && '✓'}</span>
-                <span className={`flex-1 font-semibold transition-opacity ${on ? 'line-through opacity-40' : ''}`}>{name}</span>
+                <span className={`min-w-0 flex-1 transition-opacity ${on ? 'line-through opacity-40' : ''}`}><span className="block font-semibold">{name}</span>{!shop && <span className="block truncate text-xs text-muted">{t('forDishes', lang)} {l.uses.map((u) => (u === 'basics' ? t('basics', lang) : rname(REC[u].n, lang))).join(' · ')}</span>}</span>
                 <span className="tabular-nums text-muted">{fmtQty(l.buy, l.ing.base)}</span>{!shop && <span className="w-16 text-end text-sm tabular-nums text-muted">{money(l.cost, lang)}</span>}
               </button></li>)
           })}</ul>
         </div>
       ))}
+      {!toBuy.length && !have.length && <div className="card p-8 text-center"><div className="mb-3 text-5xl">🛒</div><p className="text-muted">{t('emptyList', lang)}</p></div>}
+      {!shop && <Basics />}
       {done > 0 && <button className="btn btn-primary w-full !min-h-14" onClick={finish}>✓ {t('finish', lang)}</button>}
       {!shop && have.length > 0 && <div className="card p-4"><h3 className="mb-2 text-sm font-bold text-muted">{t('inPantry', lang)}</h3><p className="text-sm text-muted">{have.map((l) => l.ing.n[li(lang)]).join(' · ')}</p></div>}
       {!shop && <button className="btn btn-soft w-full" onClick={() => setPantryOpen(!pantryOpen)}>🫙 {t('pantry', lang)}</button>}
       {pantryOpen && !shop && <Pantry />}
       <Activity />
     </div>
+  )
+}
+
+const BEMOJI: Record<string, string> = { tea: '🍵', sugar: '🍬', mint: '🌿', milk: '🥛', bread: '🥖', egg: '🥚', coffee: '☕', oil: '🫒', yogurt: '🥣', orange: '🍊', banana: '🍌', apple: '🍎', flour: '🌾', rice: '🍚' }
+const BQ: Record<string, number> = { tea: 200, sugar: 1000, mint: 80, milk: 1000, bread: 7, egg: 12, coffee: 250, oil: 1000, yogurt: 4, orange: 6, banana: 6, apple: 6, flour: 1000, rice: 1000 }
+function Basics() {
+  const { lang, house, upHouse, award } = useApp()
+  const ex = house!.extras ?? {}
+  return (
+    <div className="card p-4"><h3 className="text-sm font-bold uppercase tracking-wide text-muted">{t('basics', lang)}</h3><p className="mb-3 text-xs text-muted">{t('basicsHint', lang)}</p>
+      <div className="flex flex-wrap gap-2">{Object.keys(BQ).map((id) => { const on = id in ex; const c = CATALOG.find((x) => x.id === id)!; return (
+        <button key={id} className="chip" aria-pressed={on} onClick={() => { upHouse((h) => { const e = { ...(h.extras ?? {}) }; if (on) delete e[id]; else e[id] = BQ[id]; h.extras = e }, `${on ? '−' : '+'} ${c.n[0]}`); if (!on) award(2, c.n[li(lang)]) }}>{BEMOJI[id]} {c.n[li(lang)]}</button>) })}</div></div>
   )
 }
 
