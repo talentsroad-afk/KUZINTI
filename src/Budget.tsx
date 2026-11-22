@@ -1,0 +1,265 @@
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronLeft, ChevronRight, Lightbulb, Lock, Plus, ShieldCheck, Target, TrendingUp, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useApp, type MoneyData } from './lib/store'
+import { curRate, money, type Lang } from './lib/i18n'
+import { Sheet } from './ui'
+
+const L = (l: Lang, en: string, fr: string, ar: string) => (l === 'en' ? en : l === 'ar' ? ar : fr)
+type Kind = 'need' | 'want'
+// Category catalogue. "need" = essentials (target 50%), "want" = lifestyle (30%), savings = 20%.
+export const CATS: Record<string, { e: string; n: [string, string, string]; k: Kind; fixed?: boolean }> = {
+  rent: { e: '🏠', n: ['Rent / mortgage', 'Loyer / crédit immo', 'الكراء / القرض السكني'], k: 'need', fixed: true },
+  bills: { e: '⚡', n: ['Water, power, internet', 'Eau, électricité, internet', 'الماء والكهرباء والإنترنت'], k: 'need', fixed: true },
+  phone: { e: '📱', n: ['Phones', 'Téléphones', 'الهواتف'], k: 'need', fixed: true },
+  transport: { e: '🚗', n: ['Transport, fuel', 'Transport, carburant', 'النقل والوقود'], k: 'need', fixed: true },
+  credit: { e: '💳', n: ['Consumer loans', 'Crédits conso', 'قروض الاستهلاك'], k: 'need', fixed: true },
+  insurance: { e: '🛡️', n: ['Insurance', 'Assurances', 'التأمين'], k: 'need', fixed: true },
+  school: { e: '🎒', n: ['School, childcare', 'École, garde', 'المدرسة والحضانة'], k: 'need', fixed: true },
+  subs: { e: '📺', n: ['Subscriptions', 'Abonnements', 'الاشتراكات'], k: 'want', fixed: true },
+  food: { e: '🛒', n: ['Groceries', 'Courses', 'المشتريات'], k: 'need' },
+  health: { e: '💊', n: ['Health', 'Santé', 'الصحة'], k: 'need' },
+  outings: { e: '🎈', n: ['Outings', 'Sorties', 'الخرجات'], k: 'want' },
+  clothes: { e: '👕', n: ['Clothes', 'Vêtements', 'الملابس'], k: 'want' },
+  home: { e: '🛋️', n: ['Home', 'Maison', 'البيت'], k: 'want' },
+  gifts: { e: '🎁', n: ['Gifts, events', 'Cadeaux, fêtes', 'الهدايا والمناسبات'], k: 'want' },
+  misc: { e: '🧾', n: ['Other', 'Divers', 'متفرقات'], k: 'want' },
+}
+const FIXED = Object.keys(CATS).filter((k) => CATS[k].fixed)
+const VAR = Object.keys(CATS).filter((k) => !CATS[k].fixed)
+// Validated categorical palette (needs / wants / savings) and reserved status colours.
+const C = { need: '#1E7A52', want: '#3D7DB8', save: '#D97A1E' }
+const cn = (k: string, l: Lang) => CATS[k].n[l === 'en' ? 0 : l === 'fr' ? 1 : 2]
+const ym = (t: number) => { const d = new Date(t); return d.getFullYear() * 12 + d.getMonth() }
+const monthName = (m: number, l: Lang) => new Intl.DateTimeFormat(l === 'ar' ? 'ar-MA-u-nu-latn' : l, { month: 'long', year: 'numeric' }).format(new Date(Math.floor(m / 12), m % 12, 1))
+const uid = () => Math.random().toString(36).slice(2, 9)
+const EMPTY: MoneyData = { inc: [], fix: {}, env: {}, exp: [], since: Date.now() }
+
+/** Household budget, A to Z. Private: stored in the signed-in person's own profile, never in the shared household. */
+export function BudgetTab() {
+  const { lang, me, patchMe, house } = useApp()
+  const m = me!.money
+  const [edit, setEdit] = useState(false)
+  if (!m || edit || !m.inc.length) return <Setup start={m ?? { ...EMPTY, env: { food: Math.round(me!.budget * 4.33) } }} onDone={(d) => { patchMe({ money: d }); setEdit(false) }} onCancel={m?.inc.length ? () => setEdit(false) : undefined} lang={lang} weekly={me!.budget} />
+  return <Dashboard m={m} lang={lang} onEdit={() => setEdit(true)} save={(d) => patchMe({ money: d })} trips={house!.trips ?? []} />
+}
+
+/** Setup as a deck of cards, like the store mode: one question per card, previous and next always visible. */
+function Setup({ start, onDone, onCancel, lang, weekly }: { start: MoneyData; onDone: (d: MoneyData) => void; onCancel?: () => void; lang: Lang; weekly: number }) {
+  const [d, setD] = useState<MoneyData>(JSON.parse(JSON.stringify(start)))
+  const [i, setI] = useState(0); const [dir, setDir] = useState(1)
+  const r = curRate(); const num = (v: string) => Math.max(0, (parseFloat(v.replace(',', '.')) || 0) / r)
+  const show = (v: number | undefined) => (v ? String(Math.round(v * r)) : '')
+  const inc = d.inc.reduce((a, x) => a + x.a, 0); const fix = Object.values(d.fix).reduce((a, x) => a + x, 0)
+  const left = inc - fix
+  const suggest = () => {
+    // 20% saved first, groceries from KUZINTI, 3% health, the rest split across lifestyle envelopes. Never more than income.
+    const save = Math.round(inc * 0.2); const food = Math.round(Math.max(d.env.food ?? 0, weekly * 4.33)); const health = Math.round(inc * 0.03)
+    const rest = Math.max(0, left - save - food - health); const sh: [string, number][] = [['outings', 0.3], ['clothes', 0.2], ['home', 0.15], ['gifts', 0.15], ['misc', 0.2]]
+    setD({ ...d, env: { food, health, ...Object.fromEntries(sh.map(([k, f]) => [k, Math.round(rest * f)])) }, goal: { n: d.goal?.n ?? '', target: d.goal?.target ?? 0, saved: d.goal?.saved ?? 0, monthly: d.goal?.monthly || save } })
+  }
+  const salary = d.inc.find((x) => x.id === 'salary')?.a; const other = d.inc.find((x) => x.id === 'other')?.a
+  const setInc = (id: string, n: string, a: number) => setD({ ...d, inc: [...d.inc.filter((x) => x.id !== id), ...(a > 0 ? [{ id, n, a }] : [])] })
+  const cards: { t: string; s: string; body: JSX.Element; ok: boolean }[] = [
+    { t: L(lang, 'Your income', 'Vos revenus', 'مداخيلك'), s: L(lang, 'Net monthly amounts. Only you can see them.', 'Montants nets par mois. Vous seul les voyez.', 'المبالغ الصافية شهريًا. أنت فقط من يراها.'), ok: inc > 0, body: <div className="space-y-3">
+      <Field label={L(lang, 'Net salary', 'Salaire net', 'الراتب الصافي')} v={show(salary)} set={(v) => setInc('salary', 'Salaire', num(v))} big />
+      <Field label={L(lang, 'Partner, rent received, extras', 'Conjoint, loyers perçus, extras', 'الزوج، كراء، إضافات')} v={show(other)} set={(v) => setInc('other', 'Autres revenus', num(v))} />
+    </div> },
+    { t: L(lang, 'Fixed charges', 'Charges fixes', 'المصاريف الثابتة'), s: L(lang, 'What leaves every month, whatever happens.', 'Ce qui part chaque mois, quoi qu’il arrive.', 'ما يُصرف كل شهر مهما حدث.'), ok: true, body: <div className="grid grid-cols-2 gap-2">
+      {FIXED.map((k) => <label key={k} className="rounded-2xl border border-line bg-surface p-2.5"><span className="block text-xs font-semibold text-muted">{CATS[k].e} {cn(k, lang)}</span><input inputMode="decimal" className="mt-1 w-full bg-transparent font-display text-lg font-extrabold tabular-nums outline-none" placeholder="0" value={show(d.fix[k])} onChange={(e) => setD({ ...d, fix: { ...d.fix, [k]: num(e.target.value) } })} /></label>)}
+    </div> },
+    { t: L(lang, 'Monthly envelopes', 'Enveloppes du mois', 'أظرفة الشهر'), s: L(lang, `After fixed charges you have ${money(left, lang)}. Split it, or let us suggest.`, `Après les charges fixes il vous reste ${money(left, lang)}. Répartissez-le, ou laissez-nous proposer.`, `بعد المصاريف الثابتة يبقى ${money(left, lang)}.`), ok: true, body: <div>
+      <button className="btn btn-soft mb-3 w-full !min-h-11 !text-sm" onClick={suggest}><Lightbulb size={16} aria-hidden /> {L(lang, 'Suggest with the 50/30/20 rule', 'Proposer avec la règle 50/30/20', 'اقتراح بقاعدة 50/30/20')}</button>
+      <div className="grid grid-cols-2 gap-2">{VAR.map((k) => <label key={k} className="rounded-2xl border border-line bg-surface p-2.5"><span className="block text-xs font-semibold text-muted">{CATS[k].e} {cn(k, lang)}{k === 'food' ? ' ⟵ KUZINTI' : ''}</span><input inputMode="decimal" className="mt-1 w-full bg-transparent font-display text-lg font-extrabold tabular-nums outline-none" placeholder="0" value={show(d.env[k])} onChange={(e) => setD({ ...d, env: { ...d.env, [k]: num(e.target.value) } })} /></label>)}</div>
+    </div> },
+    { t: L(lang, 'A savings goal', 'Un objectif d’épargne', 'هدف ادخار'), s: L(lang, 'Pay yourself first: this amount is set aside at the start of the month.', 'Payez-vous en premier : ce montant est mis de côté en début de mois.', 'ادفع لنفسك أولًا.'), ok: true, body: <div className="space-y-3">
+      <label className="block"><span className="mb-1 block text-sm font-semibold">{L(lang, 'Goal', 'Objectif', 'الهدف')}</span><input className="input" placeholder={L(lang, 'Emergency fund, holidays, Aïd…', 'Épargne de précaution, vacances, Aïd…', 'احتياط، عطلة، العيد…')} value={d.goal?.n ?? ''} onChange={(e) => setD({ ...d, goal: { n: e.target.value, target: d.goal?.target ?? 0, monthly: d.goal?.monthly ?? 0, saved: d.goal?.saved ?? 0 } })} /></label>
+      <Field label={L(lang, 'Target amount', 'Montant visé', 'المبلغ المستهدف')} v={show(d.goal?.target)} set={(v) => setD({ ...d, goal: { n: d.goal?.n ?? '', target: num(v), monthly: d.goal?.monthly ?? 0, saved: d.goal?.saved ?? 0 } })} />
+      <Field label={L(lang, 'Set aside each month', 'Mis de côté chaque mois', 'يُدّخر كل شهر')} v={show(d.goal?.monthly)} set={(v) => setD({ ...d, goal: { n: d.goal?.n ?? '', target: d.goal?.target ?? 0, monthly: num(v), saved: d.goal?.saved ?? 0 } })} hint={inc ? `${L(lang, 'Recommended', 'Recommandé', 'المستحسن')} : ${money(inc * 0.2, lang)} (20 %)` : undefined} />
+    </div> },
+  ]
+  const go = (n: number) => { setDir(n > i ? 1 : -1); setI(Math.max(0, Math.min(cards.length - 1, n))) }
+  const c = cards[i]
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2"><Lock size={14} className="text-forest" aria-hidden /><p className="text-xs font-semibold text-muted">{L(lang, 'Private: stored only in your profile, never shared with the household.', 'Privé : enregistré dans votre profil uniquement, jamais partagé avec le foyer.', 'خاص: محفوظ في ملفك فقط.')}</p></div>
+      <div className="flex gap-1.5">{cards.map((x, k) => <button key={k} className={`h-1.5 flex-1 rounded-full transition-all ${k <= i ? 'bg-forest' : 'bg-line'}`} onClick={() => go(k)} aria-label={x.t} />)}</div>
+      <div className="relative">
+        {i > 0 && <button className="absolute -start-2 top-6 z-0 hidden h-[80%] w-8 rounded-s-3xl bg-surface/70 shadow-soft sm:block" onClick={() => go(i - 1)} aria-label={cards[i - 1].t} />}
+        <div key={i} className={`relative z-10 rounded-[28px] bg-surface p-5 shadow-[0_24px_60px_-34px_rgb(var(--shadow)/.6)] ${dir > 0 ? 'slide-in-r' : 'slide-in-l'}`}>
+          <p className="text-[11px] font-bold uppercase tracking-[.18em] text-terracotta">{i + 1} / {cards.length}</p>
+          <h2 className="mt-1 font-serif text-[28px] font-semibold leading-tight">{c.t}</h2>
+          <p className="mb-4 mt-1 text-sm text-muted">{c.s}</p>
+          {c.body}
+        </div>
+      </div>
+      <div className="flex items-center justify-between text-xs text-muted"><span>{i > 0 ? `‹ ${cards[i - 1].t}` : ''}</span><span>{i < cards.length - 1 ? `${cards[i + 1].t} ›` : ''}</span></div>
+      <div className="flex gap-2">
+        {i > 0 ? <button className="btn btn-soft flex-1" onClick={() => go(i - 1)}><ArrowLeft size={18} aria-hidden /> {L(lang, 'Back', 'Retour', 'رجوع')}</button> : onCancel ? <button className="btn btn-soft flex-1" onClick={onCancel}>{L(lang, 'Cancel', 'Annuler', 'إلغاء')}</button> : null}
+        {i < cards.length - 1 ? <button className="btn btn-primary flex-[2]" disabled={!c.ok} style={{ opacity: c.ok ? 1 : 0.5 }} onClick={() => go(i + 1)}>{L(lang, 'Next', 'Suivant', 'التالي')} <ArrowRight size={18} aria-hidden /></button>
+          : <button className="btn btn-primary flex-[2]" onClick={() => onDone({ ...d, since: d.since || Date.now() })}><Check size={18} aria-hidden /> {L(lang, 'See my budget', 'Voir mon budget', 'عرض ميزانيتي')}</button>}
+      </div>
+    </div>
+  )
+}
+function Field({ label, v, set, big, hint }: { label: string; v: string; set: (v: string) => void; big?: boolean; hint?: string }) {
+  return <label className="block"><span className="mb-1 block text-sm font-semibold">{label}</span><input inputMode="decimal" className={`input tabular-nums ${big ? '!min-h-14 font-display !text-2xl font-extrabold' : ''}`} placeholder="0" value={v} onChange={(e) => set(e.target.value)} />{hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}</label>
+}
+
+function Dashboard({ m, lang, onEdit, save, trips }: { m: MoneyData; lang: Lang; onEdit: () => void; save: (d: MoneyData) => void; trips: { t: number; total: number; store?: string }[] }) {
+  const now = ym(Date.now()); const [mon, setMon] = useState(now); const first = Math.min(ym(m.since), now)
+  const [add, setAdd] = useState(false); const [cat, setCat] = useState<string | null>(null)
+  const inc = m.inc.reduce((a, x) => a + x.a, 0); const fix = Object.values(m.fix).reduce((a, x) => a + x, 0)
+  const saveM = m.goal?.monthly ?? 0
+  // Actual spending of a month: manual expenses + finished KUZINTI shopping trips (groceries, automatic).
+  const spentIn = (mm: number) => { const s: Record<string, number> = {}; for (const e of m.exp) if (ym(e.t) === mm) s[e.c] = (s[e.c] ?? 0) + e.a; for (const tr of trips) if (ym(tr.t) === mm) s.food = (s.food ?? 0) + tr.total; return s }
+  const sp = useMemo(() => spentIn(mon), [m, trips, mon]) // eslint-disable-line react-hooks/exhaustive-deps
+  const varSpent = Object.values(sp).reduce((a, x) => a + x, 0)
+  const envTot = Object.values(m.env).reduce((a, x) => a + x, 0)
+  const outflow = fix + varSpent + saveM; const rest = inc - outflow
+  const day = new Date().getDate(); const dim = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
+  const perDay = mon === now ? Math.max(0, inc - fix - saveM - varSpent) / Math.max(1, dim - day + 1) : 0
+  const need = Object.entries(m.fix).filter(([k]) => CATS[k]?.k === 'need').reduce((a, [, v]) => a + v, 0) + Object.entries(m.env).filter(([k]) => CATS[k]?.k === 'need').reduce((a, [, v]) => a + v, 0)
+  const want = Object.entries(m.fix).filter(([k]) => CATS[k]?.k === 'want').reduce((a, [, v]) => a + v, 0) + Object.entries(m.env).filter(([k]) => CATS[k]?.k === 'want').reduce((a, [, v]) => a + v, 0)
+  const pct = (x: number) => (inc ? Math.round((x / inc) * 100) : 0)
+  const months = Array.from({ length: Math.min(6, now - first + 1) }, (_, k) => now - (Math.min(6, now - first + 1) - 1) + k)
+  const hist = months.map((mm) => ({ mm, v: fix + Object.values(spentIn(mm)).reduce((a, x) => a + x, 0) }))
+  const debt = (m.fix.credit ?? 0) + (m.fix.rent ?? 0)
+  // Expert reading: alerts (status) then concrete advice with amounts.
+  const alerts: [string, string][] = []
+  for (const k of VAR) { const b = m.env[k] ?? 0; const s = sp[k] ?? 0; if (b > 0 && s > b) alerts.push(['critical', L(lang, `${cn(k, lang)}: ${money(s - b, lang)} over the envelope`, `${cn(k, lang)} : ${money(s - b, lang)} au-dessus de l’enveloppe`, `${cn(k, lang)}: تجاوز ${money(s - b, lang)}`)]); else if (b > 0 && mon === now && s > b * 0.8 && day < dim * 0.7) alerts.push(['warning', L(lang, `${cn(k, lang)}: ${Math.round((s / b) * 100)}% used before day ${Math.round(dim * 0.7)}`, `${cn(k, lang)} : ${Math.round((s / b) * 100)} % utilisés avant le ${Math.round(dim * 0.7)} du mois`, `${cn(k, lang)}: ${Math.round((s / b) * 100)}%`)]) }
+  if (inc && debt / inc > 0.4) alerts.push(['critical', L(lang, `Housing + loans take ${pct(debt)}% of income (banks cap around 40%)`, `Logement + crédits = ${pct(debt)} % des revenus (les banques plafonnent vers 40 %)`, `السكن والقروض ${pct(debt)}%`)])
+  if (inc && fix + envTot + saveM > inc) alerts.push(['warning', L(lang, `Your plan exceeds income by ${money(fix + envTot + saveM - inc, lang)}`, `Votre plan dépasse les revenus de ${money(fix + envTot + saveM - inc, lang)}`, `خطتك تتجاوز المداخيل`)])
+  const tips: [string, string][] = []
+  if (inc && pct(need) > 50) tips.push([L(lang, 'Needs above 50%', 'Besoins au-dessus de 50 %', 'الحاجيات فوق 50%'), L(lang, `Essentials take ${pct(need)}%. Target ${money(inc * 0.5, lang)}: renegotiate internet/phone, compare insurance, and let KUZINTI pick the cheapest store (often 10 to 15% less on groceries).`, `Les essentiels prennent ${pct(need)} %. Cible : ${money(inc * 0.5, lang)}. Renégociez internet et téléphone, comparez les assurances, et laissez KUZINTI choisir le magasin le moins cher (souvent 10 à 15 % de moins sur les courses).`, `الحاجيات ${pct(need)}%.`)])
+  if (inc && pct(want) > 30) tips.push([L(lang, 'Lifestyle above 30%', 'Envies au-dessus de 30 %', 'الكماليات فوق 30%'), L(lang, `Cut ${money(want - inc * 0.3, lang)} from outings, clothes or subscriptions to get back to 30%.`, `Réduisez de ${money(want - inc * 0.3, lang)} les sorties, vêtements ou abonnements pour revenir à 30 %.`, `خفّض ${money(want - inc * 0.3, lang)}.`)])
+  if (inc && saveM < inc * 0.1) tips.push([L(lang, 'Save at least 10%', 'Épargnez au moins 10 %', 'ادّخر 10% على الأقل'), L(lang, `Set up a standing transfer of ${money(inc * 0.1, lang)} on payday, then aim for 20% (${money(inc * 0.2, lang)}).`, `Programmez un virement automatique de ${money(inc * 0.1, lang)} le jour de la paie, puis visez 20 % (${money(inc * 0.2, lang)}).`, `حوّل ${money(inc * 0.1, lang)} يوم الأجر.`)])
+  const emergency = (fix + (m.env.food ?? 0)) * 3
+  tips.push([L(lang, 'Emergency fund', 'Épargne de précaution', 'احتياطي الطوارئ'), L(lang, `Keep 3 months of essentials aside: about ${money(emergency, lang)}. Build it before any other goal.`, `Gardez 3 mois de dépenses essentielles de côté : environ ${money(emergency, lang)}. Constituez-la avant tout autre objectif.`, `احتفظ بـ ${money(emergency, lang)}.`)])
+  if ((m.fix.credit ?? 0) > 0) tips.push([L(lang, 'Loans first', 'Les crédits d’abord', 'القروض أولًا'), L(lang, 'Pay off the most expensive consumer loan first (avalanche method); avoid new revolving credit.', 'Remboursez d’abord le crédit conso le plus cher (méthode avalanche) et évitez tout nouveau crédit renouvelable.', 'سدّد القرض الأغلى أولًا.')])
+  if (m.goal?.target && m.goal.monthly) tips.push([L(lang, 'Your goal', 'Votre objectif', 'هدفك'), L(lang, `${m.goal.n || 'Goal'}: ${money(Math.max(0, m.goal.target - m.goal.saved), lang)} to go, about ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / m.goal.monthly)} months at this pace.`, `${m.goal.n || 'Objectif'} : encore ${money(Math.max(0, m.goal.target - m.goal.saved), lang)}, soit environ ${Math.ceil(Math.max(0, m.goal.target - m.goal.saved) / m.goal.monthly)} mois à ce rythme.`, `${m.goal.n}`)])
+  const delExp = (id: string) => save({ ...m, exp: m.exp.filter((e) => e.id !== id) })
+  const list = m.exp.filter((e) => ym(e.t) === mon).sort((a, b) => b.t - a.t)
+
+  return (
+    <div className="space-y-6 pb-4">
+      <div className="flex items-center justify-between">
+        <button className="grid h-10 w-10 place-items-center rounded-full bg-surface shadow-soft disabled:opacity-30" disabled={mon <= first} onClick={() => setMon(mon - 1)} aria-label={L(lang, 'Previous month', 'Mois précédent', 'الشهر السابق')}><ChevronLeft size={20} aria-hidden /></button>
+        <p className="font-serif text-xl font-semibold capitalize">{monthName(mon, lang)}</p>
+        <button className="grid h-10 w-10 place-items-center rounded-full bg-surface shadow-soft disabled:opacity-30" disabled={mon >= now} onClick={() => setMon(mon + 1)} aria-label={L(lang, 'Next month', 'Mois suivant', 'الشهر التالي')}><ChevronRight size={20} aria-hidden /></button>
+      </div>
+
+      {/* Hero: what is left to live on */}
+      <section className="relative overflow-hidden rounded-[28px] bg-forest p-5 text-white">
+        <span className="zellige pointer-events-none absolute inset-0 opacity-[.06]" aria-hidden />
+        <p className="relative text-[11px] font-bold uppercase tracking-[.18em] text-white/70">{L(lang, 'Left to live on', 'Reste à vivre', 'المتبقي للعيش')}</p>
+        <p className={`relative font-display text-[44px] font-extrabold leading-none tabular-nums ${rest < 0 ? 'text-apricot' : ''}`}>{rest < 0 ? '−' : ''}{money(Math.abs(rest), lang)}</p>
+        {mon === now && <p className="relative mt-1 text-sm text-white/80">{L(lang, `≈ ${money(perDay, lang)} per day until the end of the month`, `≈ ${money(perDay, lang)} par jour jusqu’à la fin du mois`, `≈ ${money(perDay, lang)} يوميًا`)}</p>}
+        <div className="relative mt-4 grid grid-cols-4 gap-1 text-center text-[11px]">
+          {([[L(lang, 'Income', 'Revenus', 'المداخيل'), inc], [L(lang, 'Fixed', 'Fixes', 'ثابتة'), fix], [L(lang, 'Spent', 'Dépensé', 'مصروف'), varSpent], [L(lang, 'Saved', 'Épargne', 'ادخار'), saveM]] as [string, number][]).map(([l, v]) => <div key={l} className="rounded-xl bg-white/10 px-1 py-2"><p className="text-white/70">{l}</p><p className="font-display text-[13px] font-extrabold tabular-nums">{money(v, lang)}</p></div>)}
+        </div>
+      </section>
+
+      <button className="btn btn-primary w-full !min-h-14 text-base" onClick={() => setAdd(true)}><Plus size={20} aria-hidden /> {L(lang, 'Add an expense', 'Ajouter une dépense', 'إضافة مصروف')}</button>
+
+      {alerts.length > 0 && <section className="space-y-2" aria-label={L(lang, 'Alerts', 'Alertes', 'تنبيهات')}>{alerts.map(([lvl, txt]) => <p key={txt} className={`flex items-start gap-2 rounded-2xl p-3 text-sm font-semibold ${lvl === 'critical' ? 'bg-danger/10 text-danger' : 'bg-apricot/25 text-ink'}`}><AlertTriangle size={18} className="mt-0.5 shrink-0" aria-hidden /><span><span className="sr-only">{lvl === 'critical' ? 'Critique' : 'Attention'} : </span>{txt}</span></p>)}</section>}
+
+      {/* 50 / 30 / 20 */}
+      <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+        <h2 className="font-serif text-[20px] font-semibold">{L(lang, 'How your income is split', 'La répartition de vos revenus', 'توزيع مداخيلك')}</h2>
+        <p className="text-xs text-muted">{L(lang, 'Planned, against the 50/30/20 rule', 'Prévu, face à la règle 50/30/20', 'المخطط مقابل قاعدة 50/30/20')}</p>
+        <div className="mt-3 flex items-center gap-4">
+          <Donut parts={[[need, C.need, L(lang, 'Needs', 'Besoins', 'الحاجيات')], [want, C.want, L(lang, 'Wants', 'Envies', 'الكماليات')], [saveM, C.save, L(lang, 'Savings', 'Épargne', 'الادخار')]]} total={Math.max(inc, need + want + saveM)} label={`${pct(saveM)} %`} sub={L(lang, 'saved', 'épargné', 'مدّخر')} lang={lang} />
+          <ul className="min-w-0 flex-1 space-y-2 text-sm">{([[L(lang, 'Needs', 'Besoins', 'الحاجيات'), need, C.need, 50], [L(lang, 'Wants', 'Envies', 'الكماليات'), want, C.want, 30], [L(lang, 'Savings', 'Épargne', 'الادخار'), saveM, C.save, 20]] as [string, number, string, number][]).map(([l, v, c, target]) => {
+            const p = pct(v); const ok = l === L(lang, 'Savings', 'Épargne', 'الادخار') ? p >= target : p <= target
+            return <li key={l}><div className="flex items-center gap-2"><span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: c }} aria-hidden /><span className="flex-1 font-semibold">{l}</span><b className="tabular-nums">{p} %</b></div><p className="ms-[18px] text-xs text-muted">{money(v, lang)} · {L(lang, 'target', 'cible', 'الهدف')} {target} % {ok ? '✓' : '⚠︎'}</p></li>
+          })}</ul>
+        </div>
+      </section>
+
+      {/* Envelopes: budget vs actual */}
+      <section>
+        <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{L(lang, 'Envelopes', 'Enveloppes', 'الأظرفة')}</h2><span className="text-xs text-muted tabular-nums">{money(varSpent, lang)} / {money(envTot, lang)}</span></div>
+        <div className="space-y-1">{VAR.filter((k) => (m.env[k] ?? 0) > 0 || (sp[k] ?? 0) > 0).map((k) => {
+          const b = m.env[k] ?? 0; const s = sp[k] ?? 0; const over = b > 0 && s > b; const p = b ? Math.min(100, (s / b) * 100) : 100
+          return <button key={k} className="w-full rounded-2xl p-2.5 text-start active:bg-cream" onClick={() => { setCat(k); setAdd(true) }} title={`${cn(k, lang)} : ${money(s, lang)} / ${money(b, lang)}`}>
+            <div className="flex items-center gap-2 text-sm"><span className="text-lg" aria-hidden>{CATS[k].e}</span><span className="flex-1 font-semibold">{cn(k, lang)}{k === 'food' && <span className="ms-1 text-[10px] font-bold text-forest">· auto</span>}</span><span className={`tabular-nums ${over ? 'font-bold text-danger' : 'text-muted'}`}>{money(s, lang)} / {money(b, lang)}</span></div>
+            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${p}%`, background: over ? 'rgb(var(--danger))' : CATS[k].k === 'need' ? C.need : C.want }} /></div>
+          </button>
+        })}</div>
+      </section>
+
+      {/* Evolution over months (single series, one axis) */}
+      {hist.length > 1 && <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+        <h2 className="flex items-center gap-2 font-serif text-[20px] font-semibold"><TrendingUp size={18} className="text-forest" aria-hidden />{L(lang, 'Spending by month', 'Dépenses par mois', 'المصاريف الشهرية')}</h2>
+        <p className="text-xs text-muted">{L(lang, 'Fixed charges + recorded spending. Dashed line: income.', 'Charges fixes + dépenses enregistrées. Pointillés : revenus.', 'الخط المتقطع: المداخيل.')}</p>
+        <Bars data={hist.map((h) => ({ k: h.mm, label: monthName(h.mm, lang).slice(0, 3), v: h.v, on: h.mm === mon }))} ref0={inc} lang={lang} onPick={setMon} />
+      </section>}
+
+      {/* Expert advice */}
+      <section>
+        <h2 className="mb-3 flex items-center gap-2 font-serif text-[20px] font-semibold"><Lightbulb size={18} className="text-terracotta" aria-hidden />{L(lang, 'Advice', 'Conseils d’expert', 'نصائح')}</h2>
+        <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1" data-noswipe>{tips.map(([h, b]) => <div key={h} className="w-[260px] shrink-0 snap-start rounded-[22px] bg-cream p-4"><p className="font-display font-extrabold">{h}</p><p className="mt-1 text-sm leading-relaxed text-ink/80">{b}</p></div>)}</div>
+      </section>
+
+      {m.goal?.target ? <section className="rounded-[24px] bg-surface p-4 shadow-soft">
+        <div className="flex items-center gap-2"><Target size={18} className="text-terracotta" aria-hidden /><h2 className="flex-1 font-serif text-[20px] font-semibold">{m.goal.n || L(lang, 'Savings goal', 'Objectif d’épargne', 'هدف الادخار')}</h2><b className="tabular-nums">{Math.round((m.goal.saved / m.goal.target) * 100)} %</b></div>
+        <div className="mt-2 h-3 overflow-hidden rounded-full bg-cream"><div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(100, (m.goal.saved / m.goal.target) * 100)}%`, background: C.save }} /></div>
+        <div className="mt-2 flex items-center justify-between text-xs text-muted"><span>{money(m.goal.saved, lang)} / {money(m.goal.target, lang)}</span><button className="rounded-full bg-cream px-3 py-1.5 font-bold text-forest" onClick={() => save({ ...m, goal: { ...m.goal!, saved: m.goal!.saved + (m.goal!.monthly || 0) } })}>+ {money(m.goal.monthly, lang)} {L(lang, 'this month', 'ce mois', 'هذا الشهر')}</button></div>
+      </section> : null}
+
+      {list.length > 0 && <section><h2 className="mb-2 font-serif text-[20px] font-semibold">{L(lang, 'Expenses this month', 'Dépenses du mois', 'مصاريف الشهر')}</h2>
+        <div className="divide-y divide-line/70 rounded-[22px] bg-surface shadow-soft">{list.map((e) => <div key={e.id} className="flex items-center gap-3 px-4 py-2.5"><span className="text-xl" aria-hidden>{CATS[e.c]?.e ?? '🧾'}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{e.n || cn(e.c, lang)}</span><span className="text-xs text-muted">{new Date(e.t).toLocaleDateString(lang === 'ar' ? 'ar-MA-u-nu-latn' : lang, { day: 'numeric', month: 'short' })}</span></span><b className="tabular-nums">{money(e.a, lang)}</b><button className="p-1 text-muted" onClick={() => delExp(e.id)} aria-label={L(lang, 'Delete', 'Supprimer', 'حذف')}><Trash2 size={16} aria-hidden /></button></div>)}</div>
+      </section>}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line/70 pt-4 text-sm"><span className="inline-flex items-center gap-1.5 text-xs text-muted"><ShieldCheck size={14} className="text-forest" aria-hidden />{L(lang, 'Private to you · groceries come from your KUZINTI trips', 'Privé · les courses viennent de vos courses KUZINTI', 'خاص بك')}</span><button className="font-semibold text-forest" onClick={onEdit}>{L(lang, 'Edit income & charges', 'Modifier revenus et charges', 'تعديل')}</button></div>
+
+      <AddExpense open={add} cat0={cat} onClose={() => { setAdd(false); setCat(null) }} onAdd={(c, a, n) => save({ ...m, exp: [...m.exp, { id: uid(), t: mon === now ? Date.now() : new Date(Math.floor(mon / 12), mon % 12, 15).getTime(), c, a, n }] })} lang={lang} />
+    </div>
+  )
+}
+
+function Donut({ parts, total, label, sub, lang }: { parts: [number, string, string][]; total: number; label: string; sub: string; lang: Lang }) {
+  const R = 46, W = 14, C2 = 2 * Math.PI * R; let off = 0
+  const [hov, setHov] = useState<number | null>(null)
+  return (
+    <div className="relative shrink-0" style={{ width: 120, height: 120 }}>
+      <svg width="120" height="120" viewBox="0 0 120 120" className="-rotate-90" role="img" aria-label={parts.map(([v, , l]) => `${l} ${money(v, lang)}`).join(', ')}>
+        <circle cx="60" cy="60" r={R} fill="none" stroke="rgb(var(--cream))" strokeWidth={W} />
+        {parts.map(([v, c, l], i) => { const len = total ? (v / total) * C2 : 0; const seg = <circle key={l} cx="60" cy="60" r={R} fill="none" stroke={c} strokeWidth={hov === i ? W + 4 : W} strokeDasharray={`${Math.max(0, len - 2)} ${C2}`} strokeDashoffset={-off} style={{ transition: 'stroke-width .15s' }} onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)} onClick={() => setHov(hov === i ? null : i)}><title>{`${l} : ${money(v, lang)}`}</title></circle>; off += len; return seg })}
+      </svg>
+      <div className="pointer-events-none absolute inset-0 grid place-items-center text-center"><div>{hov !== null ? <><b className="block text-sm tabular-nums">{money(parts[hov][0], lang)}</b><span className="text-[10px] text-muted">{parts[hov][2]}</span></> : <><b className="block font-display text-lg font-extrabold tabular-nums">{label}</b><span className="text-[10px] text-muted">{sub}</span></>}</div></div>
+    </div>
+  )
+}
+
+function Bars({ data, ref0, lang, onPick }: { data: { k: number; label: string; v: number; on: boolean }[]; ref0: number; lang: Lang; onPick: (k: number) => void }) {
+  const max = Math.max(ref0, ...data.map((d) => d.v), 1); const H = 120
+  const [hov, setHov] = useState<number | null>(null)
+  return (
+    <div className="relative mt-3" style={{ height: H + 24 }}>
+      {ref0 > 0 && <div className="absolute inset-x-0 border-t-2 border-dashed border-muted/50" style={{ top: H - (ref0 / max) * H }} aria-hidden><span className="absolute -top-4 end-0 text-[10px] text-muted">{money(ref0, lang)}</span></div>}
+      <div className="absolute inset-x-0 top-0 flex items-end gap-2" style={{ height: H }}>
+        {data.map((d, i) => <button key={d.k} className="relative flex h-full flex-1 items-end justify-center" onMouseEnter={() => setHov(i)} onMouseLeave={() => setHov(null)} onClick={() => onPick(d.k)} aria-label={`${d.label} ${money(d.v, lang)}`}>
+          {(hov === i || d.on) && <span className="absolute z-10 whitespace-nowrap rounded-lg bg-ink px-2 py-1 text-[10px] font-bold text-white tabular-nums" style={{ bottom: (d.v / max) * H + 6 }}>{money(d.v, lang)}</span>}
+          <span className="w-full max-w-[34px] rounded-t-[4px] transition-all duration-700" style={{ height: `${(d.v / max) * 100}%`, background: d.v > ref0 && ref0 > 0 ? 'rgb(var(--danger))' : C.need, opacity: d.on ? 1 : 0.55 }} />
+        </button>)}
+      </div>
+      <div className="absolute inset-x-0 bottom-0 flex gap-2 border-t border-line pt-1">{data.map((d) => <span key={d.k} className={`flex-1 text-center text-[10px] capitalize ${d.on ? 'font-bold text-ink' : 'text-muted'}`}>{d.label}</span>)}</div>
+    </div>
+  )
+}
+
+function AddExpense({ open, cat0, onClose, onAdd, lang }: { open: boolean; cat0: string | null; onClose: () => void; onAdd: (c: string, a: number, n: string) => void; lang: Lang }) {
+  const [v, setV] = useState(''); const [c, setC] = useState<string | null>(null); const [n, setN] = useState('')
+  const cc = c ?? cat0 ?? 'misc'
+  const ok = parseFloat(v.replace(',', '.')) > 0
+  const submit = () => { if (!ok) return; onAdd(cc, parseFloat(v.replace(',', '.')) / curRate(), n.trim()); setV(''); setN(''); setC(null); onClose() }
+  return (
+    <Sheet open={open} onClose={onClose} title={L(lang, 'New expense', 'Nouvelle dépense', 'مصروف جديد')}>
+      <input autoFocus inputMode="decimal" className="w-full bg-transparent text-center font-display text-[44px] font-extrabold tabular-nums outline-none" placeholder="0" value={v} onChange={(e) => setV(e.target.value)} aria-label={L(lang, 'Amount', 'Montant', 'المبلغ')} />
+      <div className="mt-2 grid grid-cols-4 gap-2">{VAR.concat(['subs']).map((k) => <button key={k} className={`rounded-2xl border-2 p-2 text-center transition active:scale-95 ${cc === k ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => setC(k)} aria-pressed={cc === k}><span className="block text-2xl">{CATS[k].e}</span><span className="block truncate text-[10px] font-semibold">{cn(k, lang)}</span></button>)}</div>
+      <input className="input mt-3" placeholder={L(lang, 'Note (optional)', 'Note (facultatif)', 'ملاحظة')} value={n} onChange={(e) => setN(e.target.value)} />
+      <button className="btn btn-primary mt-3 w-full !min-h-14" disabled={!ok} style={{ opacity: ok ? 1 : 0.5 }} onClick={submit}><Check size={20} aria-hidden /> {L(lang, 'Add', 'Ajouter', 'إضافة')}</button>
+    </Sheet>
+  )
+}

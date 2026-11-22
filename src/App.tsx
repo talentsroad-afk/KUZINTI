@@ -10,7 +10,8 @@ import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
-import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, Wallet, type LucideIcon } from 'lucide-react'
+import { BudgetTab } from './Budget'
 import { SortiesTab } from './Sorties'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore, setStoreCountry } from './lib/stores'
@@ -114,7 +115,7 @@ function Onboarding() {
   )
 }
 
-const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', CalendarDays, 'tWeek'], ['list', ShoppingCart, 'list'], ['sorties', MapPinned, 'tSorties'], ['profile', UserRound, 'profile']]
+const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', CalendarDays, 'tWeek'], ['list', ShoppingCart, 'list'], ['sorties', MapPinned, 'tSorties'], ['budget', Wallet, 'tBudget'], ['profile', UserRound, 'profile']]
 
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
@@ -165,7 +166,7 @@ function Shell() {
     say(c <= b ? `✅ ${t('fitB', lang)} ${money(b, lang)} · ${money(b - c, lang)} ${t('margin', lang)}` : `⚠️ ${t('minB', lang)} ${money(c, lang)} (+${money(c - b, lang)}). ${t('minHint', lang)}`, u)
   }
   const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
-  const [up, setUp] = useState(false); const space: 'food' | 'out' = tab === 'sorties' ? 'out' : 'food'
+  const [up, setUp] = useState(false); const space: 'food' | 'out' = tab === 'sorties' || tab === 'budget' ? 'out' : 'food'
   useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
   const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { try { history.pushState({ kz: k }, '') } catch { /* sandboxed */ } setTab(k); scrollTo(0, 0) } }
   // Browser / phone back button moves between screens and ends on Home instead of leaving the app.
@@ -204,7 +205,7 @@ function Shell() {
       <Confetti run={boom} />
       <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.88)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className={`mx-auto flex max-w-2xl items-center gap-3 px-4 py-2.5 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
-          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button>{tab !== 'home' && <span className="font-display text-lg font-extrabold">{space === 'out' ? t('tSorties', lang) : title}</span>}
+          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button>{tab !== 'home' && <span className="font-display text-lg font-extrabold">{title}</span>}
           {space === 'food' && <button data-tour="budget" className="ms-auto min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
             <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
             <span className={`block text-[10px] font-semibold tabular-nums ${over ? 'text-danger' : 'text-muted'}`}>{t('solde', lang)} {over ? '−' : ''}{money(Math.abs(budget - total), lang)} · {t('taken', lang)} {money(spent, lang)}</span>
@@ -218,8 +219,8 @@ function Shell() {
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
       <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
-        {tab !== 'home' && <Hint tab={space === 'out' ? 'sorties' : tab} />}
-        {space === 'out' ? <div className="fade-up"><SortiesTab /></div> : <div key={tab + lang} className="fade-up">
+        {tab !== 'home' && <Hint tab={tab} />}
+        {space === 'out' ? <div key={tab} className="fade-up">{tab === 'budget' ? <BudgetTab /> : <SortiesTab />}</div> : <div key={tab + lang} className="fade-up">
           {tab === 'home' && <HomeTab compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} makeHealthy={makeHealthy} />}
           {tab === 'week' && <button className="mb-3 flex w-full items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm font-bold text-forest shadow-soft" onClick={() => go('recipes')}><BookOpen size={18} aria-hidden /> {t('tRecipes', lang)} · {lang === 'en' ? 'browse & favorites' : 'parcourir et favoris'} <span className="ms-auto">›</span></button>}
           {tab === 'week' && <WeekTab compose={compose} makeHealthy={makeHealthy} say={say} />}
