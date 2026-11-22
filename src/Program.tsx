@@ -29,27 +29,27 @@ export function buildProgram(p: SportProfile & { lvl?: Lvl }, week: number) {
       { t: soft ? 'Marche active' : 'Footing facile', icon: Footprints, min: m(soft ? 35 : 30), hard: 1, ex: [[cardio, `${m(soft ? 35 : 30)} min, on peut parler`], ['Étirements', '5 min']] },
       { t: soft ? 'Vélo fractionné doux' : 'Fractionné', icon: Timer, min: m(35), hard: 3, ex: [['Échauffement', '10 min'], [soft ? 'Vélo 1 min fort / 2 min doux' : '1 min vite / 1 min 30 lent', `${lvl === 'beg' ? 6 : lvl === 'mid' ? 8 : 10} fois`], ['Retour au calme', '5 min']] },
       { t: 'Sortie longue', icon: Activity, min: m(lvl === 'beg' ? 40 : lvl === 'mid' ? 60 : 80), hard: 2, ex: [[cardio, `${m(lvl === 'beg' ? 40 : lvl === 'mid' ? 60 : 80)} min tranquille`]] },
-      { t: 'Renfo coureur', icon: Dumbbell, min: m(30), hard: 2, ex: [['Squat', `${sets()} × 12`], ['Fentes', `${sets()} × 10/jambe`], ['Gainage', '3 × 40 s'], ['Mollets', `${sets()} × 15`]] },
+      { t: 'Renfo coureur', icon: Dumbbell, min: m(30), hard: 2, ex: [['Squat', `${sets()} × 12`], ['Fentes', `${sets()} × 10/jambe`], ['Gainage', '3 × 40 s'], ['Mountain climbers', '3 × 30 s'], ['Mollets', `${sets()} × 15`]] },
     ],
     team: [
-      { t: 'Technique et jeu', icon: Trophy, min: m(60), hard: 2, ex: [['Échauffement ballon', '10 min'], ['Ateliers technique', '30 min'], ['Petit match', '20 min']] },
+      { t: 'Technique et jeu', icon: Trophy, min: m(60), hard: 2, ex: [['Échauffement ballon', '10 min'], ['Ateliers tir et passes', '30 min'], ['Petit match', '20 min']] },
       { t: 'Explosivité', icon: Flame, min: m(35), hard: 3, ex: [[soft ? 'Step-up rapide' : 'Sprints 20 m', `${sets(2)} fois`], [soft ? 'Squat' : 'Sauts', `${sets()} × 8`], ['Changements de direction', `${sets()} × 6`]] },
       { t: 'Renfo + gainage', icon: Dumbbell, min: m(35), hard: 2, ex: [['Squat', `${sets()} × 10`], ['Pompes', `${sets()} × max`], ['Gainage', '3 × 45 s'], fin] },
     ],
     fight: [
-      { t: 'Technique', icon: Swords, min: m(50), hard: 2, ex: [['Corde à sauter', `${lvl === 'beg' ? 3 : 5} × 2 min`], ['Shadow', '4 × 2 min'], ['Sac de frappe', `${lvl === 'beg' ? 4 : 6} × 2 min`]] },
+      { t: 'Technique', icon: Swords, min: m(50), hard: 2, ex: [['Corde à sauter', `${lvl === 'beg' ? 3 : 5} × 2 min`], ['Shadow : jab, direct', '4 × 2 min'], ['Coups de pied (low kick)', '3 × 10/jambe'], ['Sac de frappe', `${lvl === 'beg' ? 4 : 6} × 2 min`]] },
       { t: 'Cardio combat', icon: HeartPulse, min: m(35), hard: 3, ex: [['Rounds 3 min / 1 min', `${lvl === 'beg' ? 4 : 6} rounds`], ['Burpees', `${sets()} × 10`]] },
       { t: 'Force', icon: Dumbbell, min: m(40), hard: 2, ex: [['Soulevé de terre', `${sets()} × 6`], ['Tractions', `${sets()} × max`], ['Rotations médecine-ball', `${sets()} × 12`]] },
     ],
     bike: [
       { t: 'Endurance', icon: Bike, min: m(60), hard: 1, ex: [['Vélo ou nage tranquille', `${m(60)} min`]] },
       { t: 'Intervalles', icon: Timer, min: m(40), hard: 3, ex: [['Échauffement', '10 min'], ['3 min fort / 2 min facile', `${lvl === 'beg' ? 4 : 6} fois`]] },
-      { t: 'Nage technique', icon: Waves, min: m(40), hard: 2, ex: [['Éducatifs', '10 × 50 m'], ['Nage continue', `${m(15)} min`]] },
+      { t: 'Nage technique', icon: Waves, min: m(40), hard: 2, ex: [['Éducatifs de crawl', '10 × 50 m'], ['Nage continue crawl', `${m(15)} min`]] },
       { t: 'Gainage', icon: Dumbbell, min: m(25), hard: 2, ex: [['Planche', '3 × 45 s'], ['Pont fessier', `${sets()} × 15`], ['Superman', `${sets()} × 12`]] },
     ],
     yoga: [
-      { t: 'Flow énergie', icon: StretchHorizontal, min: m(40), hard: 2, ex: [['Salutations au soleil', `${lvl === 'beg' ? 4 : 8} tours`], ['Postures debout', '15 min'], ['Respiration', '5 min']] },
-      { t: 'Yoga force', icon: Dumbbell, min: m(40), hard: 2, ex: [['Chaise, guerrier, planche', '3 tours'], ['Équilibres', '10 min']] },
+      { t: 'Flow énergie', icon: StretchHorizontal, min: m(40), hard: 2, ex: [['Salutations au soleil', `${lvl === 'beg' ? 4 : 8} tours`], ['Postures debout (guerrier)', '15 min'], ['Respiration', '5 min']] },
+      { t: 'Yoga force', icon: Dumbbell, min: m(40), hard: 2, ex: [['Guerrier I et II', '3 tours'], ['Équilibre de l’arbre', '10 min']] },
       { t: 'Mobilité et détente', icon: Moon, min: m(30), hard: 1, ex: [['Étirements profonds', '20 min'], ['Relaxation', '10 min']] },
     ],
   }
