@@ -8,6 +8,7 @@ import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
 import { RecipesTab } from './Extra'
+import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, type LucideIcon } from 'lucide-react'
 import { SortiesTab } from './Sorties'
 import { Assistant, Hint, Tour, tourDone, type Tab } from './Assist'
 import { bestStore } from './lib/stores'
@@ -111,7 +112,7 @@ function Onboarding() {
   )
 }
 
-const TABS: [Tab, string, string][] = [['home', '🏡', 'tHome'], ['recipes', '📖', 'tRecipes'], ['week', '🗓️', 'tWeek'], ['list', '🛒', 'list'], ['profile', '👤', 'profile']]
+const TABS: [Tab, LucideIcon, string][] = [['home', Home, 'tHome'], ['week', CalendarDays, 'tWeek'], ['list', ShoppingCart, 'list'], ['sorties', MapPinned, 'tSorties'], ['profile', UserRound, 'profile']]
 
 function Shell() {
   const { lang, me, house, patchMe, upHouse, award } = useApp()
@@ -156,7 +157,7 @@ function Shell() {
     say(c <= b ? `✅ ${t('fitB', lang)} ${money(b, lang)} · ${money(b - c, lang)} ${t('margin', lang)}` : `⚠️ ${t('minB', lang)} ${money(c, lang)} (+${money(c - b, lang)}). ${t('minHint', lang)}`, u)
   }
   const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
-  const [up, setUp] = useState(false); const [space, setSpace] = useState<'food' | 'out'>('food')
+  const [up, setUp] = useState(false); const space: 'food' | 'out' = tab === 'sorties' ? 'out' : 'food'
   useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
   const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { try { history.pushState({ kz: k }, '') } catch { /* sandboxed */ } setTab(k); scrollTo(0, 0) } }
   // Browser / phone back button moves between screens and ends on Home instead of leaving the app.
@@ -189,7 +190,7 @@ function Shell() {
     ...(over ? [[`💰 ${t('h_budget', lang)}`, () => adapt()] as [string, () => void]] : []),
     [`⚙️ ${t('adjustB', lang)}`, () => setSheet(true)],
   ].filter((x) => x[0] !== help[0]) as [string, () => void][]
-  const title = t(tab === 'stores' ? 'tStores' : TABS.find((x) => x[0] === tab)![2], lang)
+  const title = t(tab === 'stores' ? 'tStores' : tab === 'recipes' ? 'tRecipes' : TABS.find((x) => x[0] === tab)![2], lang)
 
   return (
     <div className="calm min-h-screen">
@@ -203,7 +204,6 @@ function Shell() {
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
           </button>}
         </div>
-        <div className="mx-auto max-w-2xl px-4 pb-2"><div className="flex rounded-full bg-surface p-1 shadow-soft">{([['food', '🍽️ Repas & courses'], ['out', '🎈 Sorties & activités']] as const).map(([k, l]) => <button key={k} className={`flex-1 rounded-full py-2 text-[13px] font-bold transition ${space === k ? 'bg-forest text-white shadow-soft' : 'text-muted'}`} onClick={() => { setSpace(k); scrollTo(0, 0) }} aria-pressed={space === k}>{l}</button>)}</div></div>
         {space === 'food' && <><div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-1">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
           <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${ok ? 'bg-forest text-white' : i === cur ? 'bg-apricot text-ink ring-2 ring-apricot/40' : 'bg-cream text-muted'}`}>{ok ? '✓' : i + 1}</span>
           <span className={`truncate ${i === cur ? 'text-ink' : 'text-muted'}`}>{t(k, lang)}</span>{i < 4 && <span className={`h-0.5 min-w-1 flex-1 rounded ${ok ? 'bg-forest' : 'bg-line'}`} />}</button>)}</div>
@@ -214,6 +214,7 @@ function Shell() {
         <Hint tab={space === 'out' ? 'sorties' : tab} />
         {space === 'out' ? <div className="fade-up"><SortiesTab /></div> : <div key={tab + lang} className="fade-up">
           {tab === 'home' && <HomeTab compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} total={total} items={items.length} />}
+          {tab === 'week' && <button className="mb-3 flex w-full items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm font-bold text-forest shadow-soft" onClick={() => go('recipes')}><BookOpen size={18} aria-hidden /> {t('tRecipes', lang)} · {lang === 'en' ? 'browse & favorites' : 'parcourir et favoris'} <span className="ms-auto">›</span></button>}
           {tab === 'week' && <WeekTab compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}
           {tab === 'stores' && <><button className="mb-2 text-sm font-bold text-forest" onClick={() => setTab('list')}>‹ {t('list', lang)}</button><StoresStep onShop={() => go('list')} /></>}
@@ -222,7 +223,7 @@ function Shell() {
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
       </main>
-      {space === 'food' && <><div data-tour="assist" className="fixed bottom-[5.5rem] start-4 z-40 flex max-w-[78vw] items-center gap-1 rounded-full bg-ink/90 p-1 text-sm font-bold text-white shadow-lg backdrop-blur">
+      <><div data-tour="assist" style={space === 'out' ? { display: 'none' } : undefined} className="fixed bottom-[5.5rem] start-4 z-40 flex max-w-[78vw] items-center gap-1 rounded-full bg-ink/90 p-1 text-sm font-bold text-white shadow-lg backdrop-blur">
         <button className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}>✨</button>
         <button className="truncate px-3 py-2 active:scale-95" onClick={help[1]}>➜ {help[0]}</button>
       </div>
@@ -230,8 +231,8 @@ function Shell() {
       <Tour run={tour} onEnd={() => setTour(false)} />
       {up && <button className="fixed bottom-[5.5rem] end-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-forest text-lg text-white shadow-lg" onClick={() => scrollTo({ top: 0, behavior: 'smooth' })} aria-label="top">↑</button>}
       <nav data-tour="tabs" className="tabbar" aria-label="Main">
-        {TABS.map(([k, e, key]) => <button key={k} onClick={() => go(k === 'list' && tab === 'stores' ? 'list' : k)} aria-current={tab === k || (k === 'list' && tab === 'stores') ? 'page' : undefined} className={`tab ${tab === k ? 'tab-on' : ''}`}><span className={`text-[22px] leading-none ${tab === k ? 'pop' : 'grayscale-[.6] opacity-70'}`}>{e}</span><span>{t(key, lang)}</span></button>)}
-      </nav></>}
+        {TABS.map(([k, Icon, key]) => { const on = tab === k || (k === 'list' && tab === 'stores') || (k === 'week' && tab === 'recipes'); return <button key={k} onClick={() => go(k)} aria-current={on ? 'page' : undefined} className={`tab ${on ? 'tab-on' : ''}`}><Icon size={22} strokeWidth={on ? 2.4 : 1.8} className={on ? 'pop' : ''} aria-hidden /><span>{t(key, lang)}</span></button> })}
+      </nav></>
       <Sheet open={sheet} onClose={() => setSheet(false)} title={t('adjustB', lang)}>
         <Controls setBudget={setBudget} />
         <p className="mt-3 text-center text-sm text-muted tabular-nums">{money(total, lang)} / {money(budget, lang)} · {over ? t('overBy', lang) : t('left', lang)} {money(Math.abs(budget - total), lang)}</p>

@@ -1,3 +1,4 @@
+import { FormeCard, KcalGoal } from './Forme'
 import { useState } from 'react'
 import { useApp } from './lib/store'
 import { t, type Lang } from './lib/i18n'
@@ -32,11 +33,17 @@ function Activity() {
 }
 
 export function ProfileScreen({ celebrate }: { celebrate: () => void }) {
-  const { lang, setLang, me, house, logout, toast } = useApp()
+  const { lang, setLang, me, house, logout, toast, patchMe } = useApp()
   const copy = async () => { try { await navigator.clipboard.writeText(house!.code) } catch { /* shown on screen anyway */ } toast(t('copied', lang)); celebrate() }
   return (
     <div className="space-y-4">
       <h1 className="text-3xl font-extrabold text-forest">{t('profile', lang)}</h1>
+      <div className="card space-y-3 p-4">
+        <div className="flex items-center justify-between"><h2 className="font-display text-lg font-extrabold">🎯 Forme & calories</h2>
+          <label className="flex items-center gap-2 text-xs font-semibold text-muted">Afficher dans Ma semaine<input type="checkbox" className="h-5 w-5 accent-[#245B43]" checked={!!me!.showForme} onChange={(e) => patchMe({ showForme: e.target.checked })} /></label></div>
+        <KcalGoal onChange={() => toast(lang === 'en' ? 'Goal saved: re-plan your week to apply it' : 'Objectif enregistré : recompose ta semaine pour l’appliquer')} />
+        <FormeCard plan={house!.plan} />
+      </div>
       <div className="card grid grid-cols-3 gap-2 p-4 text-center"><div><p className="text-2xl">🔥</p><b className="tabular-nums">{me!.streak}</b><p className="text-xs text-muted">{t('streak', lang)}</p></div><div><p className="text-2xl">⭐</p><b className="tabular-nums">{t('level', lang)} {Math.floor(me!.xp / 100) + 1}</b><div className="mx-auto mt-1 h-1.5 w-16 rounded-full bg-cream"><div className="h-full rounded-full bg-apricot" style={{ width: `${me!.xp % 100}%` }} /></div></div><div><p className="text-2xl">✨</p><b className="tabular-nums">{me!.xp}</b><p className="text-xs text-muted">XP</p></div></div>
       <div className="card p-5"><p className="text-lg font-bold">{me!.name}</p><p className="text-sm text-muted">{me!.email} · {me!.city}</p>
         <div className="mt-4 flex gap-2" role="group" aria-label={t('language', lang)}>{(['fr', 'en', 'ar'] as Lang[]).map((l) => <button key={l} className="chip" aria-pressed={lang === l} onClick={() => setLang(l)}>{{ fr: 'Français', en: 'English', ar: 'العربية' }[l]}</button>)}</div></div>
