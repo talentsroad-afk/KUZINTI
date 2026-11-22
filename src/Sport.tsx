@@ -70,7 +70,7 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
           <div key={l} className="rounded-2xl bg-white/12 p-2" style={{ background: 'rgba(255,255,255,.12)' }}><span className="float inline-block text-xl" style={{ animationDelay: `${i * 0.35}s` }}><E3 e={e} /></span><b className="block text-[15px] tabular-nums">{v}{u}</b><span className="block text-[10px] text-white/75">{l}</span></div>))}</div>
       </section>
 
-      <HealthPlan wk0={(Math.max(1, goalPlan(p as GoalP, n.lo, n.hi).wk) - 1) % 4} p={p} set={set} lang={lang} kcal={p.kcalO ?? n.kcal} prot={p.protO ?? n.prot} />
+      <HealthPlan wk0={(Math.max(1, goalPlan(p as GoalP, n.lo, n.hi).wk) - 1) % 4} blk={Math.floor((Math.max(1, goalPlan(p as GoalP, n.lo, n.hi).wk) - 1) / 4)} p={p} set={set} lang={lang} kcal={p.kcalO ?? n.kcal} prot={p.protO ?? n.prot} />
 
       <details className="group rounded-[24px] bg-surface p-4 shadow-soft"><summary className="flex cursor-pointer list-none items-center justify-between font-display font-extrabold">{L(lang, 'My sports profile', 'Mon profil sportif', 'ملفي الرياضي')}<span className="text-sm font-semibold text-muted">{p.w} kg · {p.days}/{L(lang, 'wk', 'sem', 'أسبوع')} <span className="inline-block transition-transform group-open:rotate-90">›</span></span></summary><div className="mt-3">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My sport', 'Mon sport', 'رياضتي')}</p>
