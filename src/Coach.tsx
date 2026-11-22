@@ -54,45 +54,92 @@ export function Athlete({ kind, paused, onRep }: { kind: Kind; paused?: boolean;
     const [A, B, T] = POSES[kind]; let raf = 0; let t0 = performance.now(); let acc = 0; let last = t0; let lastRep = 0
     const svg = ref.current; if (!svg) return
     const q = (id: string) => svg.querySelector(`#${id}`) as SVGElement
-    const parts = ['torso', 'head', 'ua1', 'fa1', 'ua2', 'fa2', 'th1', 'sh1', 'th2', 'sh2', 'shadow'].map(q)
+    const ids = ['torso', 'neck', 'head', 'ua1', 'fa1', 'ua2', 'fa2', 'th1', 'sh1', 'th2', 'sh2', 'pt1', 'pt2', 'sf1', 'sf2', 'shadow', 'stripe', 'hand1', 'hand2']
+    const E = Object.fromEntries(ids.map((i) => [i, q(i)])) as Record<string, SVGElement>
     const frame = (now: number) => {
       const dt = now - last; last = now; if (!pRef.current) acc += dt
       const ph = (acc / 1000) / T; const k = (1 - Math.cos(ph * 2 * Math.PI)) / 2 // smooth 0→1→0
       const rep = Math.floor(ph + 0.5); if (rep > lastRep) { lastRep = rep; onRep?.() }
       const P = lerp(A, B, kind === 'run' || kind === 'walk' || kind === 'bike' ? (Math.sin(ph * 2 * Math.PI) + 1) / 2 : k)
       const hip: [number, number] = [0, 0]
-      const sh = V(P.t, 52).map((v, i) => v + hip[i]) as [number, number]
-      const hd = V(P.t, 70).map((v, i) => v + hip[i]) as [number, number]
-      const arm = (a: number, e: number) => { const el = V(a, 30); const ha = V(e, 28); return [sh, [sh[0] + el[0], sh[1] + el[1]], [sh[0] + el[0] + ha[0], sh[1] + el[1] + ha[1]]] as [number, number][] }
-      const leg = (h: number, kn: number) => { const k1 = V(h, 38); const f = V(kn, 38); return [hip, [k1[0], k1[1]], [k1[0] + f[0], k1[1] + f[1]]] as [number, number][] }
+      const sh = V(P.t, 50); const nk = V(P.t, 57); const hd = V(P.t, 68)
+      const arm = (a: number, e: number) => { const el = V(a, 29); const ha = V(e, 27); return [sh, [sh[0] + el[0], sh[1] + el[1]], [sh[0] + el[0] + ha[0], sh[1] + el[1] + ha[1]]] as [number, number][] }
+      const leg = (h: number, kn: number) => { const k1 = V(h, 38); const f = V(kn, 37); return [hip, [k1[0], k1[1]], [k1[0] + f[0], k1[1] + f[1]]] as [number, number][] }
       const A1 = arm(P.a1, P.e1), A2 = arm(P.a2, P.e2), L1 = leg(P.h1, P.k1), L2 = leg(P.h2, P.k2)
       const pts = [...A1, ...A2, ...L1, ...L2, hd]
-      const ground = 182; const low = Math.max(...[L1[2], L2[2], A1[2], A2[2]].map((p) => p[1]))
+      const ground = 180; const low = Math.max(...[L1[2], L2[2], A1[2], A2[2]].map((p) => p[1] + 4))
       const xs = pts.map((p) => p[0]); const cx = (Math.min(...xs) + Math.max(...xs)) / 2
-      const oy = (kind === 'bike' ? 128 : ground - low) - (P.lift ?? 0); const ox = 110 - cx
-      const tr = (p: [number, number]) => `${(p[0] + ox).toFixed(1)},${(p[1] + oy).toFixed(1)}`
-      const line = (el: SVGElement, a: [number, number], b: [number, number]) => el.setAttribute('points', `${tr(a)} ${tr(b)}`)
-      line(parts[0], hip, sh); parts[1].setAttribute('transform', `translate(${tr(hd)})`)
-      line(parts[2], A1[0], A1[1]); line(parts[3], A1[1], A1[2]); line(parts[4], A2[0], A2[1]); line(parts[5], A2[1], A2[2])
-      line(parts[6], L1[0], L1[1]); line(parts[7], L1[1], L1[2]); line(parts[8], L2[0], L2[1]); line(parts[9], L2[1], L2[2])
-      parts[10].setAttribute('rx', String(34 - (P.lift ?? 0) * 0.5))
+      const oy = (kind === 'bike' ? 126 : ground - low) - (P.lift ?? 0); const ox = 110 - cx
+      const X = (p: number[]) => p[0] + ox, Y = (p: number[]) => p[1] + oy
+      const f = (n: number) => n.toFixed(1)
+      // tapered limb with a muscle bulge: half-widths w1 at a, w2 at b, bulge bm in the middle (outer side bo)
+      const cap = (a: number[], b: number[], w1: number, w2: number, bm: number, bo = bm, mt = 0.42) => {
+        const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, nx = -uy, ny = ux
+        const mx = a[0] + dx * mt, my = a[1] + dy * mt, wm = (w1 + w2) / 2
+        const P2 = (x: number, y: number) => `${f(x + ox)} ${f(y + oy)}`
+        return `M${P2(a[0] + nx * w1, a[1] + ny * w1)} Q${P2(mx + nx * (wm + bm) * 1.6, my + ny * (wm + bm) * 1.6)} ${P2(b[0] + nx * w2, b[1] + ny * w2)} Q${P2(b[0] + ux * w2 * 1.5, b[1] + uy * w2 * 1.5)} ${P2(b[0] - nx * w2, b[1] - ny * w2)} Q${P2(mx - nx * (wm + bo) * 1.6, my - ny * (wm + bo) * 1.6)} ${P2(a[0] - nx * w1, a[1] - ny * w1)} Q${P2(a[0] - ux * w1 * 1.4, a[1] - uy * w1 * 1.4)} ${P2(a[0] + nx * w1, a[1] + ny * w1)}Z`
+      }
+      const at = (a: number[], b: number[], t: number) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+      E.torso.setAttribute('d', cap(hip, sh, 8.5, 13, 2.2, 1.4, 0.72)) // V-shape: narrow waist, wide back and chest
+      E.stripe.setAttribute('d', cap(at(hip, sh, 0.05), at(hip, sh, 0.85), 2, 3, 0.4))
+      E.neck.setAttribute('d', cap(sh, nk, 5.5, 4.5, 0.5))
+      E.head.setAttribute('transform', `translate(${f(X(hd))},${f(Y(hd))}) rotate(${f(180 - P.t)})`)
+      E.ua1.setAttribute('d', cap(A1[0], A1[1], 7, 4.6, 2.6, 1.6)); E.fa1.setAttribute('d', cap(A1[1], A1[2], 4.6, 3.2, 1.8, 0.6))
+      E.ua2.setAttribute('d', cap(A2[0], A2[1], 7, 4.6, 2.6, 1.6)); E.fa2.setAttribute('d', cap(A2[1], A2[2], 4.6, 3.2, 1.8, 0.6))
+      E.th1.setAttribute('d', cap(L1[0], L1[1], 9, 5.6, 2.4, 1.6)); E.sh1.setAttribute('d', cap(L1[1], L1[2], 5.4, 3.2, 2.4, 0.4))
+      E.th2.setAttribute('d', cap(L2[0], L2[1], 9, 5.6, 2.4, 1.6)); E.sh2.setAttribute('d', cap(L2[1], L2[2], 5.4, 3.2, 2.4, 0.4))
+      E.pt1.setAttribute('d', cap(L1[0], at(L1[0], L1[1], 0.62), 10.5, 8, 1.2)); E.pt2.setAttribute('d', cap(L2[0], at(L2[0], L2[1], 0.62), 10.5, 8, 1.2))
+      const shoe = (el: SVGElement, L: [number, number][]) => { // toes point forward (or down when lying)
+        const dx = L[2][0] - L[1][0], dy = L[2][1] - L[1][1], l = Math.hypot(dx, dy) || 1; let tx = -dy / l, ty = dx / l
+        if (tx + ty * 0.8 < -tx - ty * 0.8) { tx = -tx; ty = -ty }
+        const b = [L[2][0] + (dx / l) * 2 - tx * 3, L[2][1] + (dy / l) * 2 - ty * 3]; el.setAttribute('d', cap(b, [b[0] + tx * 12, b[1] + ty * 12], 4.6, 3.6, 0.5))
+      }
+      shoe(E.sf1, L1); shoe(E.sf2, L2)
+      E.hand1.setAttribute('transform', `translate(${f(X(A1[2]))},${f(Y(A1[2]))})`); E.hand2.setAttribute('transform', `translate(${f(X(A2[2]))},${f(Y(A2[2]))})`)
+      E.shadow.setAttribute('rx', String(36 - (P.lift ?? 0) * 0.5))
       raf = requestAnimationFrame(frame)
     }
     raf = requestAnimationFrame(frame); return () => cancelAnimationFrame(raf)
   }, [kind]) // eslint-disable-line react-hooks/exhaustive-deps
-  const limb = (id: string, c: string, w: number) => <polyline id={id} points="0,0 0,0" stroke={c} strokeWidth={w} strokeLinecap="round" fill="none" />
+  const part = (id: string, fill: string, extra?: object) => <path id={id} d="M0 0" fill={fill} stroke="rgba(0,0,0,.18)" strokeWidth=".8" strokeLinejoin="round" {...extra} />
   return (
-    <svg ref={ref} viewBox="0 0 220 200" className="mx-auto block w-full max-w-[300px]" aria-hidden>
-      <defs><linearGradient id="mat" x1="0" x2="1"><stop offset="0" stopColor="#245B43" /><stop offset="1" stopColor="#2f7d5b" /></linearGradient></defs>
-      <rect x="10" y="182" width="200" height="8" rx="4" fill="url(#mat)" opacity=".9" />
-      <ellipse id="shadow" cx="110" cy="186" rx="34" ry="4" fill="#000" opacity=".25" />
-      {kind === 'bike' && <g stroke="#9aa6b0" strokeWidth="4" fill="none"><circle cx="70" cy="160" r="22" /><circle cx="160" cy="160" r="22" /><path d="M70 160 L105 132 L150 132 L160 160 M105 132 L118 160" /></g>}
-      {kind === 'rope' && <ellipse className="rope-spin" cx="110" cy="110" rx="46" ry="80" stroke="#f2b96b" strokeWidth="2" fill="none" />}
-      {limb('ua2', '#1f4d39', 11)}{limb('fa2', '#1f4d39', 10)}{limb('th2', '#22313a', 14)}{limb('sh2', '#22313a', 12)}
-      {limb('torso', '#2f7d5b', 22)}
-      {limb('th1', '#2c3e4a', 14)}{limb('sh1', '#2c3e4a', 12)}
-      <g id="head"><circle r="13" fill="#f3c49b" /><path d="M-13 -2 C-13 -14 13 -16 13 -4 C8 -9 -6 -10 -13 -2Z" fill="#3b2a20" /><circle cx="6" cy="0" r="1.6" fill="#2b1d14" /></g>
-      {limb('ua1', '#2f7d5b', 11)}{limb('fa1', '#f3c49b', 9)}
+    <svg ref={ref} viewBox="0 0 220 200" className="mx-auto block w-full max-w-[300px] drop-shadow-[0_12px_24px_rgba(0,0,0,.35)]" aria-hidden>
+      <defs>
+        <linearGradient id="mat" x1="0" x2="1"><stop offset="0" stopColor="#245B43" /><stop offset="1" stopColor="#2f7d5b" /></linearGradient>
+        <radialGradient id="spot" cx=".5" cy=".55" r=".5"><stop offset="0" stopColor="#F2B96B" stopOpacity=".38" /><stop offset=".6" stopColor="#8DBB91" stopOpacity=".12" /><stop offset="1" stopColor="#000" stopOpacity="0" /></radialGradient>
+        <linearGradient id="skin" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#d9a27a" /><stop offset="1" stopColor="#b67a52" /></linearGradient>
+        <linearGradient id="skin2" x1="0" x2="1"><stop offset="0" stopColor="#a86d47" /><stop offset="1" stopColor="#8f5a3a" /></linearGradient>
+        <linearGradient id="tank" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stopColor="#F2B96B" /><stop offset="1" stopColor="#e0913a" /></linearGradient>
+      </defs>
+      <circle cx="110" cy="110" r="98" fill="url(#spot)" />
+      <g stroke="#fff" strokeOpacity=".12" strokeWidth="2" strokeLinecap="round" className="coach-lines"><path d="M18 60h26M24 78h18M176 52h26M170 70h20M14 120h20M184 118h22" /></g>
+      <g fill="#fff" opacity=".1"><rect x="20" y="150" width="6" height="26" rx="2" /><rect x="14" y="158" width="18" height="10" rx="3" /><rect x="190" y="154" width="18" height="22" rx="4" /><rect x="194" y="148" width="10" height="8" rx="2" /></g>
+      <rect x="6" y="180" width="208" height="8" rx="4" fill="url(#mat)" />
+      <ellipse id="shadow" cx="110" cy="184" rx="36" ry="4" fill="#000" opacity=".3" />
+      {kind === 'bike' && <g stroke="#9aa6b0" strokeWidth="4" fill="none" strokeLinecap="round"><circle cx="70" cy="160" r="22" /><circle cx="160" cy="160" r="22" /><path d="M70 160 L105 132 L150 132 L160 160 M105 132 L118 160" /></g>}
+      {kind === 'rope' && <ellipse className="rope-spin" cx="110" cy="110" rx="46" ry="80" stroke="#F2B96B" strokeWidth="2" fill="none" />}
+      {/* back limbs (darker) */}
+      {part('ua2', 'url(#skin2)')}{part('fa2', 'url(#skin2)')}<g id="hand2"><circle r="4" fill={kind === 'box' ? '#c0392b' : '#8f5a3a'} /></g>
+      {part('th2', 'url(#skin2)')}{part('sh2', 'url(#skin2)')}{part('pt2', '#16212b')}{part('sf2', '#e9edf0', { stroke: '#F2B96B', strokeWidth: 1.6 })}
+      {/* torso: tank top over a V-shaped back */}
+      {part('neck', 'url(#skin)')}
+      {part('torso', 'url(#tank)')}
+      <path id="stripe" d="M0 0" fill="#245B43" opacity=".9" />
+      <g id="head">
+        <ellipse rx="12.5" ry="13.5" fill="url(#skin)" />
+        <path d="M-12.5 -1 C-14 -16 10 -19 13 -5 C10 -10 2 -12 -4 -11 C-8 -10 -11 -6 -12.5 -1Z" fill="#1d140f" />
+        <path d="M-12.8 -4.5 C-5 -8.5 6 -9 13.2 -5.2 L13 -1.2 C6 -5 -5 -4.6 -12.8 -0.6Z" fill="#245B43" />
+        <path d="M-12 -3 l-7 -4 l1 5 Z" fill="#245B43" />
+        <ellipse cx="-3" cy="1.5" rx="2.4" ry="3.2" fill="#b67a52" />
+        <path d="M5 -0.5 l4 -0.8" stroke="#1d140f" strokeWidth="1.6" strokeLinecap="round" />
+        <circle cx="7" cy="1.8" r="1.5" fill="#1d140f" />
+        <path d="M5 8 q3 1.8 6 -0.4" stroke="#7a3f25" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        <path d="M12.3 2 l2.4 2.6 l-2.2 .6" fill="#c98a60" />
+        <path d="M-6 11 C-2 14.5 6 14.5 10 10" stroke="#1d140f" strokeOpacity=".5" strokeWidth="2" fill="none" strokeLinecap="round" />
+      </g>
+      {/* front limbs */}
+      {part('th1', 'url(#skin)')}{part('sh1', 'url(#skin)')}{part('pt1', '#22313f')}{part('sf1', '#ffffff', { stroke: '#F2B96B', strokeWidth: 1.6 })}
+      {part('ua1', 'url(#skin)')}{part('fa1', 'url(#skin)')}<g id="hand1"><circle r="4.4" fill={kind === 'box' ? '#e74c3c' : '#c98a60'} /></g>
     </svg>)
 }
 

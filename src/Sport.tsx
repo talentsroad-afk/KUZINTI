@@ -1,6 +1,7 @@
 import { zf } from './lib/zgh'
 import { E3 } from './E3'
 import { HealthPlan } from './Health'
+import { GoalJourney, goalPlan, type GoalP } from './Goal'
 import { Ic } from './Ic'
 import { useApp } from './lib/store'
 import type { Lang } from './lib/i18n'
@@ -57,6 +58,7 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
   const pct = Math.min(100, Math.max(0, ((p.w - (n.lo - 10)) / (n.hi + 10 - (n.lo - 10))) * 100))
   return (
     <div className="stagger space-y-4 pb-4">
+      <GoalJourney p={p as GoalP} set={set as never} lang={lang} lo={n.lo} hi={n.hi} />
       <section className="relative overflow-hidden rounded-[28px] p-4 text-white" style={{ background: 'linear-gradient(140deg,#2f6fa8,#1d3f6e)' }}>
         <span className="zellige pointer-events-none absolute inset-0 opacity-[.07]" aria-hidden />
         <p className="relative text-[11px] font-bold uppercase tracking-[.16em] text-white/70">{L(lang, 'My needs today', 'Mes besoins du jour', 'احتياجاتي اليوم')}</p>
@@ -66,13 +68,11 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
           <div key={l} className="rounded-2xl bg-white/12 p-2" style={{ background: 'rgba(255,255,255,.12)' }}><span className="float inline-block text-xl" style={{ animationDelay: `${i * 0.35}s` }}><E3 e={e} /></span><b className="block text-[15px] tabular-nums">{v}{u}</b><span className="block text-[10px] text-white/75">{l}</span></div>))}</div>
       </section>
 
-      <HealthPlan p={p} set={set} lang={lang} kcal={p.kcalO ?? n.kcal} prot={p.protO ?? n.prot} />
+      <HealthPlan wk0={(Math.max(1, goalPlan(p as GoalP, n.lo, n.hi).wk) - 1) % 4} p={p} set={set} lang={lang} kcal={p.kcalO ?? n.kcal} prot={p.protO ?? n.prot} />
 
       <details className="group rounded-[24px] bg-surface p-4 shadow-soft"><summary className="flex cursor-pointer list-none items-center justify-between font-display font-extrabold">{L(lang, 'My sports profile', 'Mon profil sportif', 'ملفي الرياضي')}<span className="text-sm font-semibold text-muted">{p.w} kg · {p.days}/{L(lang, 'wk', 'sem', 'أسبوع')} <span className="inline-block transition-transform group-open:rotate-90">›</span></span></summary><div className="mt-3">
         <p className="mb-2 text-[11px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My sport', 'Mon sport', 'رياضتي')}</p>
         <div className="grid grid-cols-3 gap-2">{SPORTS.map(([k, e, en, fr, ar]) => { const on = p.sport === k; return <button key={k} className={`flex items-center gap-2 rounded-[16px] p-2 text-start text-[12.5px] font-bold transition-all duration-300 active:scale-95 ${on ? 'bg-[#2f6fa8] text-white shadow-lift' : 'bg-cream/80'}`} onClick={() => set({ sport: k })} aria-pressed={on}><span className={`text-xl ${on ? 'pop' : ''}`}><E3 e={e} /></span><span className="truncate">{L(lang, en, fr, ar)}</span></button> })}</div>
-        <p className="mb-2 mt-4 text-[11px] font-bold uppercase tracking-[.14em] text-muted">{L(lang, 'My goal', 'Mon objectif', 'هدفي')}</p>
-        <div className="grid grid-cols-2 gap-2">{GOALS.map(([k, e, , , t, d]) => { const on = p.goal === k; const li = lang === 'en' ? 0 : lang === 'ar' ? 2 : 1; return <button key={k} className={`rounded-[18px] p-2.5 text-start transition-all duration-300 active:scale-95 ${on ? 'bg-forest text-white shadow-lift' : 'bg-cream/80'}`} onClick={() => set({ goal: k })} aria-pressed={on}><span className={`text-2xl ${on ? 'pop inline-block' : ''}`}><E3 e={e} /></span><b className="block text-[13.5px]">{t[li]}</b><span className={`block text-[11px] leading-tight ${on ? 'text-white/80' : 'text-muted'}`}>{d[li]}</span></button> })}</div>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div className="col-span-2 flex rounded-full bg-cream p-1">{(['f', 'm'] as const).map((s) => <button key={s} className={`flex-1 rounded-full py-1.5 text-sm font-bold transition ${p.sex === s ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => set({ sex: s })}>{s === 'f' ? L(lang, '👩 Woman', '👩 Femme', '👩 امرأة') : L(lang, '👨 Man', '👨 Homme', '👨 رجل')}</button>)}</div>
           <Num v={p.w} set={(w) => set({ w })} min={35} max={180} unit="kg" label={L(lang, 'Weight', 'Poids', 'الوزن')} />

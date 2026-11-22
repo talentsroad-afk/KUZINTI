@@ -60,9 +60,9 @@ export function dayPlan(p: SportProfile & { lvl?: Lvl }, week: number, d: number
   return { items, tk, tp, s }
 }
 
-export function HealthPlan({ p, set, lang, kcal, prot }: { p: SportProfile & { lvl?: Lvl }; set: (o: Partial<SportProfile & { lvl?: Lvl }>) => void; lang: Lang; kcal: number; prot: number }) {
+export function HealthPlan({ p, set, lang, kcal, prot, wk0 = 0 }: { wk0?: number; p: SportProfile & { lvl?: Lvl }; set: (o: Partial<SportProfile & { lvl?: Lvl }>) => void; lang: Lang; kcal: number; prot: number }) {
   const today = (new Date().getDay() + 6) % 7
-  const [view, setView] = useState<'day' | 'week' | 'month'>('day'); const [w, setW] = useState(0); const [d, setD] = useState(today); const [open, setOpen] = useState<number | null>(null); const [am, setAm] = useState(false); const [story, setStory] = useState<{ t: string; ex: [string, string][] } | null>(null)
+  const [view, setView] = useState<'day' | 'week' | 'month'>('day'); const [w, setW] = useState(wk0); const [d, setD] = useState(today); const [open, setOpen] = useState<number | null>(null); const [am, setAm] = useState(false); const [story, setStory] = useState<{ t: string; ex: [string, string][] } | null>(null)
   const DN = lang === 'en' ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
   const day = dayPlan(p, w, d, kcal, lang, am)
   const perWeek = p.goal === 'cut' ? -0.5 : p.goal === 'bulk' ? 0.25 : 0

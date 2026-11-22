@@ -346,3 +346,5 @@ button:hover > .ico3d, a:hover > .ico3d { transform: scale(1.15) rotate(-6deg); 
 .tasting .mouth-o { animation: mouthHot 4.2s ease-in-out infinite; } @keyframes mouthHot { 0%,40%,80%,100% { opacity: 0; } 46%,74% { opacity: 1; } }
 .tasting .chef-head { transform-box: view-box; transform-origin: 160px 118px; animation: headHot 4.2s ease-in-out infinite; } @keyframes headHot { 0%,42%,80%,100% { transform: none; } 50% { transform: translateY(-6px) rotate(-5deg); } 58% { transform: translateY(-2px) rotate(5deg); } 66% { transform: translateY(-5px) rotate(-4deg); } }
 .rope-spin { transform-box: fill-box; transform-origin: 50% 50%; animation: ropeSpin .45s linear infinite; } @keyframes ropeSpin { from { transform: rotateX(0); } to { transform: rotateX(360deg); } }
+.coach-lines { animation: coachLines 1.6s ease-in-out infinite alternate; } @keyframes coachLines { from { transform: translateX(-6px); opacity: .5; } to { transform: translateX(6px); opacity: 1; } }
+.story-paused .coach-lines { animation-play-state: paused; }
