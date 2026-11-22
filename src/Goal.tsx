@@ -44,13 +44,10 @@ export function GoalJourney({ p, set, lang, lo, hi }: { p: GoalP; set: (o: Parti
   const startW = [1, g.cuts[0] + 1, g.cuts[1] + 1]
   const cur = g.wk ? (g.wk <= g.cuts[0] ? 0 : g.wk <= g.cuts[1] ? 1 : 2) : -1
   const log = p.log ?? []
-  const choose = (o: Partial<GoalP>) => set({ ...o, tw: undefined })
 
   if (!p.st) return (
     <section className="rounded-[24px] bg-surface p-4 shadow-soft">
-      <p className="text-[12px] font-bold uppercase tracking-[.14em] text-muted">{T(lang, 'Step 1 · My goal', 'Étape 1 · Mon objectif')}</p>
-      <div className="mt-2 grid grid-cols-2 gap-2">{GO.map(([k, e, en, fr]) => <button key={k} onClick={() => choose({ goal: k })} className={`flex items-center gap-2 rounded-[16px] p-2.5 text-start text-[13px] font-bold transition-all active:scale-95 ${p.goal === k ? 'bg-forest text-white shadow-lift' : 'bg-cream'}`}><span className="text-2xl"><E3 e={e} /></span>{T(lang, en, fr)}</button>)}</div>
-      <p className="mt-4 text-[12px] font-bold uppercase tracking-[.14em] text-muted">{T(lang, 'Step 2 · My target', 'Étape 2 · Ma cible')}</p>
+      <p className="text-[12px] font-bold uppercase tracking-[.14em] text-muted">{T(lang, 'My target', 'Ma cible')}</p>
       {p.goal === 'cut' || p.goal === 'bulk' ? <div className="mt-2 flex items-center justify-between rounded-2xl bg-cream p-2">
         <span className="ps-1 text-sm text-muted">{T(lang, `Now ${p.w} kg · target`, `Aujourd’hui ${p.w} kg · cible`)}</span>
         <span className="flex items-center gap-2"><button className="grid h-9 w-9 place-items-center rounded-full bg-surface text-lg font-bold shadow-soft active:scale-90" onClick={() => set({ tw: Math.max(p.goal === 'cut' ? lo : 35, g.tw - 0.5) })} aria-label="−">−</button>
@@ -59,7 +56,7 @@ export function GoalJourney({ p, set, lang, lo, hi }: { p: GoalP; set: (o: Parti
         : p.goal === 'perf' ? <div className="mt-2 flex gap-2">{RACES.map(([k, l]) => <button key={k} onClick={() => set({ race: k })} className={`flex-1 rounded-full py-2 text-sm font-bold ${race[0] === k ? 'bg-ink text-white' : 'bg-cream text-muted'}`}>{l}</button>)}</div>
           : <p className="mt-2 rounded-2xl bg-cream p-3 text-sm">{what}</p>}
       <div className="mt-4 rounded-[20px] p-4 text-white" style={{ background: 'linear-gradient(140deg,#245B43,#173d2c)' }}>
-        <p className="text-[12px] font-bold uppercase tracking-[.14em] text-white/60">{T(lang, 'Step 3 · My plan', 'Étape 3 · Mon plan')}</p>
+        <p className="text-[12px] font-bold uppercase tracking-[.14em] text-white/60">{T(lang, 'My plan', 'Mon plan')}</p>
         <p className="mt-1 font-display text-[22px] font-extrabold leading-tight">{what}</p>
         <p className="mt-1 flex items-center gap-1.5 text-sm text-white/80"><CalendarDays size={15} /> {T(lang, `${g.weeks} weeks · by ${fmt(g.end)}`, `${g.weeks} semaines · objectif le ${fmt(g.end)}`)}</p>
         {g.rate > 0 && <p className="text-xs text-white/60">{T(lang, `At a healthy pace of ${g.rate} kg per week`, `À un rythme sain de ${String(g.rate).replace('.', ',')} kg par semaine`)}</p>}
