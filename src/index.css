@@ -126,3 +126,5 @@ h1, h2, h3 { color: rgb(var(--ink)); }
 .zellige { background-image: radial-gradient(circle at 50% 50%, transparent 38%, #fff 39%, #fff 41%, transparent 42%), linear-gradient(45deg, transparent 47%, #fff 48%, #fff 52%, transparent 53%), linear-gradient(-45deg, transparent 47%, #fff 48%, #fff 52%, transparent 53%); background-size: 44px 44px; }
 .hero-meal { transition: transform var(--t-mid) var(--ease); }
 @media (prefers-reduced-motion: reduce) { .kenburns img { animation: none; } }
+.flash { animation: flash .52s var(--ease) both; }
+@keyframes flash { 0% { opacity: 0; transform: scale(.6); } 35% { opacity: 1; transform: scale(1.08); } 100% { opacity: 0; transform: scale(1); } }

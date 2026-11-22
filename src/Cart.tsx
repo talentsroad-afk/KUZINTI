@@ -20,7 +20,7 @@ export function CartMode({ open, onClose, items, onFinish }: { open: boolean; on
   const { lang, house, upHouse, award } = useApp()
   const chk = house!.checked; const miss = house!.missing ?? {}
   const [grid, setGrid] = useState(false); const [dx, setDx] = useState(0); const [fly, setFly] = useState<0 | 1 | -1>(0)
-  const [hist, setHist] = useState<string[]>([])
+  const [hist, setHist] = useState<string[]>([]); const [flash, setFlash] = useState<{ k: number; yes: boolean } | null>(null)
   const start = useRef<number | null>(null)
   if (!open) return null
   const todo = items.filter((x) => !chk[x.key] && !miss[x.key])
@@ -29,7 +29,7 @@ export function CartMode({ open, onClose, items, onFinish }: { open: boolean; on
   const pct = items.length ? ((items.length - todo.length) / items.length) * 100 : 0
   const decide = (yes: boolean) => {
     if (!cur || fly) return
-    setFly(yes ? 1 : -1); try { navigator.vibrate?.(yes ? 18 : [10, 40, 10]) } catch { /* no vibration */ }
+    setFly(yes ? 1 : -1); setFlash({ k: Date.now(), yes }); setTimeout(() => setFlash(null), 520); try { navigator.vibrate?.(yes ? 18 : [10, 40, 10]) } catch { /* no vibration */ }
     setTimeout(() => {
       upHouse((h) => { if (yes) h.checked[cur.key] = true; else h.missing = { ...(h.missing ?? {}), [cur.key]: true } }, yes ? `🛒 ${cur.name}` : `✕ ${cur.name}`)
       if (yes) award(2, cur.name)
@@ -63,7 +63,8 @@ export function CartMode({ open, onClose, items, onFinish }: { open: boolean; on
         </div>
       ) : cur ? (
         <div className="relative mx-auto flex w-full max-w-md flex-1 items-center justify-center px-6">
-          {next && <div className="absolute inset-x-10 top-1/2 h-[54%] -translate-y-[46%] scale-95 rounded-[32px] bg-surface opacity-70 shadow-soft" aria-hidden />}
+          {next && <div className={`absolute inset-x-8 top-1/2 -translate-y-[44%] rounded-[32px] bg-surface p-6 text-center shadow-soft transition-all duration-300 ${fly ? 'scale-100 opacity-100' : 'scale-[.92] opacity-60'}`} aria-hidden><div className="mt-10 text-[64px] leading-none opacity-80">{next.e}</div><p className="mt-3 font-serif text-xl font-semibold text-muted">{next.name}</p></div>}
+          {flash && <div key={flash.k} className={`flash pointer-events-none absolute inset-0 z-10 grid place-items-center`} aria-hidden><span className={`grid h-28 w-28 place-items-center rounded-full text-white shadow-lg ${flash.yes ? 'bg-forest' : 'bg-muted'}`}>{flash.yes ? <Check size={56} /> : <X size={56} />}</span></div>}
           <div key={cur.key} className="relative w-full touch-none select-none rounded-[32px] bg-surface p-6 text-center shadow-[0_24px_60px_-30px_rgb(var(--shadow)/.6)] fade-up"
             style={{ transform: `translateX(${x}px) rotate(${x / 18}deg)`, transition: start.current === null ? 'transform .22s var(--ease)' : 'none' }}
             onPointerDown={(e) => { start.current = e.clientX; (e.target as HTMLElement).setPointerCapture?.(e.pointerId) }}
@@ -96,6 +97,7 @@ export function CartMode({ open, onClose, items, onFinish }: { open: boolean; on
           <button className="grid h-20 w-20 place-items-center rounded-full bg-forest text-white shadow-lg active:scale-90" onClick={() => decide(true)} aria-label={L(lang, 'In the trolley', 'Dans le caddie', 'في العربة')}><Check size={38} aria-hidden /></button>
         </div>
       )}
+      {!grid && cur && next && <p className="fade-up pb-1 text-center text-sm" key={next.key}><span className="text-muted">{L(lang, 'Next', 'Ensuite', 'التالي')} :</span> <b>{next.e} {next.name}</b> <span className="text-muted">· {next.q}</span>{next.aisle !== cur.aisle && <span className="ms-1 rounded-full bg-apricot/40 px-2 py-0.5 text-[11px] font-bold">{L(lang, 'new aisle', 'nouveau rayon', 'قسم جديد')} : {next.aisle}</span>}</p>}
       {!grid && cur && <p className="pb-4 text-center text-xs text-muted">{L(lang, 'Swipe right: in the trolley · left: not found', 'Glissez à droite : dans le caddie · à gauche : pas trouvé', 'اسحب يمينًا: في العربة · يسارًا: غير موجود')}</p>}
     </div>, document.body)
 }

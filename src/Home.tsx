@@ -1,10 +1,11 @@
-import { ArrowRight, BookOpen, Carrot, Check, Clock, Dices, Heart, Leaf, Plus, RefreshCw, ShoppingCart, Shuffle, SlidersHorizontal, Sparkles, Store, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { ArrowRight, BookOpen, Carrot, Check, ChevronDown, Flame, Clock, Dices, Heart, Leaf, Plus, RefreshCw, ShoppingCart, Shuffle, SlidersHorizontal, Sparkles, Store, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { KcalGoal } from './Forme'
 import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
 import { REC, RECIPES, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
-import { entryCost, parseIng } from './lib/engine'
+import { entryCost, parseIng, recipeCost } from './lib/engine'
 import { composeSides, cuisineOf, CUISINES, FLAG, REGIONS, type Prefs } from './lib/plan'
 import { Dish, Sheet } from './ui'
 import { Controls, RecipeSheet, ReplaceSheet } from './Screens'
@@ -35,7 +36,9 @@ const when = (off: number, s: Meal, d: number, l: Lang) => {
 /** Home, "Riad" direction: an editorial page built only from the household's real data. */
 export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list' | 'stores' | 'recipes') => void; makeHealthy: () => void }) {
   const { lang, me, house, patchMe, upHouse, toast } = useApp()
-  const [eat, setEat] = useState(false)
+  const [eat, setEat] = useState(false); const [ctry, setCtry] = useState(false); const [kc, setKc] = useState(false)
+  const kt = useRef<number | undefined>(undefined)
+  const onKcal = (k: number) => { clearTimeout(kt.current); kt.current = window.setTimeout(() => recompose({ kcal: k }), 450) }
   const { items, total, spent, store, price } = useBasket()
   const [prefs, setPrefs] = useState(false); const [rv, setRv] = useState<Recipe | null>(null); const [rep, setRep] = useState<string | null>(null)
   const plan = house!.plan; const n = Object.keys(plan).length
@@ -93,49 +96,42 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
   const putToday = (r: Recipe) => { upHouse((h) => { h.plan[`${today}-${slotNow}`] = { r: r.id, n: me!.size, x: composeSides(r.id, slotNow) } }, `+ ${rname(r.n, lang)}`); toast(`✅ ${rname(r.n, lang)} · ${t(slotNow, lang)}`); setEat(false) }
   const prefLine = [`${FLAG[cuisine]} ${t('c_' + cuisine, lang)}`, cuisine === 'ma' && region !== 'all' ? t('r_' + region, lang) : '', ...goals.filter((g) => ['cheap', 'quick', 'varied'].includes(g)).map((g) => t('g_' + g, lang)), `${me!.size} ${t('people', lang).toLowerCase()}`, money(me!.budget, lang)].filter(Boolean).join(' · ')
   const nr = nm ? REC[nm.e.r] : null
+  // Real catalog only: one dish of the day (changes every day) and three short shelves.
+  const pool = RECIPES.filter((r) => (r.m.includes('l') || r.m.includes('d')) && (cuisine === 'mix' || cuisineOf(r) === cuisine) && !(veg && !r.tags.includes('vegetarian')))
+  const doy = Math.floor((now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 864e5)
+  const daily = pool.length ? pool[doy % pool.length] : null
+  const shelves: [string, Recipe[]][] = [
+    [L(lang, 'Ready in 30 min', 'Prêt en 30 min', 'جاهز في 30 دقيقة'), pool.filter((r) => r.t <= 30 && r !== daily).slice(0, 10)],
+    [L(lang, 'Vegetarian', 'Végétarien', 'نباتي'), RECIPES.filter((r) => r.tags.includes('vegetarian') && (r.m.includes('l') || r.m.includes('d')) && (cuisine === 'mix' || cuisineOf(r) === cuisine)).slice(0, 10)],
+    [cuisine === 'ma' ? L(lang, 'Moroccan family classics', 'Les classiques de la famille', 'كلاسيكيات العائلة') : L(lang, 'From around the world', 'Cuisine du monde', 'من مطابخ العالم'), (cuisine === 'ma' ? pool.filter((r) => r.tags.includes('family')) : RECIPES.filter((r) => cuisineOf(r) !== 'ma' && r.m.length)).slice(0, 10)],
+  ]
 
   return (
     <div className="riad pb-4">
       {/* Zone 1 — personal introduction */}
       <header className="rise pt-2 lg:col-span-12">
-        <p className="text-[11px] font-bold uppercase tracking-[.18em] text-terracotta">{date}</p>
+        <div className="flex items-center justify-between gap-3"><p className="text-[11px] font-bold uppercase tracking-[.18em] text-terracotta">{date}</p>
+          <button className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-sm font-bold shadow-soft active:scale-95" onClick={() => setCtry(true)} aria-label={L(lang, 'Change country', 'Changer de pays', 'تغيير البلد')}>{me!.country === 'FR' ? '🇫🇷 France · €' : '🇲🇦 Maroc · MAD'} <ChevronDown size={15} aria-hidden /></button></div>
         <h1 className="mt-1 font-serif text-[34px] font-semibold leading-[1.05] tracking-tight text-ink lg:text-[46px]">{greet}, <span className="italic text-forest">{firstName}</span>.</h1>
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-muted">{lead}</p>
         <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted"><Users size={14} aria-hidden /> {house!.name} · {house!.members.length} {L(lang, house!.members.length > 1 ? 'members' : 'member', house!.members.length > 1 ? 'membres' : 'membre', 'أعضاء')}</p>
       </header>
 
-      {/* The main action, always at the top */}
-      <button className="rise btn btn-primary w-full !min-h-14 text-[17px] lg:col-span-7" onClick={compose}>{n ? <RefreshCw size={20} aria-hidden /> : <Sparkles size={20} aria-hidden />} {n ? L(lang, 'Recompose my week', 'Recomposer ma semaine', 'إعادة تركيب أسبوعي') : t('composeAuto', lang)}</button>
-
-      {/* Quick choices, always visible */}
-      <div className="rise -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:col-span-12 lg:mx-0 lg:flex-wrap lg:px-0" data-noswipe>
-        {[['MA', '🇲🇦 Maroc'], ['FR', '🇫🇷 France']].map(([c, l]) => <button key={c} className="chip shrink-0" aria-pressed={me!.country === c} onClick={() => setCountry(c)}>{l}</button>)}
-        <span className="mx-1 w-px shrink-0 self-stretch bg-line" aria-hidden />
+      {/* 2 — the main action and quick settings */}
+      <section className="rise space-y-3 lg:col-span-12">
+      <button className="btn btn-primary w-full !min-h-14 text-[17px] lg:w-auto lg:px-10" onClick={compose}>{n ? <RefreshCw size={20} aria-hidden /> : <Sparkles size={20} aria-hidden />} {n ? L(lang, 'Recompose my week', 'Recomposer ma semaine', 'إعادة تركيب أسبوعي') : t('composeAuto', lang)}</button>
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0" data-noswipe>
+        <button className="chip shrink-0" onClick={() => setKc(true)}><Flame size={15} className="me-1.5 text-terracotta" aria-hidden />{me!.kcal ?? 2100} kcal</button>
         {QUICK.map(([k, l, I, on, f]) => <button key={k} className="chip shrink-0" aria-pressed={on} onClick={f}><I size={15} className="me-1.5" aria-hidden />{l}</button>)}
+        <button className="chip shrink-0" onClick={() => setPrefs(true)}><Wallet size={15} className="me-1.5" aria-hidden />{money(me!.budget, lang)} · {me!.size} {L(lang, 'pers.', 'pers.', 'أشخاص')}</button>
         <button className="chip shrink-0" onClick={() => setPrefs(true)}><SlidersHorizontal size={15} className="me-1.5" aria-hidden />{L(lang, 'More', 'Plus', 'المزيد')}</button>
       </div>
+      </section>
 
-      {/* The journey: one clear next action */}
-      {n > 0 && <section className="rise lg:col-span-7" aria-label={L(lang, 'Your journey', 'Votre parcours', 'مسارك')}>
-        <div className="relative overflow-hidden rounded-[28px] bg-forest p-4 text-white sm:p-5">
-          <span className="zellige pointer-events-none absolute inset-0 opacity-[.06]" aria-hidden />
-          <ol className="relative flex items-center gap-1.5 text-[12px] font-bold">{STEPS.map((x, i) => <li key={x} className="flex flex-1 items-center gap-1.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs transition ${i < stepI ? 'bg-white text-forest' : i === stepI ? 'bg-apricot text-ink ring-4 ring-apricot/30' : 'bg-white/15 text-white/70'}`}>{i < stepI ? '✓' : i + 1}</span><span className={i === stepI ? 'text-white' : 'text-white/65'}>{x}</span>{i < 2 && <span className={`h-0.5 min-w-2 flex-1 rounded ${i < stepI ? 'bg-white' : 'bg-white/20'}`} />}</li>)}</ol>
-          <button className="relative mt-4 flex w-full items-center gap-3 rounded-2xl bg-white p-3.5 text-start text-ink shadow-lg transition active:scale-[.98]" onClick={act[3]}>
-            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-forest text-white">{(() => { const I = act[2]; return <I size={22} aria-hidden /> })()}</span>
-            <span className="min-w-0 flex-1"><span className="block font-display text-[17px] font-extrabold leading-tight">{act[0]}</span><span className="block truncate text-xs text-muted">{act[1]}</span></span>
-            <ArrowRight size={20} className="shrink-0 text-forest rtl:rotate-180" aria-hidden />
-          </button>
-        </div>
-      </section>}
-
-      <button className="rise group flex w-full self-stretch lg:col-span-5 items-center gap-3 rounded-[24px] bg-apricot/25 p-4 text-start transition active:scale-[.98]" onClick={() => setEat(true)}>
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-apricot text-ink"><UtensilsCrossed size={22} aria-hidden /></span>
-        <span className="min-w-0 flex-1"><span className="block font-serif text-[19px] font-semibold leading-tight">{L(lang, 'What do we eat today?', 'Que manger aujourd’hui ?', 'ماذا نأكل اليوم؟')}</span><span className="block truncate text-xs text-muted">{hasHome ? L(lang, 'Ideas with what you already have', 'Des idées avec ce que vous avez déjà', 'أفكار بما لديكم') : L(lang, 'A quick idea for today', 'Une idée rapide pour aujourd’hui', 'فكرة سريعة لليوم')}</span></span>
-        <ArrowRight size={18} className="shrink-0 text-ink/60 transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden />
-      </button>
-
-      {/* Zone 2 — the next meal */}
-      {nm && <section className="lg:col-span-7" aria-label={L(lang, 'Next meal', 'Prochain repas', 'الوجبة القادمة')}>
+      {/* 3 — today */}
+      <section className="rise space-y-3 lg:col-span-7">
+        <h2 className="mb-3 font-serif text-[22px] font-semibold">{L(lang, 'Today', 'Aujourd’hui', 'اليوم')}</h2>
+      {nm && <div>
         {nr && nm ? (
           <article className="hero-meal rise -mx-4 overflow-hidden bg-surface sm:mx-0 sm:rounded-[28px] sm:shadow-soft">
             <button className="relative block w-full text-start" onClick={() => setRv(nr)} aria-label={rname(nr.n, lang)}>
@@ -153,9 +149,29 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
             </div>
           </article>
         ) : null}
+      </div>}
+      <button className="group flex w-full items-center gap-3 rounded-[24px] bg-apricot/25 p-4 text-start transition active:scale-[.98]" onClick={() => setEat(true)}>
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-apricot text-ink"><UtensilsCrossed size={22} aria-hidden /></span>
+        <span className="min-w-0 flex-1"><span className="block font-serif text-[19px] font-semibold leading-tight">{L(lang, 'What do we eat today?', 'Que manger aujourd’hui ?', 'ماذا نأكل اليوم؟')}</span><span className="block truncate text-xs text-muted">{hasHome ? L(lang, 'Ideas with what you already have', 'Des idées avec ce que vous avez déjà', 'أفكار بما لديكم') : L(lang, 'A quick idea for today', 'Une idée rapide pour aujourd’hui', 'فكرة سريعة لليوم')}</span></span>
+        <ArrowRight size={18} className="shrink-0 text-ink/60 transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden />
+      </button>
+      </section>
+
+      {/* 4 — shopping: one next step */}
+      {n > 0 && <section className="rise lg:col-span-5" aria-label={L(lang, 'Your shopping', 'Vos courses', 'مشترياتك')}>
+        <h2 className="mb-3 font-serif text-[22px] font-semibold">{L(lang, 'Your shopping', 'Vos courses', 'مشترياتك')}</h2>
+        <div className="relative overflow-hidden rounded-[28px] bg-forest p-4 text-white sm:p-5">
+          <span className="zellige pointer-events-none absolute inset-0 opacity-[.06]" aria-hidden />
+          <ol className="relative flex items-center gap-1.5 text-[12px] font-bold">{STEPS.map((x, i) => <li key={x} className="flex flex-1 items-center gap-1.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs transition ${i < stepI ? 'bg-white text-forest' : i === stepI ? 'bg-apricot text-ink ring-4 ring-apricot/30' : 'bg-white/15 text-white/70'}`}>{i < stepI ? '✓' : i + 1}</span><span className={i === stepI ? 'text-white' : 'text-white/65'}>{x}</span>{i < 2 && <span className={`h-0.5 min-w-2 flex-1 rounded ${i < stepI ? 'bg-white' : 'bg-white/20'}`} />}</li>)}</ol>
+          <button className="relative mt-4 flex w-full items-center gap-3 rounded-2xl bg-white p-3.5 text-start text-ink shadow-lg transition active:scale-[.98]" onClick={act[3]}>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-forest text-white">{(() => { const I = act[2]; return <I size={22} aria-hidden /> })()}</span>
+            <span className="min-w-0 flex-1"><span className="block font-display text-[17px] font-extrabold leading-tight">{act[0]}</span><span className="block truncate text-xs text-muted">{act[1]}</span></span>
+            <ArrowRight size={20} className="shrink-0 text-forest rtl:rotate-180" aria-hidden />
+          </button>
+        </div>
       </section>}
 
-      {/* Zone 3 — the week ahead */}
+      {/* 5 — the week */}
       {n > 0 && (
         <section className="rise lg:col-span-12">
           <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[22px] font-semibold">{L(lang, 'The week ahead', 'La semaine', 'الأسبوع')}</h2><button className="inline-flex items-center gap-1 text-sm font-semibold text-forest" onClick={() => go('week')}>{L(lang, 'See all', 'Tout voir', 'عرض الكل')} <ArrowRight size={15} className="rtl:rotate-180" aria-hidden /></button></div>
@@ -176,11 +192,29 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
         </section>
       )}
 
-      {/* Zone 4 + 5 — shopping and ideas (right column on desktop) */}
-      <aside className="space-y-8 lg:col-span-5 lg:space-y-6">
+      {/* 6 — ideas and recipes */}
+      <section className="rise lg:col-span-12">
+        <h2 className="mb-3 font-serif text-[22px] font-semibold">{L(lang, 'Ideas & recipes', 'Idées et recettes', 'أفكار ووصفات')}</h2>
+        <div className="space-y-8 lg:grid lg:grid-cols-12 lg:gap-10 lg:space-y-0">
+      <div className="space-y-6 lg:col-span-7">
+        {daily && <button className="group relative block w-full overflow-hidden rounded-[28px] bg-surface text-start shadow-soft active:scale-[.99]" onClick={() => setRv(daily)}>
+          <div className="grid grid-cols-[42%_1fr] lg:grid-cols-[320px_1fr]"><Dish r={daily} w={500} className="h-full min-h-[170px]" />
+            <div className="p-4 lg:p-6"><p className="text-[11px] font-bold uppercase tracking-[.18em] text-terracotta">{L(lang, 'Recipe of the day', 'Recette du jour', 'وصفة اليوم')}</p><h3 className="mt-1 font-serif text-[24px] font-semibold leading-tight lg:text-[30px]">{rname(daily.n, lang)}</h3><p className="mt-2 flex flex-wrap gap-x-3 text-xs text-muted"><span>⏱ {daily.t} min</span><span>{'●'.repeat(daily.d)}{'○'.repeat(3 - daily.d)}</span><span>{money(recipeCost(daily.id) / daily.s, lang)} / {L(lang, 'serving', 'pers.', 'للفرد')}</span></p><span className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-forest">{L(lang, 'See the recipe', 'Voir la recette', 'عرض الوصفة')} <ArrowRight size={15} className="transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden /></span></div></div>
+        </button>}
+        {shelves.map(([title, list]) => list.length > 0 && (
+          <div key={title}>
+            <div className="mb-2 flex items-baseline justify-between"><h2 className="font-serif text-[20px] font-semibold">{title}</h2><button className="text-sm font-semibold text-forest" onClick={() => go('recipes')}>{L(lang, 'All', 'Tout', 'الكل')}</button></div>
+            <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0" data-noswipe>{list.map((r) => (
+              <button key={r.id} className="w-[132px] shrink-0 snap-start text-start active:scale-[.97]" onClick={() => setRv(r)}>
+                <Dish r={r} w={300} className="h-[104px] w-full rounded-[18px]" />
+                <span className="mt-1.5 line-clamp-2 block text-sm font-semibold leading-snug">{rname(r.n, lang)}</span><span className="text-[11px] text-muted">⏱ {r.t} min</span>
+              </button>))}</div>
+          </div>))}
+      </div>
+      <aside className="lg:col-span-5">
         {sugg.length > 0 && (
           <section className="rise">
-            <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[22px] font-semibold">{L(lang, 'Ideas for you', 'Idées pour vous', 'أفكار لكم')}</h2><button className="text-sm font-semibold text-forest" onClick={() => go('recipes')}>{L(lang, 'All recipes', 'Toutes les recettes', 'كل الوصفات')}</button></div>
+            <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[22px] font-semibold">{L(lang, 'For you', 'Pour vous', 'لكم')}</h2><button className="text-sm font-semibold text-forest" onClick={() => go('recipes')}>{L(lang, 'All recipes', 'Toutes les recettes', 'كل الوصفات')}</button></div>
             <div className="space-y-3">{sugg.map(({ r, why }) => (
               <button key={r.id} className="flex w-full items-center gap-3 text-start active:scale-[.99]" onClick={() => setRv(r)}>
                 <Dish r={r} w={240} className="h-[72px] w-[72px] shrink-0 rounded-2xl" />
@@ -190,6 +224,8 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
           </section>
         )}
       </aside>
+        </div>
+      </section>
 
       {/* Zone 6 — settings stay one discreet line away */}
       <nav className="rise flex flex-wrap gap-x-6 gap-y-2 border-t border-line/70 pt-4 text-sm lg:col-span-12" aria-label={t('prefs', lang)}>
@@ -197,6 +233,18 @@ export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () =
         {n > 0 && <button className="inline-flex items-center gap-2 font-semibold text-ink" onClick={compose}><RefreshCw size={16} className="text-forest" aria-hidden /> {t('newWeek', lang)}</button>}
       </nav>
 
+      <Sheet open={ctry} onClose={() => setCtry(false)} title={L(lang, 'Your country', 'Votre pays', 'بلدك')}>
+        <div className="space-y-2">{([['MA', '🇲🇦', 'Maroc', 'MAD · Marjane, BIM, Carrefour, souk…', L(lang, 'Moroccan cuisine', 'Cuisine marocaine', 'المطبخ المغربي')], ['FR', '🇫🇷', 'France', '€ · Leclerc, Lidl, Carrefour, marché…', L(lang, 'French cuisine', 'Cuisine française', 'المطبخ الفرنسي')]] as const).map(([c, f, nm2, sub, cu]) => (
+          <button key={c} className={`flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-start transition active:scale-[.98] ${me!.country === c ? 'border-forest bg-leaf/15' : 'border-line'}`} onClick={() => { setCountry(c); setCtry(false) }}>
+            <span className="text-4xl">{f}</span><span className="min-w-0 flex-1"><b className="block font-display text-lg">{nm2}</b><span className="block text-xs text-muted">{sub}</span><span className="block text-xs text-muted">{cu}</span></span>{me!.country === c && <Check size={22} className="text-forest" aria-hidden />}
+          </button>))}</div>
+        <p className="mt-3 text-xs text-muted">{L(lang, 'Changes currency, stores and prices. Your week is recomposed with the local cuisine.', 'Change la devise, les magasins et les prix. Votre semaine est recomposée avec la cuisine locale.', 'يغيّر العملة والمتاجر والأسعار.')}</p>
+      </Sheet>
+      <Sheet open={kc} onClose={() => setKc(false)} title={L(lang, 'Calories', 'Calories', 'السعرات')}>
+        <KcalGoal onChange={onKcal} />
+        <p className="mt-3 text-xs text-muted">{n ? L(lang, 'Your week adapts automatically.', 'Votre semaine s’adapte automatiquement.', 'يتكيف أسبوعك تلقائيًا.') : L(lang, 'Used when you compose your week.', 'Pris en compte quand vous composez la semaine.', 'يؤخذ بعين الاعتبار عند التركيب.')}</p>
+        <button className="btn btn-primary mt-4 w-full" onClick={() => setKc(false)}>{t('ok', lang)}</button>
+      </Sheet>
       <Sheet open={eat} onClose={() => setEat(false)} title={L(lang, 'What do we eat today?', 'Que manger aujourd’hui ?', 'ماذا نأكل اليوم؟')}>
         <p className="mb-3 text-sm text-muted">{hasHome ? L(lang, 'Ranked by what is already at home (your last shopping and pantry).', 'Classées selon ce que vous avez déjà (vos dernières courses et le garde-manger).', 'مرتبة حسب ما لديكم في البيت.') : L(lang, 'Nothing in the pantry yet: here are quick dishes. After your shopping, ideas will use what you bought.', 'Rien au garde-manger pour l’instant : voici des plats rapides. Après vos courses, les idées utiliseront ce que vous avez acheté.', 'المخزن فارغ: إليكم أطباق سريعة.')}</p>
         <div className="space-y-3">{shown.map(({ r, hit, of }) => (
