@@ -165,6 +165,17 @@ function Shell() {
   // Budget change re-builds the week to fit the new cap (up or down), debounced for the slider, with undo.
   const bt = useRef<number | undefined>(undefined)
   const setBudget = (b: number) => { patchMe({ budget: b }); clearTimeout(bt.current); bt.current = window.setTimeout(() => refit(b), 450) }
+  // One source of truth: weekly groceries budget (me.budget) and the monthly "Courses" envelope in Budget stay in sync both ways.
+  const food = me!.money?.env.food; const sync = useRef<{ b: number; f?: number } | null>(null)
+  useEffect(() => {
+    const m = me!.money; const prev = sync.current; sync.current = { b: budget, f: food }
+    if (!m || food == null) return
+    const toFood = () => { const tf = Math.round(budget * 4.33); if (Math.abs(food - tf) > 3) patchMe({ money: { ...m, env: { ...m.env, food: tf } } }) }
+    if (!prev) { toFood(); return }
+    if (budget !== prev.b && food === prev.f) toFood()
+    else if (food !== prev.f && budget === prev.b) { const w = Math.max(50, Math.round(food / 4.33)); if (Math.abs(w - budget) > 1) setBudget(w) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [budget, food])
   const refit = (b: number) => {
     const u = snap(t('adjustB', lang)); const mul = store ? Math.max(...Object.values(store.m)) : 1
     const target = Math.max(0, (b - extraCost) / mul)
