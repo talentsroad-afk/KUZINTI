@@ -32,5 +32,5 @@ export function photoOf(r: Recipe): Photo | null {
 export const photoSrc = (p: Photo, w = 640) => {
   if (p.path.startsWith('o:')) return `https://upload.wikimedia.org/wikipedia/commons/${p.path.slice(2)}`
   const f = p.path.slice(p.path.lastIndexOf('/') + 1)
-  return `https://upload.wikimedia.org/wikipedia/commons/thumb/${p.path}/${w <= 400 ? 500 : w <= 700 ? 640 : 960}px-${f}`
+  return `https://upload.wikimedia.org/wikipedia/commons/thumb/${p.path}/${w <= 600 ? 500 : 960}px-${f}`
 }
