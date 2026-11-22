@@ -1,6 +1,6 @@
 import { zf } from './lib/zgh'
 import { E3 } from './E3'
-import { Program } from './Program'
+import { HealthPlan } from './Health'
 import { Ic } from './Ic'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
@@ -112,7 +112,7 @@ export function SportTab({ apply }: { apply: (kcal: number) => void }) {
         </div>
       </section>
 
-      <Program p={p} set={set} lang={lang} />
+      <HealthPlan p={p} set={set} lang={lang} kcal={p.kcalO ?? n.kcal} prot={p.protO ?? n.prot} />
 
       <section className="rounded-[24px] bg-surface p-4 shadow-soft">
         <div className="flex items-baseline justify-between"><p className="text-[11px] font-bold uppercase tracking-[.14em] text-muted"><Ic e="⚖️" /> {L(lang, 'Advised weight', 'Poids conseillé', 'الوزن المنصوح')}</p><b className="font-display text-lg tabular-nums text-forest">{n.lo}–{n.hi} kg</b></div>

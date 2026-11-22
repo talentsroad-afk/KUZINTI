@@ -174,7 +174,7 @@ export function Controls({ setBudget }: { setBudget: (b: number) => void }) {
         <input type="range" min={200} max={3000} step={50} value={Math.min(b, 3000)} onChange={(e) => setBudget(+e.target.value)} className="w-full accent-[#245B43]" aria-label={t('budgetBar', lang)} />
       </div>
       <div className="card divide-y divide-line/70">
-        <div className="flex items-center justify-between p-3"><span className="font-semibold">👤 {t('people', lang)}</span><Stepper v={me!.size} set={(n) => patchMe({ size: n })} max={12} /></div>
+        <div className="flex items-center justify-between p-3"><span className="font-semibold"><Ic e="👤" /> {t('people', lang)}</span><Stepper v={me!.size} set={(n) => patchMe({ size: n })} max={12} /></div>
         <div className="flex items-center justify-between gap-2 p-3"><span className="font-semibold">{t('mealsIncl', lang)}</span><span className="flex gap-1">{SLOTS.map((s) => <button key={s} className="chip !px-2.5" aria-pressed={meals.includes(s)} onClick={() => patchMe({ meals: meals.includes(s) ? meals.filter((x) => x !== s) : SLOTS.filter((x) => x === s || meals.includes(x)) })} aria-label={t(s, lang)}><Ic e={SLOT_E[s]} /></button>)}</span></div>
         <div className="flex items-center justify-between p-3"><span className="font-semibold">🌱 {t('veg', lang)}</span><button className="chip" aria-pressed={me!.diet.includes('vegetarian')} onClick={() => patchMe({ diet: me!.diet.includes('vegetarian') ? [] : ['vegetarian'] })}>{me!.diet.includes('vegetarian') ? '✓' : '—'}</button></div>
       </div>
@@ -237,7 +237,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
         </div>
         <div className="mt-2 flex items-center gap-2 ps-[3.75rem]">
           <button className="rounded-full bg-forest px-3.5 py-1.5 text-xs font-bold text-white active:scale-95" onClick={() => setRep(k)}><RefreshCw size={13} className="inline -mt-0.5" aria-hidden /> {t('change', lang)}</button>
-          <span className="inline-flex items-center rounded-full bg-cream text-xs font-bold"><button className="px-2.5 py-1.5" onClick={() => upHouse((h) => { h.plan[k] = { ...e, n: Math.max(1, e.n - 1) } })} aria-label="−">−</button><span className="tabular-nums">👤 {e.n}</span><button className="px-2.5 py-1.5" onClick={() => upHouse((h) => { h.plan[k] = { ...e, n: Math.min(12, e.n + 1) } })} aria-label="+">+</button></span>
+          <span className="inline-flex items-center rounded-full bg-cream text-xs font-bold"><button className="px-2.5 py-1.5" onClick={() => upHouse((h) => { h.plan[k] = { ...e, n: Math.max(1, e.n - 1) } })} aria-label="−">−</button><span className="inline-flex items-center gap-1 tabular-nums"><Ic e="👤" /> {e.n}</span><button className="px-2.5 py-1.5" onClick={() => upHouse((h) => { h.plan[k] = { ...e, n: Math.min(12, e.n + 1) } })} aria-label="+">+</button></span>
           <button className="rounded-full bg-cream px-3 py-1.5 text-xs font-bold active:scale-95" onClick={() => setRv(r)}><BookOpen size={13} className="inline -mt-0.5" aria-hidden /> {t('recipe', lang)}</button>
         </div>
       </div>
@@ -283,7 +283,7 @@ export function WeekTab({ compose, makeHealthy, say, clear, toBasket }: { compos
       <button className="cta-glow btn btn-primary sticky bottom-28 z-20 w-full !min-h-14 text-base shadow-lift" onClick={toBasket}><Ic e="🛒" /> {lang === 'en' ? 'Done choosing → my basket' : lang === 'ar' ? 'انتهيت → سلتي' : 'J’ai fini mes choix → mon panier'}</button>
       {rep && <ReplaceSheet k={rep} onClose={() => setRep(null)} say={say} />}
       {rv && <RecipeSheet r={rv} onClose={() => setRv(null)} />}
-      <p className="px-1 text-center text-xs text-muted">{me!.size} 👤 · {t('c_' + p.cuisine, lang)}</p>
+      <p className="px-1 text-center text-xs text-muted">{me!.size} <Ic e="👤" /> · {t('c_' + p.cuisine, lang)}</p>
     </div>
   )
 }
