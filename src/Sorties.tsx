@@ -166,22 +166,27 @@ export function SortiesTab() {
   return (
     <div className="stagger space-y-3">
       <div className="card space-y-3 p-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">1 · Où ?</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">Où ?</p>
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4">{Object.keys(CITIES).map((c) => <button key={c} className="chip shrink-0" aria-pressed={c === city} onClick={() => { patchMe({ city: c }); save({}, `📍 ${c}`, true) }}>📍 {c}</button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">2 · Quand ?</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">Quand ?</p>
         <div className="flex rounded-full bg-cream p-1">{([['day', '📅 Jour'], ['week', '🗓️ Semaine'], ['month', '📆 Mois']] as [Mode, string][]).map(([m, l]) => <button key={m} className={`flex-1 rounded-full py-2 text-sm font-bold ${mode === m ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => { setMode(m); setOpen(daysFor(m)[0][0]) }}>{l}</button>)}</div>
-        <div className="grid grid-cols-2 gap-2">{([['auto', '✨ Automatique', 'soirée en semaine, journée le week-end'], ...FMT.map((f) => [f[0], f[1], f[2]])] as [string, string, string][]).map(([k, l, h]) => <button key={k} className={`rounded-2xl border p-2 text-start ${fmt === k ? 'border-forest bg-leaf/20' : 'border-line bg-surface'} ${k === 'auto' ? 'col-span-2' : ''}`} onClick={() => setFmt(k as Fmt | 'auto')} aria-pressed={fmt === k}><span className="block text-sm font-bold">{l}</span><span className="block text-[11px] text-muted">{h}</span></button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">3 · Avec qui ?</p>
-        <div className="flex flex-wrap gap-2">{KINDS.map(([k, l]) => <button key={k} className="chip" aria-pressed={kinds.includes(k)} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])}>{l}</button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">4 · Comment je me déplace ?</p>
-        <div className="flex gap-2">{MOVES.map(([m, l]) => <button key={m} className="chip flex-1 justify-center" aria-pressed={mv === m} onClick={() => setMv(m)}>{l}</button>)}</div>
-        <p className="text-xs font-bold uppercase tracking-wide text-muted">5 · Combien ?</p>
-        <div className="flex items-center gap-3"><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-24 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
         <button className="btn btn-primary w-full !min-h-14 text-base" onClick={compose}>🎈 Composer {mode === 'day' ? 'ma journée' : mode === 'week' ? 'ma semaine' : 'mes week-ends'}</button>
+        <details className="group rounded-2xl bg-cream/70 p-3">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold"><span>⚙️ Personnaliser <span className="font-normal text-muted">· {fmt === 'auto' ? 'Auto' : FMT.find((f) => f[0] === fmt)?.[1]} · {kinds.length ? KINDS.filter(([k]) => kinds.includes(k)).map(([, l]) => l).join(', ') : 'Tous'} · {MOVES.find(([m]) => m === mv)?.[1]} · {money(budget, 'fr')}</span></span><span className="text-muted transition-transform group-open:rotate-90">›</span></summary>
+          <div className="mt-3 space-y-3">
+        <div className="grid grid-cols-2 gap-2">{([['auto', '✨ Automatique', 'soirée en semaine, journée le week-end'], ...FMT.map((f) => [f[0], f[1], f[2]])] as [string, string, string][]).map(([k, l, h]) => <button key={k} className={`rounded-2xl border p-2 text-start ${fmt === k ? 'border-forest bg-leaf/20' : 'border-line bg-surface'} ${k === 'auto' ? 'col-span-2' : ''}`} onClick={() => setFmt(k as Fmt | 'auto')} aria-pressed={fmt === k}><span className="block text-sm font-bold">{l}</span><span className="block text-[11px] text-muted">{h}</span></button>)}</div>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">Avec qui ?</p>
+        <div className="flex flex-wrap gap-2">{KINDS.map(([k, l]) => <button key={k} className="chip" aria-pressed={kinds.includes(k)} onClick={() => setKinds(kinds.includes(k) ? kinds.filter((x) => x !== k) : [...kinds, k])}>{l}</button>)}</div>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">Déplacement</p>
+        <div className="flex gap-2">{MOVES.map(([m, l]) => <button key={m} className="chip flex-1 justify-center" aria-pressed={mv === m} onClick={() => setMv(m)}>{l}</button>)}</div>
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">Budget</p>
+        <div className="flex items-center gap-3"><input type="range" min={0} max={3000} step={50} value={budget} onChange={(e) => setBudget(+e.target.value)} className="flex-1 accent-[#245B43]" aria-label="Budget sorties" /><b className="w-24 whitespace-nowrap text-end tabular-nums">{money(budget, 'fr')}</b></div>
+          </div>
+        </details>
         <p className="text-center text-[11px] text-muted">Pour {people} personne(s) · prix indicatifs, à vérifier sur place</p>
       </div>
       {!days.some(([k]) => plan[k]) ? (
-        <div className="card space-y-2 p-6 text-center"><p className="float text-5xl">🗺️</p><p className="font-display text-lg font-extrabold">Rien de prévu pour l’instant</p><p className="text-sm text-muted">Réponds aux 4 questions ci-dessus puis touche « Composer » : tu reçois un vrai programme heure par heure à {city}, avec où manger et comment y aller.</p></div>
+        <div className="card space-y-2 p-6 text-center"><p className="float text-5xl">🗺️</p><p className="font-display text-lg font-extrabold">Rien de prévu pour l’instant</p><p className="text-sm text-muted">Choisis la ville et la période, puis touche « Composer » : tu reçois un vrai programme heure par heure à {city}, avec où manger et comment y aller.</p></div>
       ) : (<>
         <div className="card p-4"><div className="flex items-center justify-between"><span className="font-semibold">💰 Total estimé · {people} pers.</span><span className={`font-display text-xl font-extrabold tabular-nums ${total > budget ? 'text-danger' : 'text-forest'}`}>{money(total, 'fr')} <span className="text-xs font-semibold text-muted">/ {money(budget, 'fr')}</span></span></div>
           <div className="mt-2 grid grid-cols-3 gap-1 text-center text-[11px]">{([['🎟️ Activités', sum.a], ['🍽️ Repas', sum.m], [MOVES.find((m) => m[0] === mv)![1].split(' ')[0] + ' Trajets', sum.tr]] as [string, number][]).map(([l, v]) => <div key={l} className="rounded-xl bg-cream/70 py-1.5"><p className="text-muted">{l}</p><b className="tabular-nums">{money(v, 'fr')}</b></div>)}</div>

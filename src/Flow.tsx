@@ -1,4 +1,5 @@
-import { Camera, Share2, Store } from 'lucide-react'
+import { Camera, History, Share2, ShoppingCart, Store } from 'lucide-react'
+import { CartMode, iconOf, type CartItem } from './Cart'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
 import { curRate, money, money2, rname, t, type Lang } from './lib/i18n'
@@ -72,11 +73,21 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   }
   const openEdit = (key: string, name: string, est: number, line?: Line) => { setEdit({ key, name, est, line }); setVal(house!.paid?.[key] !== undefined ? String(Math.round(house!.paid![key] * curRate() * 100) / 100) : '') }
   const savePaid = () => { if (!edit) return; const v = parseFloat(val.replace(',', '.')) / curRate(); upHouse((h) => { const p = { ...(h.paid ?? {}) }; if (isNaN(v)) delete p[edit.key]; else p[edit.key] = v; h.paid = p; if (!isNaN(v)) h.checked[edit.key] = true }); setEdit(null) }
-  const finish = () => { upHouse((h) => { for (const l of lines) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.checked = {}; h.qty = {}; h.home = {}; h.custom = []; h.paid = {} }, 'finished the trip'); toast(t('pantry', lang) + ' ✓') }
+  const cart: CartItem[] = [
+    ...groups.flatMap(([a, rows]) => rows.filter((l) => l.buy > 0).map((l) => ({ key: l.id, name: l.ing.n[li(lang)], q: fmtQty(l.buy, l.ing.base), price: price(l.id, l.cost * mul(a)), e: iconOf(l.id, a), aisle: AISLE[a][li(lang)] }))),
+    ...(day < 0 ? [...homeRows.map((x) => ({ key: 'h:' + x.id, name: x.n[li(lang)], q: `×${x.q}`, price: price('h:' + x.id, x.q * x.p * mul('grocery')), e: x.e, aisle: t('maison', lang) })), ...custom.map((c) => ({ key: 'c:' + c.id, name: c.name, q: c.qty, price: price('c:' + c.id, c.price), e: '📝', aisle: t('mine', lang) }))] : []),
+  ]
+  const [cartOpen, setCartOpen] = useState(false); const [histOpen, setHistOpen] = useState(false)
+  const finish = () => {
+    const all = [...lines.map((l) => ({ k: l.id, n: l.ing.n[li(lang)], q: fmtQty(l.buy, l.ing.base), est: l.cost * mul(l.ing.aisle) })), ...homeRows.map((x) => ({ k: 'h:' + x.id, n: x.n[li(lang)], q: `×${x.q}`, est: x.q * x.p * mul('grocery') })), ...custom.map((c) => ({ k: 'c:' + c.id, n: c.name, q: c.qty, est: c.price }))]
+    const got = all.filter((x) => chk[x.k]).map((x) => ({ n: x.n, q: x.q, p: Math.round(price(x.k, x.est) * 100) / 100 }))
+    const trip = { t: Date.now(), store: store?.name, total: Math.round(got.reduce((a, x) => a + x.p, 0) * 100) / 100, items: got, missed: Object.keys(house!.missing ?? {}).length }
+    upHouse((h) => { for (const l of lines) if (h.checked[l.id]) h.pantry[l.id] = (h.pantry[l.id] ?? 0) + l.buy; h.trips = [trip, ...(h.trips ?? [])].slice(0, 30); h.checked = {}; h.qty = {}; h.home = {}; h.custom = []; h.paid = {}; h.missing = {} }, 'finished the trip'); toast(t('pantry', lang) + ' ✓'); celebrate()
+  }
   const saveCustom = () => { if (!f.name.trim()) return; upHouse((h) => { h.custom = [...(h.custom ?? []), { id: Math.random().toString(36).slice(2, 8), name: f.name.trim(), qty: f.qty.trim(), price: Math.max(0, parseFloat(f.price.replace(',', '.')) || 0), note: f.note.trim() }] }, `+ ${f.name.trim()}`); setF({ name: '', qty: '', price: '', note: '' }); setAdding(false) }
-  const Row = ({ k, name, sub, est, line, q }: { k: string; name: string; sub: string; est: number; line?: Line; q?: string }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; return (
-    <div className="flex items-center gap-3 py-2">
-      <button className="check !h-8 !w-8" data-on={on} onClick={() => toggle(k, name)} aria-pressed={on} aria-label={name}>{on && '✓'}</button>
+  const Row = ({ k, name, sub, est, line, q, e }: { k: string; name: string; sub: string; est: number; line?: Line; q?: string; e?: string }) => { const on = !!chk[k]; const paid = house!.paid?.[k]; const no = !!house!.missing?.[k]; return (
+    <div className={`flex items-center gap-3 py-2 transition-opacity ${on || no ? 'opacity-70' : ''}`}>
+      <button data-on={on} className={`chk relative grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-2xl transition active:scale-90 ${on ? 'bg-leaf/35' : 'bg-cream'}`} onClick={() => toggle(k, name)} aria-pressed={on} aria-label={name}><span className={on ? 'pop' : ''}>{e ?? '🛒'}</span>{on && <span className="pop absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-forest text-xs font-bold text-white ring-2 ring-surface">✓</span>}{no && !on && <span className="absolute -bottom-1 -end-1 grid h-6 w-6 place-items-center rounded-full bg-muted text-xs font-bold text-white ring-2 ring-surface">✕</span>}</button>
       <button className="min-w-0 flex-1 text-start" onClick={() => openEdit(k, name, est, line)}><span className={`block truncate font-semibold ${on ? 'text-muted line-through' : ''}`}>{name}</span>{sub && <span className="block truncate text-xs text-muted">{sub}</span>}</button>
       <button className={`shrink-0 rounded-xl px-2.5 py-1 text-end tabular-nums ${paid !== undefined ? 'bg-leaf/30' : 'bg-cream'}`} onClick={() => openEdit(k, name, est, line)}>
         {q && <span className="block text-[15px] font-extrabold leading-tight text-forest">{q}</span>}
@@ -85,6 +96,12 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
     </div>) }
   return (
     <div className="space-y-3">
+      {store && cart.length > 0 && <button className="fade-up flex w-full items-center gap-3 rounded-[24px] bg-forest p-4 text-start text-white shadow-lg active:scale-[.98]" onClick={() => setCartOpen(true)}>
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-white/15"><ShoppingCart size={28} aria-hidden /></span>
+        <span className="min-w-0 flex-1"><b className="block font-display text-lg leading-tight">{lang === 'en' ? 'Start store mode' : 'Lancer le mode magasin'}</b><span className="block text-xs text-white/80">{lang === 'en' ? 'One hand, one swipe per product' : 'Une main, un geste par produit'} · {cart.filter((x) => !chk[x.key]).length} / {cart.length}</span></span>
+        <span className="text-2xl" aria-hidden>→</span>
+      </button>}
+      <CartMode open={cartOpen} onClose={() => setCartOpen(false)} items={cart} onFinish={finish} />
       {!store && <button className="card fade-up flex w-full items-center gap-3 border-2 border-apricot p-4 text-start" onClick={goStores}><span className="text-3xl">🏬</span><span className="flex-1"><b className="block font-display">{lang === 'en' ? 'First, pick your store' : 'D’abord, choisis ton magasin'}</b><span className="text-xs text-muted">{lang === 'en' ? 'Your list will use its prices.' : 'Ta liste utilisera ses prix. Compare les magasins en un coup d’œil.'}</span></span><span className="text-xl text-forest">→</span></button>}
       <div className="card p-4">
         <div className="grid grid-cols-4 gap-1 text-center">
@@ -104,7 +121,8 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       </div>
       <div className="flex items-center gap-2">
         <div className="flex rounded-full bg-surface p-1 shadow-soft">{[-1, (new Date().getDay() + 6) % 7].map((d, i) => <button key={i} className={`rounded-full px-3 py-1.5 text-xs font-bold ${(i === 0 ? day < 0 : day >= 0) ? 'bg-forest text-white' : 'text-muted'}`} onClick={() => setDay(d)}>{i === 0 ? t('lWeek', lang) : t('lDay', lang)}</button>)}</div>
-        <button className="ms-auto rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}><Camera size={14} className="inline -mt-0.5" aria-hidden /> {t('fridgeS', lang)}</button>
+        <button className="ms-auto rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setHistOpen(true)}><History size={14} className="inline -mt-0.5" aria-hidden /> {lang === 'en' ? 'History' : 'Historique'}</button>
+        <button className="rounded-full bg-surface px-3 py-1.5 text-xs font-bold shadow-soft" onClick={() => setFridge(true)}><Camera size={14} className="inline -mt-0.5" aria-hidden /> {t('fridgeS', lang)}</button>
       </div>
       {day >= 0 && <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4">{Array.from({ length: 7 }, (_, d) => <button key={d} className={`chip shrink-0 capitalize ${d === day ? '!bg-forest !text-white' : ''}`} onClick={() => setDay(d)}>{dayName(d, lang).slice(0, 3)}</button>)}</div>}
       <FridgeSheet open={fridge} onClose={() => setFridge(false)} />
@@ -112,16 +130,16 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
       <p className="px-1 text-xs text-muted">{done}/{items.length} · {t('paid', lang).replace(' (MAD)', '')} → {t('ok', lang)}</p>
       {groups.map(([a, rows]) => (
         <div key={a} className="card px-4 py-2"><h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">{AISLE[a][3]} {AISLE[a][li(lang)]}</h3>
-          <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} q={fmtQty(l.buy, l.ing.base)} sub={`${unitP(l, mul(a))} · ${l.uses.map((u) => useName(u, lang)).join(', ')}`} est={l.cost * mul(a)} line={l} />)}</div></div>
+          <div className="divide-y divide-line/60">{rows.map((l) => <Row key={l.id} k={l.id} name={l.ing.n[li(lang)]} q={fmtQty(l.buy, l.ing.base)} sub={`${unitP(l, mul(a))} · ${l.uses.map((u) => useName(u, lang)).join(', ')}`} est={l.cost * mul(a)} line={l} e={iconOf(l.id, a)} />)}</div></div>
       ))}
       <div className="card px-4 py-2">
         <button className="flex w-full items-center justify-between py-1.5" onClick={() => setHomeOpen(!homeOpen)} aria-expanded={homeOpen}><h3 className="text-xs font-bold uppercase tracking-wider text-muted">🏠 {t('maison', lang)} · {homeRows.length}</h3><span className="text-sm font-bold text-forest">{homeOpen ? '−' : '＋'}</span></button>
         {homeOpen && <div className="grid grid-cols-4 gap-1.5 pb-2">{HOME.map((x) => { const q = house!.home?.[x.id] ?? 0; return <button key={x.id} className={`rounded-xl border p-1.5 text-center active:scale-95 ${q ? 'border-forest bg-leaf/20' : 'border-line'}`} onClick={() => upHouse((h) => { h.home = { ...(h.home ?? {}), [x.id]: q ? 0 : 1 } })} aria-pressed={q > 0}><div className="text-xl">{x.e}</div><div className="line-clamp-2 text-[10px] font-semibold leading-tight">{x.n[li(lang)]}</div></button> })}</div>}
-        <div className="divide-y divide-line/60">{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} name={`${x.e} ${HOME_BY[x.id].n[li(lang)]}`} q={`×${x.q}`} sub='' est={x.q * x.p * mul('grocery')} />)}</div>
+        <div className="divide-y divide-line/60">{homeRows.map((x) => <Row key={x.id} k={'h:' + x.id} e={x.e} name={HOME_BY[x.id].n[li(lang)]} q={`×${x.q}`} sub='' est={x.q * x.p * mul('grocery')} />)}</div>
       </div>
       <div className="card px-4 py-2">
         <h3 className="pt-1 text-xs font-bold uppercase tracking-wider text-muted">✍️ {t('mine', lang)}</h3>
-        <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} name={c.name} q={c.qty || undefined} sub={c.note} est={c.price} />)}</div>
+        <div className="divide-y divide-line/60">{custom.map((c) => <Row key={c.id} k={'c:' + c.id} e='📝' name={c.name} q={c.qty || undefined} sub={c.note} est={c.price} />)}</div>
         <button className="w-full py-2.5 text-start text-sm font-bold text-forest" onClick={() => setAdding(true)}>＋ {t('addProd', lang)}</button>
       </div>
       {done > 0 && (sure
@@ -134,6 +152,14 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
           <div><label htmlFor="paid" className="mb-1 block text-sm font-semibold">{t('paid', lang)}</label><input id="paid" inputMode="decimal" className="input text-lg" placeholder={edit.est.toFixed(2)} value={val} onChange={(e) => setVal(e.target.value)} autoFocus /><p className="mt-1 text-xs text-muted">{t('estimated', lang)}: {m2(edit.est, lang)}</p></div>
           <button className="btn btn-primary w-full">{t('save', lang)}</button>
         </form>}
+      </Sheet>
+      <Sheet open={histOpen} onClose={() => setHistOpen(false)} title={lang === 'en' ? 'Purchase history' : 'Historique des achats'}>
+        {!(house!.trips ?? []).length ? <p className="py-6 text-center text-sm text-muted">{lang === 'en' ? 'Your finished shopping trips will appear here, with date, store and total.' : 'Vos courses terminées apparaîtront ici, avec la date, le magasin et le total.'}</p>
+          : <div className="space-y-2">{house!.trips!.map((tr) => (
+            <details key={tr.t} className="group rounded-2xl border border-line p-3">
+              <summary className="flex cursor-pointer list-none items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-cream"><ShoppingCart size={18} className="text-forest" aria-hidden /></span><span className="min-w-0 flex-1"><b className="block text-sm capitalize">{new Date(tr.t).toLocaleDateString(lang === 'ar' ? 'ar-MA-u-nu-latn' : lang, { weekday: 'long', day: 'numeric', month: 'long' })}</b><span className="block text-xs text-muted">{tr.store ?? '—'} · {tr.items.length} {lang === 'en' ? 'items' : 'articles'}{tr.missed ? ` · ${tr.missed} ${lang === 'en' ? 'not found' : 'pas trouvés'}` : ''}</span></span><b className="tabular-nums text-forest">{money(tr.total, lang)}</b></summary>
+              <div className="mt-2 space-y-1 border-t border-line/70 pt-2 text-sm">{tr.items.map((it, i) => <p key={i} className="flex justify-between gap-2"><span className="truncate">{it.n} <span className="text-muted">· {it.q}</span></span><span className="shrink-0 tabular-nums">{m2(it.p, lang)}</span></p>)}</div>
+            </details>))}</div>}
       </Sheet>
       <Sheet open={adding} onClose={() => setAdding(false)} title={t('addProd', lang)}>
         <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); saveCustom() }}>
@@ -188,12 +214,19 @@ export function StoresStep({ onShop }: { onShop: (id: string) => void }) {
   return (
     <div className="space-y-3">
       <h1 className="text-2xl font-extrabold text-forest">{t('storesTitle', lang)}</h1>
+      <p className="text-sm text-muted">{lang === 'en' ? 'Pick where you shop: go straight to your checklist, or open the detailed ticket to compare.' : 'Choisissez votre magasin : allez droit à votre checklist, ou ouvrez le ticket détaillé pour comparer.'}</p>
       {rows.map(({ s, tot }, i) => (
-        <button key={s.id} className={`card rise flex w-full items-center gap-3 p-3 text-start transition-all active:scale-[.98] ${chosen === s.id ? '!shadow-[0_0_0_2px_rgb(var(--forest))]' : ''}`} style={{ animationDelay: `${i * 60}ms` }} onClick={() => setOpen(s.id)}>
-          <StoreLogo id={s.id} />
-          <span className="min-w-0 flex-1">{i === 0 && <span className="inline-block rounded-full bg-apricot px-2.5 py-0.5 text-[11px] font-bold text-[#3c280a]">👑 {t('best', lang)}</span>}<span className="block text-xs text-muted">🧾 {t('viewTicket', lang)} ›</span></span>
-          <span className="text-end"><span className="block font-display text-xl font-extrabold tabular-nums text-forest">{money(tot, lang)}</span>{i === 0 ? <span className="text-[11px] font-semibold text-forest">−{money(worst.tot - tot, lang)}</span> : <span className="text-[11px] text-muted">+{money(tot - best.tot, lang)}</span>}</span>
-        </button>
+        <div key={s.id} className={`card rise p-3 transition-all ${chosen === s.id && house!.store ? '!shadow-[0_0_0_2px_rgb(var(--forest))]' : ''}`} style={{ animationDelay: `${i * 60}ms` }}>
+          <div className="flex items-center gap-3">
+            <StoreLogo id={s.id} />
+            <span className="min-w-0 flex-1">{i === 0 ? <span className="inline-block rounded-full bg-apricot px-2.5 py-0.5 text-[11px] font-bold text-[#3c280a]">👑 {t('best', lang)}</span> : <span className="text-xs text-muted">+{money(tot - best.tot, lang)}</span>}</span>
+            <span className="text-end"><span className="block font-display text-xl font-extrabold tabular-nums text-forest">{money(tot, lang)}</span>{i === 0 && <span className="text-[11px] font-semibold text-forest">−{money(worst.tot - tot, lang)}</span>}</span>
+          </div>
+          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+            <button className="btn btn-primary !min-h-11 !text-sm" onClick={() => { upHouse((h) => { h.store = s.id }); onShop(s.id) }}><ShoppingCart size={16} aria-hidden /> {lang === 'en' ? 'Shop here' : 'Mes courses ici'}</button>
+            <button className="btn btn-soft !min-h-11 !text-sm" onClick={() => setOpen(s.id)}>🧾 {lang === 'en' ? 'Ticket' : 'Ticket'}</button>
+          </div>
+        </div>
       ))}
       <div className="card flex items-center justify-between gap-3 p-4"><span className="text-sm font-semibold">🔀 {t('split', lang)}</span><b className="tabular-nums">{money(split, lang)}</b></div>
       <p className="text-xs text-muted">{t('storesNote', lang)} {t('logoNote', lang)}</p>

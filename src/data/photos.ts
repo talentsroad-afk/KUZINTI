@@ -30,7 +30,10 @@ const RULES: [RegExp, string][] = [
   [/brochette|kebab|skewer|grill|mechoui|chawarma|shawarma|tandoori|yakitori/, 'grill'],
   [/rice|riz|paella|biryani|pilaf|pilav|curry|donburi/, 'rice'],
 ]
+// Off until each photo is checked against its dish (the family photos did not match well enough).
+const ENABLED = false
 export function photoOf(r: Recipe): Photo | null {
+  if (!ENABLED) return null
   const hay = `${r.id} ${r.n[0]} ${r.n[1]}`.toLowerCase()
   for (const [re, k] of RULES) if (re.test(hay)) return PHOTOS[k]
   return null

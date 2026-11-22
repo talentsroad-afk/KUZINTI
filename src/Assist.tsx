@@ -64,22 +64,26 @@ export function Assistant({ open, onClose, tab, next, more, undo, onTour, go }: 
   const cur = QA.find((x) => x[0] === q)
   return (
     <Sheet open={open} onClose={() => { setQ(null); onClose() }} title={`✨ ${L(lang, 'Assistant', 'Assistant')}`}>
-      <p className="text-xs font-bold uppercase tracking-wide text-muted">{L(lang, 'Tu es ici', 'You are here')} · {i.name}</p>
-      <p className="mt-1 text-sm">{i.what}</p>
-      <button className="btn btn-primary mt-3 w-full !min-h-12" onClick={() => { next[1](); onClose() }}>➜ {next[0]}</button>
-      {more.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{more.map(([n, f]) => <button key={n} className="chip" onClick={() => { f(); onClose() }}>{n}</button>)}</div>}
-      <div className="mt-4 space-y-1.5 rounded-2xl bg-cream p-3 text-sm">{state.map(([e, s]) => <p key={s} className="flex gap-2"><span aria-hidden>{e}</span><span>{s}</span></p>)}</div>
-      <p className="mt-4 text-xs font-bold uppercase tracking-wide text-muted">{L(lang, 'Questions fréquentes', 'Quick questions')}</p>
-      <div className="mt-2 flex flex-wrap gap-2">{QA.map(([k, label]) => <button key={k} className={`chip ${q === k ? '!bg-forest !text-white' : ''}`} aria-pressed={q === k} onClick={() => setQ(q === k ? null : k)}>{label}</button>)}</div>
-      {cur && <div className="fade-up mt-3 rounded-2xl border border-line p-3 text-sm" aria-live="polite"><p>{cur[2]()}</p>{cur[3] && <button className="btn btn-soft mt-2 w-full" onClick={cur[3][1]}>{cur[3][0]}</button>}</div>}
-      <button className="mt-4 w-full py-2 text-sm font-semibold text-forest underline" onClick={() => { onClose(); onTour() }}>🧭 {L(lang, 'Revoir la visite guidée', 'Replay the guided tour')}</button>
+      <div className="rounded-3xl bg-forest p-4 text-white">
+        <p className="text-[11px] font-bold uppercase tracking-[.16em] text-white/70">{i.name} · {L(lang, 'étape suivante', 'next step')}</p>
+        <button className="mt-2 flex w-full items-center gap-3 rounded-2xl bg-white p-3.5 text-start text-ink active:scale-[.98]" onClick={() => { next[1](); onClose() }}><span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-forest text-white">➜</span><b className="flex-1 font-display text-[16px] leading-tight">{next[0]}</b></button>
+        <p className="mt-2 text-xs text-white/75">{i.what}</p>
+      </div>
+      {more.length > 0 && <div className="mt-3 grid grid-cols-2 gap-2">{more.map(([n, f]) => <button key={n} className="min-h-16 rounded-2xl border border-line bg-surface px-3 py-2.5 text-start text-sm font-semibold active:scale-[.97]" onClick={() => { f(); onClose() }}>{n}</button>)}</div>}
+      <p className="mt-3 text-center text-xs text-muted">{state.slice(0, 4).map(([e, x]) => `${e} ${x}`).join('  ·  ')}</p>
+      <details className="group mt-3 rounded-2xl bg-cream p-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold">{L(lang, 'Questions fréquentes', 'Quick questions')}<span className="text-muted transition-transform group-open:rotate-90">›</span></summary>
+        <div className="mt-2 flex flex-wrap gap-2">{QA.map(([k, label]) => <button key={k} className={`chip ${q === k ? '!bg-forest !text-white' : ''}`} aria-pressed={q === k} onClick={() => setQ(q === k ? null : k)}>{label}</button>)}</div>
+        {cur && <div className="fade-up mt-3 rounded-2xl bg-surface p-3 text-sm" aria-live="polite"><p>{cur[2]()}</p>{cur[3] && <button className="btn btn-soft mt-2 w-full" onClick={cur[3][1]}>{cur[3][0]}</button>}</div>}
+      </details>
+      <button className="mt-3 w-full py-2 text-sm font-semibold text-forest" onClick={() => { onClose(); onTour() }}>🧭 {L(lang, 'Revoir la visite guidée', 'Replay the guided tour')}</button>
     </Sheet>
   )
 }
 
 /** Short spotlight tour over real UI elements marked with data-tour. Skippable, replayable. */
 const TOUR: [string, string, string, string, string][] = [
-  ['steps', 'Ton parcours', 'Your journey', 'Ces 5 étapes montrent où tu en es : Composer → Semaine → Magasin → Courses → Fini. Touche une étape pour y aller.', 'These 5 steps show where you are. Tap a step to jump there.'],
+  ['steps', 'Ton parcours', 'Your journey', 'Trois étapes seulement : Semaine → Magasin → Courses. Touche une étape pour y aller.', 'Just three steps: Week → Store → Shopping. Tap a step to jump there.'],
   ['budget', 'Ton budget', 'Your budget', 'Le total de ta liste face à ton budget. Touche-le pour changer le budget, le nombre de personnes ou les repas.', 'Your list total vs budget. Tap it to change budget, people or meals.'],
   ['tabs', 'Les 5 espaces', 'The 5 spaces', 'Accueil, Semaine, Courses, Sorties, Profil. Touche l’onglet actif pour remonter en haut. Les recettes s’ouvrent depuis Semaine.', 'Home, Week, Shopping, Outings, Profile. Tap the active tab to scroll to top.'],
   ['assist', 'Ton assistant', 'Your assistant', 'Il sait où tu es et te propose la prochaine action. Touche ✨ dès que tu hésites.', 'It knows where you are and suggests the next action. Tap ✨ whenever unsure.'],

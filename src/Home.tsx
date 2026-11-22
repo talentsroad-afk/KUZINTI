@@ -1,11 +1,11 @@
-import { ArrowRight, BookOpen, ChevronRight, Clock, Heart, Plus, RefreshCw, ShoppingBasket, Shuffle, SlidersHorizontal, Sparkles, Users, Wallet, Zap } from 'lucide-react'
+import { ArrowRight, BookOpen, Carrot, Check, Clock, Dices, Heart, Leaf, Plus, RefreshCw, ShoppingCart, Shuffle, SlidersHorizontal, Sparkles, Store, Users, UtensilsCrossed, Wallet, Zap, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
 import { REC, RECIPES, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { entryCost, parseIng } from './lib/engine'
-import { cuisineOf, CUISINES, FLAG, REGIONS, type Prefs } from './lib/plan'
+import { composeSides, cuisineOf, CUISINES, FLAG, REGIONS, type Prefs } from './lib/plan'
 import { Dish, Sheet } from './ui'
 import { Controls, RecipeSheet, ReplaceSheet } from './Screens'
 import { useBasket } from './Flow'
@@ -33,8 +33,9 @@ const when = (off: number, s: Meal, d: number, l: Lang) => {
 }
 
 /** Home, "Riad" direction: an editorial page built only from the household's real data. */
-export function HomeTab({ compose, recompose, go }: { compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list' | 'stores' | 'recipes') => void }) {
-  const { lang, me, house, patchMe, toast } = useApp()
+export function HomeTab({ compose, recompose, go, makeHealthy }: { compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list' | 'stores' | 'recipes') => void; makeHealthy: () => void }) {
+  const { lang, me, house, patchMe, upHouse, toast } = useApp()
+  const [eat, setEat] = useState(false)
   const { items, total, spent, store, price } = useBasket()
   const [prefs, setPrefs] = useState(false); const [rv, setRv] = useState<Recipe | null>(null); const [rep, setRep] = useState<string | null>(null)
   const plan = house!.plan; const n = Object.keys(plan).length
@@ -52,7 +53,7 @@ export function HomeTab({ compose, recompose, go }: { compose: () => void; recom
   // Suggestions from real data only: pantry matches, then favourites, then quick dishes of the chosen cuisine.
   const sugg = useMemo(() => {
     const inPlan = new Set(Object.values(plan).map((e) => e.r)); const pantry = house!.pantry
-    const ok = (r: Recipe) => r.m.length > 0 && !inPlan.has(r.id) && (cuisine === 'mix' || cuisineOf(r) === cuisine || cuisine === 'healthy') && !(me!.diet.includes('vegetarian') && !r.tags.includes('vegetarian'))
+    const ok = (r: Recipe) => (r.m.includes('l') || r.m.includes('d')) && !inPlan.has(r.id) && (cuisine === 'mix' || cuisineOf(r) === cuisine || cuisine === 'healthy') && !(me!.diet.includes('vegetarian') && !r.tags.includes('vegetarian'))
     const out: { r: Recipe; why: string }[] = []; const seen = new Set<string>()
     const push = (r: Recipe, why: string) => { if (out.length < 3 && !seen.has(r.id)) { seen.add(r.id); out.push({ r, why }) } }
     const have = RECIPES.filter(ok).map((r) => ({ r, hit: r.ing.map((s) => parseIng(s).id).filter((id) => (pantry[id] ?? 0) > 0 && ['produce', 'meat', 'dairy'].includes(ING[id]?.aisle)) })).filter((x) => x.hit.length >= 2).sort((a, b) => b.hit.length - a.hit.length)
@@ -62,7 +63,34 @@ export function HomeTab({ compose, recompose, go }: { compose: () => void; recom
     return out
   }, [plan, house, me, cuisine, lang])
 
-  const tg = (g: string) => { const ng = goals.includes(g) ? goals.filter((x) => x !== g) : [...goals, g]; patchMe({ goals: ng }); recompose({ goals: ng }) }
+  const tg = (g: string) => { const on = !goals.includes(g); const ng = on ? [...goals.filter((x) => !(g === 'healthy' && x === 'gourmand')), g] : goals.filter((x) => x !== g); patchMe({ goals: ng }); if (g === 'healthy' && on && n) makeHealthy(); else recompose({ goals: ng }) }
+  const veg = me!.diet.includes('vegetarian')
+  const setCountry = (c: string) => { if (c === me!.country) return; const cu = c === 'FR' ? 'fr' : 'ma'; patchMe({ country: c, cuisine: cu, region: 'all' }); upHouse((h) => { h.store = undefined }); recompose({ cuisine: cu, region: 'all' }); toast(c === 'FR' ? '🇫🇷 France · €' : '🇲🇦 Maroc · MAD') }
+  const QUICK: [string, string, LucideIcon, boolean, () => void][] = [
+    ['healthy', 'Healthy', Leaf, goals.includes('healthy'), () => tg('healthy')],
+    ['veg', L(lang, 'Veggie', 'Végé', 'نباتي'), Carrot, veg, () => { const d = veg ? [] : ['vegetarian']; patchMe({ diet: d }); recompose({ diet: d }) }],
+    ['cheap', t('g_cheap', lang), Wallet, goals.includes('cheap'), () => tg('cheap')],
+    ['quick', t('g_quick', lang), Zap, goals.includes('quick'), () => tg('quick')],
+  ]
+  // One journey for the whole app: week → store → shopping.
+  const stepI = !n ? 0 : !store ? 1 : left.length ? 2 : 3
+  const STEPS = [L(lang, 'Week', 'Semaine', 'الأسبوع'), L(lang, 'Store', 'Magasin', 'المتجر'), L(lang, 'Shopping', 'Courses', 'التسوق')]
+  const act: [string, string, LucideIcon, () => void] = stepI === 0 ? [t('composeAuto', lang), L(lang, '7 days of meals, the list and the budget in one tap', '7 jours de repas, la liste et le budget en un geste', '7 أيام من الوجبات واللائحة والميزانية بلمسة'), Sparkles, compose]
+    : stepI === 1 ? [L(lang, 'Choose my store', 'Choisir mon magasin', 'اختيار متجري'), L(lang, `${items.length} items · compare prices or go straight to the list`, `${items.length} articles · comparez les prix ou allez droit à la liste`, `${items.length} منتج · قارن الأسعار أو اذهب للائحة`), Store, () => go('stores')]
+    : stepI === 2 ? [L(lang, 'Go shopping', 'Faire mes courses', 'التسوق'), `${left.length} ${L(lang, 'items', 'articles', 'منتج')} · ${money(leftCost, lang)} · ${store!.name}`, ShoppingCart, () => go('list')]
+    : [L(lang, 'Shopping done', 'Courses faites', 'تم التسوق') + ' ✓', items.length ? `${money(spent, lang)} · ${store?.name ?? ''}` : L(lang, 'Everything is already at home', 'Tout est déjà à la maison', 'كل شيء متوفر في البيت'), Check, () => go('week')]
+  // "What do we eat today?": dishes ranked by what is already at home (bought or in the pantry).
+  const [shift, setShift] = useState(0)
+  const ideas = useMemo(() => {
+    const pantry = house!.pantry
+    const ok = (r: Recipe) => (r.m.includes('l') || r.m.includes('d')) && (cuisine === 'mix' || cuisineOf(r) === cuisine || cuisine === 'healthy') && !(veg && !r.tags.includes('vegetarian'))
+    return RECIPES.filter(ok).map((r) => { const ids = r.ing.map((x) => parseIng(x).id); const fresh = ids.filter((id) => ['produce', 'meat', 'dairy'].includes(ING[id]?.aisle)); const hit = fresh.filter((id) => (pantry[id] ?? 0) > 0); return { r, hit, of: fresh.length, score: hit.length * 3 - (fresh.length - hit.length) * 0.5 + (r.t <= 35 ? 2 : 0) - r.t / 60 } })
+      .sort((a, b) => b.score - a.score || a.r.t - b.r.t)
+  }, [house, cuisine, veg])
+  const hasHome = ideas.some((x) => x.hit.length > 0)
+  const shown = ideas.slice(shift % Math.max(1, ideas.length - 3), (shift % Math.max(1, ideas.length - 3)) + 3)
+  const slotNow: Meal = now.getHours() < 15 ? 'l' : 'd'
+  const putToday = (r: Recipe) => { upHouse((h) => { h.plan[`${today}-${slotNow}`] = { r: r.id, n: me!.size, x: composeSides(r.id, slotNow) } }, `+ ${rname(r.n, lang)}`); toast(`✅ ${rname(r.n, lang)} · ${t(slotNow, lang)}`); setEat(false) }
   const prefLine = [`${FLAG[cuisine]} ${t('c_' + cuisine, lang)}`, cuisine === 'ma' && region !== 'all' ? t('r_' + region, lang) : '', ...goals.filter((g) => ['cheap', 'quick', 'varied'].includes(g)).map((g) => t('g_' + g, lang)), `${me!.size} ${t('people', lang).toLowerCase()}`, money(me!.budget, lang)].filter(Boolean).join(' · ')
   const nr = nm ? REC[nm.e.r] : null
 
@@ -76,12 +104,40 @@ export function HomeTab({ compose, recompose, go }: { compose: () => void; recom
         <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-muted"><Users size={14} aria-hidden /> {house!.name} · {house!.members.length} {L(lang, house!.members.length > 1 ? 'members' : 'member', house!.members.length > 1 ? 'membres' : 'membre', 'أعضاء')}</p>
       </header>
 
+      {/* Quick choices, always visible */}
+      <div className="rise -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:col-span-12 lg:mx-0 lg:flex-wrap lg:px-0" data-noswipe>
+        {[['MA', '🇲🇦 Maroc'], ['FR', '🇫🇷 France']].map(([c, l]) => <button key={c} className="chip shrink-0" aria-pressed={me!.country === c} onClick={() => setCountry(c)}>{l}</button>)}
+        <span className="mx-1 w-px shrink-0 self-stretch bg-line" aria-hidden />
+        {QUICK.map(([k, l, I, on, f]) => <button key={k} className="chip shrink-0" aria-pressed={on} onClick={f}><I size={15} className="me-1.5" aria-hidden />{l}</button>)}
+        <button className="chip shrink-0" onClick={() => setPrefs(true)}><SlidersHorizontal size={15} className="me-1.5" aria-hidden />{L(lang, 'More', 'Plus', 'المزيد')}</button>
+      </div>
+
+      {/* The journey: one clear next action */}
+      <section className="rise lg:col-span-7" aria-label={L(lang, 'Your journey', 'Votre parcours', 'مسارك')}>
+        <div className="relative overflow-hidden rounded-[28px] bg-forest p-4 text-white sm:p-5">
+          <span className="zellige pointer-events-none absolute inset-0 opacity-[.06]" aria-hidden />
+          <ol className="relative flex items-center gap-1.5 text-[12px] font-bold">{STEPS.map((x, i) => <li key={x} className="flex flex-1 items-center gap-1.5"><span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs transition ${i < stepI ? 'bg-white text-forest' : i === stepI ? 'bg-apricot text-ink ring-4 ring-apricot/30' : 'bg-white/15 text-white/70'}`}>{i < stepI ? '✓' : i + 1}</span><span className={i === stepI ? 'text-white' : 'text-white/65'}>{x}</span>{i < 2 && <span className={`h-0.5 min-w-2 flex-1 rounded ${i < stepI ? 'bg-white' : 'bg-white/20'}`} />}</li>)}</ol>
+          <button className="relative mt-4 flex w-full items-center gap-3 rounded-2xl bg-white p-3.5 text-start text-ink shadow-lg transition active:scale-[.98]" onClick={act[3]}>
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-forest text-white">{(() => { const I = act[2]; return <I size={22} aria-hidden /> })()}</span>
+            <span className="min-w-0 flex-1"><span className="block font-display text-[17px] font-extrabold leading-tight">{act[0]}</span><span className="block truncate text-xs text-muted">{act[1]}</span></span>
+            <ArrowRight size={20} className="shrink-0 text-forest rtl:rotate-180" aria-hidden />
+          </button>
+          {stepI === 3 && <button className="relative mt-2 w-full py-1.5 text-sm font-semibold text-white/85" onClick={compose}><RefreshCw size={14} className="-mt-0.5 me-1 inline" aria-hidden />{t('newWeek', lang)}</button>}
+        </div>
+      </section>
+
+      <button className="rise group flex w-full self-stretch lg:col-span-5 items-center gap-3 rounded-[24px] bg-apricot/25 p-4 text-start transition active:scale-[.98]" onClick={() => setEat(true)}>
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-apricot text-ink"><UtensilsCrossed size={22} aria-hidden /></span>
+        <span className="min-w-0 flex-1"><span className="block font-serif text-[19px] font-semibold leading-tight">{L(lang, 'What do we eat today?', 'Que manger aujourd’hui ?', 'ماذا نأكل اليوم؟')}</span><span className="block truncate text-xs text-muted">{hasHome ? L(lang, 'Ideas with what you already have', 'Des idées avec ce que vous avez déjà', 'أفكار بما لديكم') : L(lang, 'A quick idea for today', 'Une idée rapide pour aujourd’hui', 'فكرة سريعة لليوم')}</span></span>
+        <ArrowRight size={18} className="shrink-0 text-ink/60 transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden />
+      </button>
+
       {/* Zone 2 — the next meal */}
-      <section className="lg:col-span-7" aria-label={L(lang, 'Next meal', 'Prochain repas', 'الوجبة القادمة')}>
+      {nm && <section className="lg:col-span-7" aria-label={L(lang, 'Next meal', 'Prochain repas', 'الوجبة القادمة')}>
         {nr && nm ? (
           <article className="hero-meal rise -mx-4 overflow-hidden bg-surface sm:mx-0 sm:rounded-[28px] sm:shadow-soft">
             <button className="relative block w-full text-start" onClick={() => setRv(nr)} aria-label={rname(nr.n, lang)}>
-              <Dish r={nr} w={1100} credit className="h-[330px] kenburns lg:h-[420px]" />
+              <Dish r={nr} w={1100} credit className="h-[220px] kenburns lg:h-[300px]" />
               <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
               <span className="absolute inset-x-0 bottom-0 p-5 text-white">
                 <span className="text-[11px] font-bold uppercase tracking-[.18em] text-apricot">{when(nm.off, nm.s, nm.d, lang)}</span>
@@ -94,19 +150,8 @@ export function HomeTab({ compose, recompose, go }: { compose: () => void; recom
               <button className="btn btn-soft flex-1" onClick={() => setRep(nm.k)}><RefreshCw size={17} aria-hidden /> {L(lang, 'Replace', 'Remplacer', 'تغيير')}</button>
             </div>
           </article>
-        ) : (
-          <article className="rise relative -mx-4 overflow-hidden bg-forest p-6 text-white sm:mx-0 sm:rounded-[28px] lg:p-10">
-            <span className="zellige pointer-events-none absolute inset-0 opacity-[.06]" aria-hidden />
-            <p className="relative text-[11px] font-bold uppercase tracking-[.18em] text-apricot">{n ? L(lang, 'Your week is over', 'Semaine terminée', 'انتهى الأسبوع') : L(lang, 'Your first week', 'Votre première semaine', 'أسبوعكم الأول')}</p>
-            <h2 className="relative mt-2 max-w-md font-serif text-[30px] font-semibold leading-[1.1] text-white lg:text-[40px]">{L(lang, 'Real home cooking, without the headache.', 'La vraie cuisine maison, sans y penser.', 'طبخ منزلي حقيقي، بلا عناء.')}</h2>
-            <p className="relative mt-2 max-w-md text-sm text-white/80">{t('composeSub', lang)}</p>
-            <div className="relative mt-5 flex flex-wrap gap-2">
-              <button className="btn bg-white !text-forest" onClick={compose}><Sparkles size={17} aria-hidden /> {t('composeAuto', lang)}</button>
-              <button className="btn border border-white/30 bg-transparent text-white" onClick={() => setPrefs(true)}><SlidersHorizontal size={17} aria-hidden /> {t('prefs', lang)}</button>
-            </div>
-          </article>
-        )}
-      </section>
+        ) : null}
+      </section>}
 
       {/* Zone 3 — the week ahead */}
       {n > 0 && (
@@ -131,24 +176,6 @@ export function HomeTab({ compose, recompose, go }: { compose: () => void; recom
 
       {/* Zone 4 + 5 — shopping and ideas (right column on desktop) */}
       <aside className="space-y-8 lg:col-span-5 lg:space-y-6">
-        {n > 0 && (
-          <section className="rise">
-            <h2 className="mb-3 font-serif text-[22px] font-semibold">{t('list', lang)}</h2>
-            <button className="group w-full rounded-[24px] bg-cream p-4 text-start transition active:scale-[.99]" onClick={() => go(store ? 'list' : 'stores')}>
-              <span className="flex items-start gap-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-surface text-forest shadow-soft"><ShoppingBasket size={20} aria-hidden /></span>
-                <span className="min-w-0 flex-1">
-                  {!items.length ? <><span className="block font-semibold">{L(lang, 'Everything is at home', 'Tout est déjà à la maison', 'كل شيء متوفر في البيت')}</span><span className="block text-xs text-muted">{L(lang, 'Your pantry covers this week.', 'Votre garde-manger couvre la semaine.', 'المخزن يغطي هذا الأسبوع.')}</span></>
-                    : !left.length ? <><span className="block font-semibold">{L(lang, 'Shopping done', 'Courses faites', 'تم التسوق')} ✓</span><span className="block text-xs text-muted">{money(spent, lang)}{store ? ` · ${store.name}` : ''}</span></>
-                    : <><span className="block font-semibold">{left.length} {L(lang, 'items left', left.length > 1 ? 'articles restants' : 'article restant', 'منتجات متبقية')} · <span className="tabular-nums">{money(leftCost, lang)}</span></span>
-                      <span className="block truncate text-xs text-muted">{store ? store.name : L(lang, 'Choose your store to see its prices', 'Choisissez votre magasin pour ses prix', 'اختر متجرك لرؤية أسعاره')}</span></>}
-                </span>
-                <ChevronRight size={18} className="mt-3 shrink-0 text-muted transition group-hover:translate-x-0.5 rtl:rotate-180" aria-hidden />
-              </span>
-              {items.length > 0 && <span className="mt-3 block h-1.5 overflow-hidden rounded-full bg-surface"><span className="block h-full rounded-full bg-forest transition-all duration-700" style={{ width: `${((items.length - left.length) / items.length) * 100}%` }} /></span>}
-            </button>
-          </section>
-        )}
         {sugg.length > 0 && (
           <section className="rise">
             <div className="mb-3 flex items-baseline justify-between"><h2 className="font-serif text-[22px] font-semibold">{L(lang, 'Ideas for you', 'Idées pour vous', 'أفكار لكم')}</h2><button className="text-sm font-semibold text-forest" onClick={() => go('recipes')}>{L(lang, 'All recipes', 'Toutes les recettes', 'كل الوصفات')}</button></div>
@@ -168,6 +195,17 @@ export function HomeTab({ compose, recompose, go }: { compose: () => void; recom
         {n > 0 && <button className="inline-flex items-center gap-2 font-semibold text-ink" onClick={compose}><RefreshCw size={16} className="text-forest" aria-hidden /> {t('newWeek', lang)}</button>}
       </nav>
 
+      <Sheet open={eat} onClose={() => setEat(false)} title={L(lang, 'What do we eat today?', 'Que manger aujourd’hui ?', 'ماذا نأكل اليوم؟')}>
+        <p className="mb-3 text-sm text-muted">{hasHome ? L(lang, 'Ranked by what is already at home (your last shopping and pantry).', 'Classées selon ce que vous avez déjà (vos dernières courses et le garde-manger).', 'مرتبة حسب ما لديكم في البيت.') : L(lang, 'Nothing in the pantry yet: here are quick dishes. After your shopping, ideas will use what you bought.', 'Rien au garde-manger pour l’instant : voici des plats rapides. Après vos courses, les idées utiliseront ce que vous avez acheté.', 'المخزن فارغ: إليكم أطباق سريعة.')}</p>
+        <div className="space-y-3">{shown.map(({ r, hit, of }) => (
+          <div key={r.id} className="fade-up flex items-center gap-3 rounded-2xl border border-line p-2.5">
+            <button className="shrink-0" onClick={() => setRv(r)} aria-label={rname(r.n, lang)}><Dish r={r} w={200} className="h-16 w-16 rounded-xl" /></button>
+            <button className="min-w-0 flex-1 text-start" onClick={() => setRv(r)}><span className="line-clamp-2 block font-semibold leading-snug">{rname(r.n, lang)}</span><span className="block truncate text-xs text-muted">{hit.length ? `${L(lang, 'You have', 'Vous avez', 'لديكم')} ${hit.length}/${of} : ${hit.slice(0, 3).map((id) => ING[id].n[li(lang)].toLowerCase()).join(', ')}` : `⏱ ${r.t} min`}</span></button>
+            <button className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-white shadow-lg active:scale-90" onClick={() => putToday(r)} aria-label={L(lang, 'Add to today', 'Ajouter à aujourd’hui', 'أضف لليوم')}><Plus size={20} aria-hidden /></button>
+          </div>))}</div>
+        <button className="btn btn-soft mt-3 w-full" onClick={() => setShift(shift + 3)}><Dices size={17} aria-hidden /> {L(lang, 'Other ideas', 'D’autres idées', 'أفكار أخرى')}</button>
+        <p className="mt-2 text-center text-[11px] text-muted">{L(lang, 'Adds the dish to today’s', 'Ajoute le plat au', 'يضيف الطبق إلى')} {t(slotNow, lang).toLowerCase()} · {L(lang, 'your list updates', 'la liste se met à jour', 'تتحدث اللائحة')}</p>
+      </Sheet>
       <Sheet open={prefs} onClose={() => setPrefs(false)} title={t('prefs', lang)}>
         <div className="space-y-4">
           <div>
