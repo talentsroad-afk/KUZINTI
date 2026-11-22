@@ -52,7 +52,7 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   const [f, setF] = useState({ name: '', qty: '', price: '', note: '' })
   const budget = me!.budget; const chk = house!.checked
   const done = items.filter((x) => chk[x.key]).length
-  const pace = total; const left = budget - spent; const over = pace > budget
+  const pace = total; const over = pace > budget
   const day = house!.listDay ?? -1; const [fridge, setFridge] = useState(false)
   const dayLines = useMemo(() => day < 0 ? lines : buildList(Object.fromEntries(Object.entries(house!.plan).filter(([k]) => k.startsWith(day + '-'))), house!.pantry, {}, {}), [day, lines, house])
   const buy = dayLines.filter((l) => l.buy > 0 || l.auto > 0)
@@ -85,10 +85,9 @@ export function CoursesTab({ celebrate, goStores, compose }: { celebrate: () => 
   return (
     <div className="space-y-3">
       <div className="card p-4">
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div><p className="text-[11px] font-semibold uppercase text-muted">{t('budgetW', lang)}</p><p className="font-display text-lg font-extrabold tabular-nums">{money(budget, lang)}</p></div>
-          <div><p className="text-[11px] font-semibold uppercase text-muted">{t('spent', lang)}</p><p className="font-display text-lg font-extrabold tabular-nums text-forest">{money(spent, lang)}</p></div>
-          <div><p className="text-[11px] font-semibold uppercase text-muted">{t('left', lang)}</p><p className="font-display text-lg font-extrabold tabular-nums" style={{ color: left < 0 ? 'rgb(var(--danger))' : 'rgb(var(--ink))' }}>{money(left, lang)}</p></div>
+        <div className="grid grid-cols-4 gap-1 text-center">
+          {([[t('budgetW', lang), budget, 'ink'], [t('taken', lang), spent, 'forest'], [t('toTake', lang), pace - spent, 'ink'], [t('solde', lang), budget - pace, budget - pace < 0 ? 'danger' : 'forest']] as [string, number, string][]).map(([l, v, c]) => (
+            <div key={l} className="rounded-xl bg-cream/60 px-1 py-1.5"><p className="text-[10px] font-semibold uppercase leading-tight text-muted">{l}</p><p className="whitespace-nowrap font-display text-[13px] font-extrabold tabular-nums" style={{ color: `rgb(var(--${c}))` }}>{money(v, lang)}</p></div>))}
         </div>
         <div className="relative mt-3 h-3 overflow-hidden rounded-full bg-cream">
           <div className="absolute inset-y-0 start-0 rounded-full bg-leaf/50 transition-all duration-500" style={{ width: `${Math.min(100, (pace / budget) * 100)}%` }} />

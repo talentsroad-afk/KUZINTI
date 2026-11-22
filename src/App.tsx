@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApp } from './lib/store'
 import { money, t, type Lang } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
@@ -120,7 +120,7 @@ function Shell() {
   const [note, setNote] = useState<string | null>(null)
   const [boom, setBoom] = useState(0)
   const p = usePrefs()
-  const { extraCost, total, items, lines, homeCost, customCost } = useBasket()
+  const { extraCost, total, items, lines, homeCost, customCost, store, spent } = useBasket()
   const budget = me!.budget; const over = total > budget
   const celebrate = () => setBoom((b) => b + 1)
   const [undo, setUndo] = useState<[string, () => void] | null>(null)
@@ -143,7 +143,17 @@ function Shell() {
     const bits = [fit.swapped && `${fit.swapped} ${t('swapped', lang)}`, fit.scaled && `${fit.scaled} ${t('scaled', lang)}`].filter(Boolean).join(' · ')
     say(fit.after + extraCost <= b ? `✅ ${bits || t('fitted', lang)} · −${money(fit.before - fit.after, lang)}` : `${t('tight', lang)} ${bits}`, u)
   }
-  const setBudget = (b: number) => { patchMe({ budget: b }); if (hasPlan && total > b) adapt(b) }
+  // Budget change re-builds the week to fit the new cap (up or down), debounced for the slider, with undo.
+  const bt = useRef<number | undefined>(undefined)
+  const setBudget = (b: number) => { patchMe({ budget: b }); if (!hasPlan) return; clearTimeout(bt.current); bt.current = window.setTimeout(() => refit(b), 450) }
+  const refit = (b: number) => {
+    const u = snap(t('adjustB', lang)); const mul = store ? Math.max(...Object.values(store.m)) : 1
+    const target = Math.max(0, (b - extraCost) / mul)
+    const next = composeWeek({ ...p, budget: target }, h.pantry, h.extras ?? {})
+    const c = listCost(next, h.pantry, h.extras ?? {}) * mul + extraCost
+    upHouse((x) => { x.plan = next; x.qty = {} }, `budget ${b}`)
+    say(c <= b ? `✅ ${t('fitB', lang)} ${money(b, lang)} · ${money(b - c, lang)} ${t('margin', lang)}` : `⚠️ ${t('minB', lang)} ${money(c, lang)} (+${money(c - b, lang)}). ${t('minHint', lang)}`, u)
+  }
   const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
   const [up, setUp] = useState(false)
   useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
@@ -182,6 +192,7 @@ function Shell() {
           <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button><span className="font-display text-lg font-extrabold">{title}</span>
           <button data-tour="budget" className="ms-auto min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
             <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
+            <span className={`block text-[10px] font-semibold tabular-nums ${over ? 'text-danger' : 'text-muted'}`}>{t('solde', lang)} {over ? '−' : ''}{money(Math.abs(budget - total), lang)} · {t('taken', lang)} {money(spent, lang)}</span>
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
           </button>
         </div>
