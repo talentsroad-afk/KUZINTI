@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from './lib/store'
 import type { Recipe } from './data/recipes'
+import { photoOf, photoSrc } from './data/photos'
 
 export const Logo = ({ size = 36 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 96 96" aria-hidden><rect width="96" height="96" rx="26" fill="#245B43" /><path d="M30 66c0-22 14-36 38-38 0 22-12 38-34 38" fill="#8DBB91" /><path d="M30 66c8-14 18-24 30-30" stroke="#F4F1E8" strokeWidth="4" strokeLinecap="round" fill="none" /><circle cx="66" cy="66" r="7" fill="#F2B96B" /></svg>
@@ -14,6 +15,17 @@ export function FoodTile({ r, className = '' }: { r: Recipe; className?: string 
     <div className={`relative grid place-items-center overflow-hidden ${className}`} style={{ background: `linear-gradient(135deg, hsl(${r.h} 80% 88%), hsl(${(r.h + 30) % 360} 70% 78%))` }}>
       <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/40 blur-xl" />
       <span className="relative text-5xl drop-shadow-sm" role="img" aria-hidden>{r.e}</span>
+    </div>
+  )
+}
+/** Real food photo when the dish family has one (free Unsplash License), the drawn tile otherwise or if it fails to load. */
+export function Dish({ r, className = '', w = 600, credit = false }: { r: Recipe; className?: string; w?: number; credit?: boolean }) {
+  const p = photoOf(r); const [bad, setBad] = useState(false); const [ok, setOk] = useState(false)
+  if (!p || bad) return <FoodTile r={r} className={className} />
+  return (
+    <div className={`relative overflow-hidden bg-cream ${className}`}>
+      <img src={photoSrc(p, w)} alt="" loading="lazy" decoding="async" onLoad={() => setOk(true)} onError={() => setBad(true)} className={`h-full w-full object-cover transition-[opacity,transform] duration-700 ${ok ? 'scale-100 opacity-100' : 'scale-105 opacity-0'}`} />
+      {credit && <span className="absolute bottom-2 end-3 text-[9px] font-medium text-white/75">Photo {p.by} · Unsplash</span>}
     </div>
   )
 }

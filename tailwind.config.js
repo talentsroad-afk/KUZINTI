@@ -14,8 +14,10 @@ export default {
         apricot: 'rgb(var(--apricot) / <alpha-value>)',
         cream: 'rgb(var(--cream) / <alpha-value>)',
         danger: 'rgb(var(--danger) / <alpha-value>)',
+        terracotta: 'rgb(var(--terracotta) / <alpha-value>)',
       },
       fontFamily: {
+        serif: ['Fraunces', 'Georgia', 'serif'],
         display: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },

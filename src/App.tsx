@@ -3,7 +3,8 @@ import { useApp } from './lib/store'
 import { money, setCurrency, t, type Lang } from './lib/i18n'
 import { Brand, Confetti, Toasts } from './ui'
 import { RECIPES } from './data/recipes'
-import { Controls, HomeTab, usePrefs, WeekTab } from './Screens'
+import { Controls, usePrefs, WeekTab } from './Screens'
+import { HomeTab } from './Home'
 import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
@@ -202,24 +203,24 @@ function Shell() {
     <div className="calm min-h-screen">
       <Confetti run={boom} />
       <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.88)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-2.5">
-          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button><span className="font-display text-lg font-extrabold">{space === 'out' ? t('tSorties', lang) : title}</span>
+        <div className={`mx-auto flex max-w-2xl items-center gap-3 px-4 py-2.5 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
+          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button>{tab !== 'home' && <span className="font-display text-lg font-extrabold">{space === 'out' ? t('tSorties', lang) : title}</span>}
           {space === 'food' && <button data-tour="budget" className="ms-auto min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
             <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
             <span className={`block text-[10px] font-semibold tabular-nums ${over ? 'text-danger' : 'text-muted'}`}>{t('solde', lang)} {over ? '−' : ''}{money(Math.abs(budget - total), lang)} · {t('taken', lang)} {money(spent, lang)}</span>
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
           </button>}
         </div>
-        {space === 'food' && <><div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-1">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
+        {space === 'food' && (tab !== 'home' || tour) && <><div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-1">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
           <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${ok ? 'bg-forest text-white' : i === cur ? 'bg-apricot text-ink ring-2 ring-apricot/40' : 'bg-cream text-muted'}`}>{ok ? '✓' : i + 1}</span>
           <span className={`truncate ${i === cur ? 'text-ink' : 'text-muted'}`}>{t(k, lang)}</span>{i < 4 && <span className={`h-0.5 min-w-1 flex-1 rounded ${ok ? 'bg-forest' : 'bg-line'}`} />}</button>)}</div>
         {tab !== 'home' && <p className="mx-auto max-w-2xl px-4 pb-2 text-[11px] font-semibold text-forest">{cur < 0 ? '🎉 Parcours terminé ! Recompose une nouvelle semaine quand tu veux.' : `👉 Étape ${cur + 1} sur 5 · ${[t('stepHint0', lang), t('stepHint1', lang), t('stepHint3', lang), t('stepHint2', lang), t('stepHint4', lang)][cur]}`}</p>}</>}
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
-      <main className="mx-auto w-full max-w-2xl px-4 pb-40 pt-2">
+      <main className={`mx-auto w-full max-w-2xl px-4 pb-40 pt-2 ${tab === 'home' ? 'lg:max-w-5xl' : ''}`}>
         {tab !== 'home' && <Hint tab={space === 'out' ? 'sorties' : tab} />}
         {space === 'out' ? <div className="fade-up"><SortiesTab /></div> : <div key={tab + lang} className="fade-up">
-          {tab === 'home' && <HomeTab compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} total={total} items={items.length} />}
+          {tab === 'home' && <HomeTab compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} />}
           {tab === 'week' && <button className="mb-3 flex w-full items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm font-bold text-forest shadow-soft" onClick={() => go('recipes')}><BookOpen size={18} aria-hidden /> {t('tRecipes', lang)} · {lang === 'en' ? 'browse & favorites' : 'parcourir et favoris'} <span className="ms-auto">›</span></button>}
           {tab === 'week' && <WeekTab compose={compose} makeHealthy={makeHealthy} say={say} />}
           {tab === 'list' && <CoursesTab celebrate={celebrate} goStores={() => go('stores')} compose={compose} />}

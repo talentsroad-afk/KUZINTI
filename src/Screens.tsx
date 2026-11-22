@@ -1,4 +1,4 @@
-import { BookOpen, Coffee, Dices, Moon, RefreshCw, Shuffle, SlidersHorizontal, Sparkles, Sun, Sunrise, Wallet, Zap, type LucideIcon } from 'lucide-react'
+import { BookOpen, Coffee, Dices, Moon, RefreshCw, Shuffle, Sun, Sunrise, type LucideIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useApp } from './lib/store'
 import { dayName, money, rname, t, type Lang } from './lib/i18n'
@@ -6,7 +6,7 @@ import { REC, type Meal, type Recipe } from './data/recipes'
 import { ING } from './data/catalog'
 import { SIDE } from './data/sides'
 import { dailyKcal, entryCost, entryKcal, fmtQty, healthLevel, kcalPerServing, parseIng, recipeCost, toBase } from './lib/engine'
-import { alternatives, CUISINES, FLAG, REGIONS, surpriseOne, composeSides, type Prefs } from './lib/plan'
+import { alternatives, FLAG, surpriseOne, composeSides, type Prefs } from './lib/plan'
 import { FoodTile, Sheet, Stepper } from './ui'
 import { FormeCard } from './Forme'
 
@@ -104,61 +104,8 @@ export function Controls({ setBudget }: { setBudget: (b: number) => void }) {
   )
 }
 
-/** Home, Apple-simple: a calm greeting, one "Votre semaine" summary, preferences folded into one row. */
-export function HomeTab({ compose, recompose, go, total, items }: { compose: () => void; recompose: (o: Partial<Prefs>) => void; go: (t: 'week' | 'list') => void; total: number; items: number }) {
-  const { lang, me, house, patchMe } = useApp()
-  const [prefs, setPrefs] = useState(false)
-  const cuisine = me!.cuisine ?? 'ma'; const region = me!.region ?? 'all'; const goals = me!.goals ?? []
-  const plan = house!.plan; const n = Object.keys(plan).length
-  const today = (new Date().getDay() + 6) % 7
-  const tg = (g: string) => { const ng = goals.includes(g) ? goals.filter((x) => x !== g) : [...goals.filter((x) => !(g === 'healthy' && x === 'gourmand') && !(g === 'gourmand' && x === 'healthy')), g]; patchMe({ goals: ng }); recompose({ goals: ng }) }
-  const summary = [`${FLAG[cuisine]} ${t('c_' + cuisine, lang)}`, cuisine === 'ma' && region !== 'all' ? t('r_' + region, lang) : '', ...goals.filter((g) => ['cheap', 'quick', 'varied'].includes(g)).map((g) => t('g_' + g, lang)), `${me!.size} ${t('people', lang).toLowerCase()}`, money(me!.budget, lang)].filter(Boolean).join(' · ')
-  const left = me!.budget - total
-  return (
-    <div className="space-y-5">
-      <div className="rise pt-1"><p className="text-sm text-muted">{t('hello', lang)} {me!.name}</p><h1 className="font-display text-[28px] font-extrabold leading-tight">{n ? t('weekReady', lang) : t('homeTitle', lang)}</h1></div>
-      {n > 0 ? (
-        <div className="card rise overflow-hidden">
-          <div className="grid grid-cols-7 gap-1 px-3 pt-4 text-center">{Array.from({ length: 7 }, (_, d) => { const e = plan[`${d}-l`] ?? plan[`${d}-d`]; return <button key={d} onClick={() => go('week')} className={`rounded-2xl py-1.5 ${d === today ? 'bg-cream' : ''}`}><p className={`text-[10px] font-bold uppercase ${d === today ? 'text-forest' : 'text-muted'}`}>{dayName(d, lang).slice(0, 2)}</p><p className="text-2xl">{e ? REC[e.r].e : '·'}</p></button> })}</div>
-          <div className="mt-3 grid grid-cols-3 divide-x divide-line/70 border-y border-line/70 text-center rtl:divide-x-reverse">
-            <div className="py-3"><b className="block text-lg tabular-nums">{n}</b><span className="text-[11px] text-muted">{t('meals', lang)}</span></div>
-            <div className="py-3">{items > 0 ? <><b className="block text-lg tabular-nums">{items}</b><span className="text-[11px] text-muted">{t('toBuy', lang).toLowerCase()}</span></> : <><b className="block text-lg text-forest">✓</b><span className="text-[11px] text-muted">{t('allHome', lang)}</span></>}</div>
-            <div className="py-3"><b className="block text-lg tabular-nums" style={{ color: left < 0 ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }}>{money(Math.abs(left), lang)}</b><span className="text-[11px] text-muted">{left < 0 ? t('overBy', lang) : t('left', lang)}</span></div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 p-3"><button className="btn btn-primary" onClick={() => go('week')}>{t('seeWeek', lang)}</button><button className="btn btn-soft" onClick={() => go('list')}>{t('myList', lang)}</button></div>
-        </div>
-      ) : (
-        <div className="card rise space-y-3 p-5"><p className="text-sm text-muted">{t('composeSub', lang)}</p><button className="btn btn-primary w-full" onClick={compose}><Sparkles size={18} aria-hidden /> {t('composeAuto', lang)}</button></div>
-      )}
-      <div className="card divide-y divide-line/70 overflow-hidden">
-        <button className="flex w-full items-center gap-3 px-4 py-3.5 text-start active:bg-cream" onClick={() => setPrefs(true)}>
-          <SlidersHorizontal size={18} className="shrink-0 text-forest" aria-hidden /><span className="min-w-0 flex-1"><span className="block font-semibold">{t('prefs', lang)}</span><span className="block truncate text-xs text-muted">{summary}</span></span><span className="text-muted" aria-hidden>›</span>
-        </button>
-        {n > 0 && <button className="flex w-full items-center gap-3 px-4 py-3.5 text-start active:bg-cream" onClick={compose}>
-          <RefreshCw size={18} className="shrink-0 text-forest" aria-hidden /><span className="min-w-0 flex-1"><span className="block font-semibold">{t('newWeek', lang)}</span><span className="block truncate text-xs text-muted">{t('newWeekD', lang)}</span></span><span className="text-muted" aria-hidden>›</span>
-        </button>}
-      </div>
-      <Sheet open={prefs} onClose={() => setPrefs(false)} title={t('prefs', lang)}>
-        <div className="space-y-4">
-          <div>
-            <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-muted">{t('cuisine', lang)}</p>
-            <div className="flex flex-wrap gap-2">{CUISINES.map((c) => <button key={c} className="chip" aria-pressed={cuisine === c} onClick={() => { patchMe({ cuisine: c, region: 'all' }); recompose({ cuisine: c, region: 'all' }) }}>{FLAG[c]} {t('c_' + c, lang)}</button>)}</div>
-            {cuisine === 'ma' && <div className="mt-2 flex flex-wrap gap-1.5">{REGIONS.map((r) => <button key={r} className={`rounded-full px-3 py-1 text-xs font-semibold ${region === r ? 'bg-leaf/40 text-forest' : 'text-muted'}`} onClick={() => { patchMe({ region: r }); recompose({ region: r }) }}>{t('r_' + r, lang)}</button>)}</div>}
-          </div>
-          <div>
-            <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-muted">{t('goals', lang)}</p>
-            <div className="flex flex-wrap gap-2">{([['cheap', Wallet], ['quick', Zap], ['varied', Shuffle]] as const).map(([g, E]) => <button key={g} className="chip" aria-pressed={goals.includes(g)} onClick={() => tg(g)}><E size={15} className="me-1.5" aria-hidden />{t('g_' + g, lang)}</button>)}</div>
-          </div>
-          <Controls setBudget={(b) => patchMe({ budget: b })} />
-          <button className="btn btn-primary w-full" onClick={() => { setPrefs(false); if (!n) compose() }}>{n ? t('ok', lang) : t('composeAuto', lang)}</button>
-        </div>
-      </Sheet>
-    </div>
-  )
-}
-
 /** Swap one meal in one tap: Surprise me, or pick from ranked alternatives. */
-function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => void; say: (m: string) => void }) {
+export function ReplaceSheet({ k, onClose, say }: { k: string; onClose: () => void; say: (m: string) => void }) {
   const { lang, house, upHouse, award } = useApp()
   const p = usePrefs(); const plan = house!.plan
   const [f, setF] = useState('same'); const [q, setQ] = useState('')

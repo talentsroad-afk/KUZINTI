@@ -4,7 +4,7 @@
 
 :root {
   --bg: 247 244 237; --surface: 255 255 253; --ink: 20 38 31; --muted: 104 116 108; --line: 228 226 216;
-  --forest: 36 91 67; --leaf: 141 187 145; --apricot: 242 185 107; --cream: 244 241 232; --danger: 190 70 60; --shadow: 36 91 67;
+  --forest: 36 91 67; --leaf: 141 187 145; --apricot: 242 185 107; --cream: 244 241 232; --danger: 190 70 60; --shadow: 36 91 67; --terracotta: 184 92 56;
 }
 html, body, #root { min-height: 100%; }
 body { margin: 0; background: rgb(var(--bg)); color: rgb(var(--ink)); font-family: Inter, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -118,3 +118,11 @@ details[open] > div { animation: rise .25s ease-out both; } summary::-webkit-det
 .stagger > *, main .fade-up > .space-y-3 > *, main .fade-up > .space-y-4 > * { animation-duration: var(--t-slow); }
 .card { border-radius: 20px; }
 h1, h2, h3 { color: rgb(var(--ink)); }
+/* Home, "Riad" direction: editorial, warm, one strong image */
+.riad { display: flex; flex-direction: column; gap: 2.25rem; }
+@media (min-width: 1024px) { .riad { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-flow: row dense; column-gap: 2.5rem; row-gap: 2.75rem; align-items: start; } }
+.kenburns img { animation: kenburns 1.6s var(--ease) both; }
+@keyframes kenburns { from { transform: scale(1.07); } to { transform: scale(1); } }
+.zellige { background-image: radial-gradient(circle at 50% 50%, transparent 38%, #fff 39%, #fff 41%, transparent 42%), linear-gradient(45deg, transparent 47%, #fff 48%, #fff 52%, transparent 53%), linear-gradient(-45deg, transparent 47%, #fff 48%, #fff 52%, transparent 53%); background-size: 44px 44px; }
+.hero-meal { transition: transform var(--t-mid) var(--ease); }
+@media (prefers-reduced-motion: reduce) { .kenburns img { animation: none; } }
