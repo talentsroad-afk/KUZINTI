@@ -134,7 +134,7 @@ function Shell() {
     const next = composeWeek({ ...p, ...o, budget: Math.max(0, budget - extraCost) }, h.pantry, h.extras ?? {})
     upHouse((x) => { x.plan = next; x.qty = {} }, 'composed the week'); award(15, '✨'); celebrate()
     const c = listCost(next, h.pantry, h.extras ?? {}) + extraCost
-    say(c <= budget ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); if (!stay) setTab('week')
+    say(c <= budget ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); if (!stay) go('week')
   }
   const adapt = (b = budget) => {
     const u = snap(t('h_budget', lang))
@@ -147,7 +147,13 @@ function Shell() {
   const makeHealthy = () => { const u = snap(t('makeHealthy', lang)); const r = adaptToMode(h.plan, 'light', p); upHouse((x) => { x.plan = r.plan }, 'made the week healthy'); say(`🥗 ${r.changed} ${t('adapted', lang)} · ${t('listUpdated', lang)}`, u); award(10, '🥗'); celebrate() }
   const [up, setUp] = useState(false)
   useEffect(() => { const f = () => setUp(scrollY > 500); addEventListener('scroll', f, { passive: true }); return () => removeEventListener('scroll', f) }, [])
-  const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { setTab(k); scrollTo(0, 0) } }
+  const go = (k: Tab) => { if (k === tab) scrollTo({ top: 0, behavior: 'smooth' }); else { try { history.pushState({ kz: k }, '') } catch { /* sandboxed */ } setTab(k); scrollTo(0, 0) } }
+  // Browser / phone back button moves between screens and ends on Home instead of leaving the app.
+  useEffect(() => {
+    try { history.replaceState({ kz: tab }, '') } catch { /* sandboxed */ }
+    const on = (e: PopStateEvent) => { const k = (e.state?.kz as Tab | undefined) ?? 'home'; setTab(k); scrollTo(0, 0) }
+    addEventListener('popstate', on); return () => removeEventListener('popstate', on)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const nChk = Object.values(h.checked).filter(Boolean).length
   const steps: [string, Tab, boolean][] = [['st_compose', 'home', hasPlan], ['st_week', 'week', hasPlan], ['st_list', 'list', nChk > 0], ['st_store', 'stores', !!h.store], ['st_done', 'list', items.length > 0 && nChk >= items.length]]
   const cur = steps.findIndex((x) => !x[2])
@@ -173,7 +179,7 @@ function Shell() {
       <Confetti run={boom} />
       <header className="sticky top-0 z-40 bg-[rgb(var(--bg)/.88)] backdrop-blur" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-4 py-2.5">
-          <Logo size={32} /><span className="font-display text-lg font-extrabold">{title}</span>
+          <button className="flex items-center gap-2" onClick={() => go('home')} aria-label={t('tHome', lang)}>{tab !== 'home' && <span className="text-xl font-bold text-forest" aria-hidden>‹</span>}<Logo size={32} /></button><span className="font-display text-lg font-extrabold">{title}</span>
           <button data-tour="budget" className="ms-auto min-w-[9.5rem] rounded-2xl bg-surface px-3 py-1.5 text-start shadow-soft active:scale-[.98]" onClick={() => setSheet(true)} aria-label={t('adjustB', lang)}>
             <span className="flex items-baseline justify-between gap-2 text-xs"><b className={`tabular-nums ${over ? 'text-danger' : 'text-forest'}`}>{money(total, lang)}</b><span className="text-muted tabular-nums">/ {money(budget, lang)}</span></span>
             <span className="mt-1 block h-1 overflow-hidden rounded-full bg-cream"><span className="block h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (total / budget) * 100)}%`, background: over ? 'rgb(var(--danger))' : 'rgb(var(--forest))' }} /></span>
