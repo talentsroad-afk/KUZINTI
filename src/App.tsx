@@ -7,6 +7,7 @@ import { Controls, HomeTab, usePrefs, WeekTab } from './Screens'
 import { ProfileScreen } from './ListScreen'
 import { CoursesTab, StoresStep, useBasket } from './Flow'
 import { type Prefs, adaptToBudget, adaptToMode, composeWeek, listCost } from './lib/plan'
+import { buildList } from './lib/engine'
 import { RecipesTab } from './Extra'
 import { CalendarDays, Home, MapPinned, ShoppingCart, UserRound, BookOpen, Sparkles, type LucideIcon } from 'lucide-react'
 import { SortiesTab } from './Sorties'
@@ -135,9 +136,13 @@ function Shell() {
   const compose = () => composeWith()
   const composeWith = (o: Partial<Prefs> = {}, stay = false) => {
     const u = snap(t('composeAuto', lang))
-    const next = composeWeek({ ...p, ...o, budget: Math.max(0, budget - extraCost) }, h.pantry, h.extras ?? {})
-    upHouse((x) => { x.plan = next; x.qty = {} }, 'composed the week'); award(15, '✨'); celebrate()
-    const c = listCost(next, h.pantry, h.extras ?? {}) + extraCost
+    // A brand-new week means last week was eaten: use up its ingredients from the pantry,
+    // otherwise the same dishes would show an empty list (pantry still holding last trip).
+    const pantry = { ...h.pantry }
+    if (!stay && hasPlan) for (const l of buildList(h.plan, {}, {}, {})) if (pantry[l.id]) pantry[l.id] = Math.max(0, pantry[l.id] - l.need)
+    const next = composeWeek({ ...p, ...o, budget: Math.max(0, budget - extraCost) }, pantry, h.extras ?? {})
+    upHouse((x) => { x.plan = next; x.qty = {}; if (!stay) { x.pantry = Object.fromEntries(Object.entries(pantry).filter(([, v]) => v > 0)); x.checked = {} } }, 'composed the week'); award(15, '✨'); celebrate()
+    const c = listCost(next, pantry, h.extras ?? {}) + extraCost
     say(c <= budget ? `🎉 ${Object.keys(next).length} ${t('meals', lang)} · ${money(budget - c, lang)} ${t('margin', lang)}` : t('tight', lang), hasPlan ? u : undefined); if (!stay) go('week')
   }
   const adapt = (b = budget) => {
@@ -169,10 +174,9 @@ function Shell() {
     addEventListener('popstate', on); return () => removeEventListener('popstate', on)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const nChk = Object.values(h.checked).filter(Boolean).length
-  const steps: [string, Tab, boolean][] = [['st_compose', 'home', hasPlan], ['st_week', 'week', hasPlan], ['st_store', 'stores', !!h.store], ['st_list', 'list', nChk > 0], ['st_done', 'list', items.length > 0 && nChk >= items.length]]
+  const steps: [string, Tab, boolean][] = [['st_compose', 'home', hasPlan], ['st_week', 'week', hasPlan], ['st_store', 'stores', !!h.store], ['st_list', 'list', nChk > 0 || (hasPlan && items.length === 0)], ['st_done', 'list', hasPlan && nChk >= items.length]]
   const cur = steps.findIndex((x) => !x[2])
-  const nextStep: [string, string, () => void] | null = !hasPlan ? null
-    : tab === 'home' ? [t('ns_week', lang), t('ns_weekD', lang), () => go('week')]
+  const nextStep: [string, string, () => void] | null = !hasPlan || tab === 'home' ? null
     : tab === 'week' || tab === 'recipes' ? (h.store ? [t('ns_list', lang), t('ns_listD', lang), () => go('list')] : [t('ns_store', lang), t('ns_storeD', lang), () => go('stores')])
     : tab === 'list' ? (h.store ? [t('ns_done', lang), t('ns_doneD', lang), () => scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })] : [t('ns_store', lang), t('ns_storeD', lang), () => go('stores')])
     : tab === 'stores' ? [t('ns_shop', lang), t('ns_shopD', lang), () => go('list')]
@@ -209,11 +213,11 @@ function Shell() {
         {space === 'food' && <><div data-tour="steps" className="mx-auto flex max-w-2xl items-center px-4 pb-1">{steps.map(([k, to, ok], i) => <button key={k} onClick={() => go(to)} className="flex flex-1 items-center gap-1 text-[10px] font-bold">
           <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] ${ok ? 'bg-forest text-white' : i === cur ? 'bg-apricot text-ink ring-2 ring-apricot/40' : 'bg-cream text-muted'}`}>{ok ? '✓' : i + 1}</span>
           <span className={`truncate ${i === cur ? 'text-ink' : 'text-muted'}`}>{t(k, lang)}</span>{i < 4 && <span className={`h-0.5 min-w-1 flex-1 rounded ${ok ? 'bg-forest' : 'bg-line'}`} />}</button>)}</div>
-        <p className="mx-auto max-w-2xl px-4 pb-2 text-[11px] font-semibold text-forest">{cur < 0 ? '🎉 Parcours terminé ! Recompose une nouvelle semaine quand tu veux.' : `👉 Étape ${cur + 1} sur 5 · ${[t('stepHint0', lang), t('stepHint1', lang), t('stepHint3', lang), t('stepHint2', lang), t('stepHint4', lang)][cur]}`}</p></>}
+        {tab !== 'home' && <p className="mx-auto max-w-2xl px-4 pb-2 text-[11px] font-semibold text-forest">{cur < 0 ? '🎉 Parcours terminé ! Recompose une nouvelle semaine quand tu veux.' : `👉 Étape ${cur + 1} sur 5 · ${[t('stepHint0', lang), t('stepHint1', lang), t('stepHint3', lang), t('stepHint2', lang), t('stepHint4', lang)][cur]}`}</p>}</>}
         {note && <div className="toast mx-auto max-w-2xl px-4 pb-2"><div className="flex items-center gap-2 rounded-2xl bg-forest px-4 py-2 text-sm font-semibold text-white" role="status"><button className="flex-1 text-start" onClick={() => setNote(null)}>{note}</button>{undo && <button className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold" onClick={undo[1]}>↩ {t('undo', lang)}</button>}</div></div>}
       </header>
       <main className="mx-auto w-full max-w-2xl px-4 pb-40 pt-2">
-        <Hint tab={space === 'out' ? 'sorties' : tab} />
+        {tab !== 'home' && <Hint tab={space === 'out' ? 'sorties' : tab} />}
         {space === 'out' ? <div className="fade-up"><SortiesTab /></div> : <div key={tab + lang} className="fade-up">
           {tab === 'home' && <HomeTab compose={compose} recompose={(o) => hasPlan && composeWith(o, true)} go={go} total={total} items={items.length} />}
           {tab === 'week' && <button className="mb-3 flex w-full items-center gap-2 rounded-2xl bg-surface px-4 py-3 text-sm font-bold text-forest shadow-soft" onClick={() => go('recipes')}><BookOpen size={18} aria-hidden /> {t('tRecipes', lang)} · {lang === 'en' ? 'browse & favorites' : 'parcourir et favoris'} <span className="ms-auto">›</span></button>}
@@ -225,7 +229,7 @@ function Shell() {
           {nextStep && <button className="card fade-up mt-4 flex w-full items-center gap-3 p-4 text-start active:scale-[.98]" onClick={nextStep[2]}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-forest text-xl text-white">→</span><span className="min-w-0 flex-1"><span className="block text-[11px] font-bold uppercase tracking-wide text-muted">{t('nextStep', lang)}</span><span className="block font-display font-extrabold">{nextStep[0]}</span><span className="block text-xs text-muted">{nextStep[1]}</span></span></button>}
         </div>}
       </main>
-      <><div data-tour="assist" style={space === 'out' ? { display: 'none' } : undefined} className="fixed bottom-[5.5rem] start-4 z-40 flex max-w-[78vw] items-center gap-1 rounded-full bg-ink/90 p-1 text-sm font-bold text-white shadow-lg backdrop-blur">
+      <><div data-tour="assist" style={space === 'out' || (tab === 'home' && !tour) ? { display: 'none' } : undefined} className="fixed bottom-[5.5rem] start-4 z-40 flex max-w-[78vw] items-center gap-1 rounded-full bg-ink/90 p-1 text-sm font-bold text-white shadow-lg backdrop-blur">
         <button className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-lg active:scale-90" onClick={() => setAssist(true)} aria-label={t('assistant', lang)}><Sparkles size={18} aria-hidden /></button>
         <button className="truncate px-3 py-2 active:scale-95" onClick={help[1]}>➜ {help[0]}</button>
       </div>
