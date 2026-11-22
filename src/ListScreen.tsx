@@ -54,9 +54,9 @@ export function ProfileScreen({ celebrate }: { celebrate: () => void }) {
         <p className="text-xs text-muted">{t('twoTabs', lang)}</p>
         <h3 className="pt-2 text-sm font-bold text-muted">{t('members', lang)}</h3>
         {house!.members.map((m) => <div key={m.id} className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-full bg-leaf/40 font-bold">{m.name[0]}</span><span className="flex-1 font-semibold">{m.name}</span><span className="rounded-full bg-cream px-3 py-1 text-xs font-semibold">{t(m.role, lang)}</span></div>)}</div>
-      <div className="card space-y-2 p-5"><h3 className="font-bold">{t('pantry', lang)}</h3><Pantry /></div>
-      <Activity />
-      <div className="card p-5"><h3 className="font-bold">{t('soon', lang)}</h3><p className="mt-1 text-sm text-muted">{t('soonItems', lang)}</p></div>
+      <details className="card group p-5"><summary className="flex cursor-pointer list-none items-center justify-between font-bold">🥫 {t('pantry', lang)}<span className="text-muted transition-transform group-open:rotate-90">›</span></summary><div className="mt-3"><Pantry /></div></details>
+      <details className="card group p-5"><summary className="flex cursor-pointer list-none items-center justify-between font-bold">🕘 {lang === 'en' ? 'Household activity' : 'Activité du foyer'}<span className="text-muted transition-transform group-open:rotate-90">›</span></summary><div className="mt-3"><Activity /></div></details>
+      <p className="px-1 text-center text-xs text-muted">{t('soon', lang)} : {t('soonItems', lang)}</p>
       <button className="btn btn-soft w-full" onClick={logout}>{t('logout', lang)}</button>
     </div>
   )

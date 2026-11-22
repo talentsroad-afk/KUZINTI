@@ -106,3 +106,4 @@ main .fade-up > .space-y-3 > *:nth-child(2), main .fade-up > .space-y-4 > *:nth-
 }
 /* Country accent: Morocco keeps apricot, France gets a soft blue accent. */
 [data-country="FR"] { --apricot: 132 170 222; }
+details[open] > div { animation: rise .25s ease-out both; } summary::-webkit-details-marker { display: none; }
